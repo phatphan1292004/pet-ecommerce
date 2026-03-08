@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import {FaChevronDown, FaRegUserCircle } from "react-icons/fa";
+import { FaChevronDown, FaRegUserCircle } from "react-icons/fa";
 import { IoCartOutline } from "react-icons/io5";
 
 export default function Header() {
@@ -26,9 +26,29 @@ export default function Header() {
             </span>
           </div>
           {/* User Icon */}
-          <button className="text-neutral-1 hover:text-primary-1">
-            <FaRegUserCircle size={22} />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* User Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-neutral-1 transition-colors">
+                <FaRegUserCircle size={22} />
+                <FaChevronDown size={12} />
+              </button>
+              <div className="absolute top-full right-0 mt-2 w-36 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <Link
+                  href="/register"
+                  className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                >
+                  Đăng ký
+                </Link>
+                <Link
+                  href="/login"
+                  className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                >
+                  Đăng nhập
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
