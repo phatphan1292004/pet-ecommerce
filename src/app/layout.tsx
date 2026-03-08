@@ -25,7 +25,7 @@ export default function RootLayout({
         className={`${primaryFont.variable} ${primaryFont.className} antialiased flex flex-col min-h-screen`}
       >
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 bg-white">{children}</main>
         <Footer />
       </body>
     </html>

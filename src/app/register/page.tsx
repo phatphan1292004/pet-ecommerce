@@ -1,24 +1,49 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdEmail, MdPhone, MdLock } from "react-icons/md";
+import { registerWithEmail } from "@/integrations/firebase";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [form, setForm] = useState({
     email: "",
     phone: "",
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: handle register logic
+    if (form.password !== form.confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await registerWithEmail(form.email, form.password);
+      router.push("/");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("email-already-in-use")) {
+        setError("Email này đã được sử dụng.");
+      } else if (msg.includes("weak-password")) {
+        setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      } else {
+        setError("Đăng ký thất bại. Vui lòng thử lại.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,6 +51,9 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold tracking-widest mb-8">ĐĂNG KÝ</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-4 py-2">{error}</p>
+        )}
         {/* Email */}
         <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
           <input
@@ -80,9 +108,10 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded mt-2 transition-colors"
+          disabled={loading}
+          className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold py-4 rounded mt-2 transition-colors"
         >
-          Đăng ký
+          {loading ? "Đang đăng ký..." : "Đăng ký"}
         </button>
       </form>
 

@@ -1,23 +1,59 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdEmail, MdLock } from "react-icons/md";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
+import { loginWithEmail, loginWithGoogle, loginWithFacebook } from "@/integrations/firebase";
 
 export default function LoginPage() {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const router = useRouter();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: handle login logic
+    setLoading(true);
+    setError("");
+    try {
+      await loginWithEmail(form.email, form.password);
+      router.push("/");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("user-not-found") || msg.includes("wrong-password") || msg.includes("invalid-credential")) {
+        setError("Email hoặc mật khẩu không đúng.");
+      } else {
+        setError("Đăng nhập thất bại. Vui lòng thử lại.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError("");
+    try {
+      await loginWithGoogle();
+      router.push("/");
+    } catch {
+      setError("Đăng nhập Google thất bại.");
+    }
+  };
+
+  const handleFacebook = async () => {
+    setError("");
+    try {
+      await loginWithFacebook();
+      router.push("/");
+    } catch {
+      setError("Đăng nhập Facebook thất bại.");
+    }
   };
 
   return (
@@ -25,6 +61,9 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold tracking-widest mb-8">ĐĂNG NHẬP</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-4 py-2">{error}</p>
+        )}
         {/* Email */}
         <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
           <input
@@ -53,20 +92,21 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded mt-2 transition-colors"
+          disabled={loading}
+          className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold py-4 rounded mt-2 transition-colors"
         >
-          Đăng nhập
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
 
       {/* Social Login */}
       <p className="mt-10 text-sm text-gray-500">Đăng nhập với</p>
       <div className="flex gap-4 mt-3 w-full max-w-md">
-        <button className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
+        <button onClick={handleFacebook} type="button" className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
           <FaFacebook className="text-blue-600 text-xl" />
           Facebook
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
+        <button onClick={handleGoogle} type="button" className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
           <FaGoogle className="text-red-500 text-xl" />
           Google
         </button>

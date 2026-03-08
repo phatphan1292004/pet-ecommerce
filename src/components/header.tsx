@@ -2,12 +2,27 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaChevronDown, FaRegUserCircle } from "react-icons/fa";
-import { IoCartOutline } from "react-icons/io5";
+import { IoCartOutline, IoSearchOutline, IoCloseOutline } from "react-icons/io5";
 
 export default function Header() {
   const [cartCount] = useState(1);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <header className="w-full">
@@ -57,10 +72,10 @@ export default function Header() {
         <div className="container mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <Image 
-              src="/logo.png" 
-              alt="ODeli Logo" 
-              width={120} 
+            <Image
+              src="/logo.png"
+              alt="ODeli Logo"
+              width={120}
               height={80}
               className="object-contain"
               priority
@@ -86,7 +101,49 @@ export default function Header() {
 
             <div className="relative group">
               <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
-                Món ăn, Thức uống
+                Sản phẩm cho chó
+                <FaChevronDown size={16} />
+              </button>
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <Link
+                  href="/food"
+                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
+                >
+                  Món ăn
+                </Link>
+                <Link
+                  href="/drink"
+                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
+                >
+                  Thức uống
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
+                Sản phẩm cho mèo
+                <FaChevronDown size={16} />
+              </button>
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <Link
+                  href="/food"
+                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
+                >
+                  Món ăn
+                </Link>
+                <Link
+                  href="/drink"
+                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
+                >
+                  Thức uống
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
+                Nhãn hàng
                 <FaChevronDown size={16} />
               </button>
               <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
@@ -123,14 +180,39 @@ export default function Header() {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-            {/* Language Selector */}
+            {/* Search */}
+            <div className="relative">
+              <button
+                onClick={() => setSearchOpen((v) => !v)}
+                className={`transition-colors ${searchOpen ? "text-primary-1" : "text-neutral-1 hover:text-primary-1"}`}
+              >
+                <IoSearchOutline size={20} />
+              </button>
+
+              {/* Floating search bar */}
+              {searchOpen && (
+                <div className="absolute top-full right-0 mt-5 w-72 bg-white border border-neutral-20 rounded-lg shadow-lg flex items-center gap-2 px-4 py-2.5 z-50 focus-within:border-primary-3 transition-colors">
+                  <IoSearchOutline size={18} className="text-neutral-5 shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm sản phẩm..."
+                    className="flex-1 text-sm text-neutral-1 placeholder:text-neutral-5 outline-none bg-transparent"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")} className="text-neutral-5 hover:text-neutral-3 transition-colors">
+                      <IoCloseOutline size={18} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Cart */}
             <Link href="/cart" className="relative">
-              <IoCartOutline 
-                className="text-neutral-1"
-                size={24}
-              />
+              <IoCartOutline className="text-neutral-1" size={24} />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-1 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
                   {cartCount}
