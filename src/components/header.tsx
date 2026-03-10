@@ -34,7 +34,7 @@ export default function Header() {
             <span className="hidden sm:inline">-</span>
             <span>Kiểm tra đơn hàng</span>
             <span className="hidden sm:inline">-</span>
-            <span>Hợp tác cùng ODELI</span>
+            <span>Hợp tác cùng Pet Spots</span>
             <span className="hidden sm:inline">-</span>
             <span className="flex items-center gap-1">
               📞 Đặt hàng nhanh <strong>0909090909</strong>
@@ -181,12 +181,12 @@ export default function Header() {
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex items-center">
               <button
                 onClick={() => setSearchOpen((v) => !v)}
-                className={`transition-colors ${searchOpen ? "text-primary-1" : "text-neutral-1 hover:text-primary-1"}`}
+                className={`flex items-center transition-colors ${searchOpen ? "text-primary-1" : "text-neutral-1"}`}
               >
-                <IoSearchOutline size={20} />
+                <IoSearchOutline size={24} />
               </button>
 
               {/* Floating search bar */}
@@ -211,7 +211,7 @@ export default function Header() {
             </div>
 
             {/* Cart */}
-            <Link href="/cart" className="relative">
+            <Link href="/cart" className="relative flex items-center">
               <IoCartOutline className="text-neutral-1" size={24} />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-1 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">

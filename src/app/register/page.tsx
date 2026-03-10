@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerWithEmail } from "@/integrations/firebase";
+import { syncUserToDatabase } from "@/integrations/userSync";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
+    displayName: "",
     email: "",
     phone: "",
     password: "",
@@ -30,7 +32,18 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
     try {
-      await registerWithEmail(form.email, form.password);
+      // Register with Firebase
+      const userCredential = await registerWithEmail(form.email, form.password);
+      const firebaseUid = userCredential.user.uid;
+
+      // Sync to MongoDB
+      await syncUserToDatabase({
+        firebaseUid,
+        email: form.email,
+        displayName: form.displayName,
+        phone: form.phone,
+      });
+
       router.push("/");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
@@ -54,6 +67,19 @@ export default function RegisterPage() {
         {error && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-4 py-2">{error}</p>
         )}
+        {/* Display Name */}
+        <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
+          <input
+            type="text"
+            name="displayName"
+            placeholder="Họ và tên"
+            value={form.displayName}
+            onChange={handleChange}
+            className="flex-1 outline-none py-1 text-sm text-gray-700 placeholder-gray-400"
+            required
+          />
+        </div>
+
         {/* Email */}
         <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
           <input
