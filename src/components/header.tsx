@@ -4,9 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { FaChevronDown, FaRegUserCircle } from "react-icons/fa";
-import { IoCartOutline, IoSearchOutline, IoCloseOutline } from "react-icons/io5";
+import {
+  IoCartOutline,
+  IoSearchOutline,
+  IoCloseOutline,
+} from "react-icons/io5";
+import { logout } from "@/features/guest/logout";
+import { Category } from "@/types/category";
+import CategoryDropdown from "./category-dropdown";
 
-export default function Header() {
+interface HeaderProps {
+  isLoggedIn: boolean;
+  categories: Category[] | null;
+}
+
+export default function Header({ isLoggedIn, categories }: HeaderProps) {
   const [cartCount] = useState(1);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,19 +60,40 @@ export default function Header() {
                 <FaRegUserCircle size={22} />
                 <FaChevronDown size={12} />
               </button>
-              <div className="absolute top-full right-0 mt-2 w-36 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <Link
-                  href="/register"
-                  className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
-                >
-                  Đăng ký
-                </Link>
-                <Link
-                  href="/login"
-                  className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
-                >
-                  Đăng nhập
-                </Link>
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/userinfo"
+                      className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                    >
+                      Thông tin cá nhân
+                    </Link>
+
+                    <button
+                      type="submit"
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                      onClick={() => logout()}
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/register"
+                      className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                    >
+                      Đăng ký
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="block px-4 py-2 text-sm hover:bg-neutral-10 text-neutral-1"
+                    >
+                      Đăng nhập
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -84,6 +117,7 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden lg:flex items-center gap-8 flex-1 justify-center">
+            {/* Về Pet Spots - Static */}
             <div className="relative group">
               <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
                 Về Pet Spots
@@ -99,69 +133,17 @@ export default function Header() {
               </div>
             </div>
 
-            <div className="relative group">
-              <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
-                Sản phẩm cho chó
-                <FaChevronDown size={16} />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <Link
-                  href="/food"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Món ăn
-                </Link>
-                <Link
-                  href="/drink"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Thức uống
-                </Link>
-              </div>
-            </div>
+            {/* Dynamic Categories */}
+            {categories?.filter(cat => cat.is_active).map((category) => (
+              <CategoryDropdown
+                key={category._id}
+                categoryId={category._id}
+                categoryName={category.name}
+                categorySlug={category.slug}
+              />
+            ))}
 
-            <div className="relative group">
-              <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
-                Sản phẩm cho mèo
-                <FaChevronDown size={16} />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <Link
-                  href="/food"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Món ăn
-                </Link>
-                <Link
-                  href="/drink"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Thức uống
-                </Link>
-              </div>
-            </div>
-
-            <div className="relative group">
-              <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
-                Nhãn hàng
-                <FaChevronDown size={16} />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <Link
-                  href="/food"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Món ăn
-                </Link>
-                <Link
-                  href="/drink"
-                  className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
-                >
-                  Thức uống
-                </Link>
-              </div>
-            </div>
-
+            {/* Liên hệ - Static */}
             <div className="relative group">
               <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
                 Liên hệ
@@ -192,7 +174,10 @@ export default function Header() {
               {/* Floating search bar */}
               {searchOpen && (
                 <div className="absolute top-full right-0 mt-5 w-72 bg-white border border-neutral-20 rounded-lg shadow-lg flex items-center gap-2 px-4 py-2.5 z-50 focus-within:border-primary-3 transition-colors">
-                  <IoSearchOutline size={18} className="text-neutral-5 shrink-0" />
+                  <IoSearchOutline
+                    size={18}
+                    className="text-neutral-5 shrink-0"
+                  />
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -202,7 +187,10 @@ export default function Header() {
                     className="flex-1 text-sm text-neutral-1 placeholder:text-neutral-5 outline-none bg-transparent"
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery("")} className="text-neutral-5 hover:text-neutral-3 transition-colors">
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-neutral-5 hover:text-neutral-3 transition-colors"
+                    >
                       <IoCloseOutline size={18} />
                     </button>
                   )}

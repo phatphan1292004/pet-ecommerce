@@ -9,10 +9,11 @@ import UserInfoTab from "./user-info-tab";
 import AddressTab from "./address-tab";
 import OrdersTab from "./orders-tab";
 import ChangePasswordTab from "./change-password-tab";
+import { UserInfo } from "@/types/user";
 
 type Tab = "info" | "address" | "orders" | "password";
 
-export default function UserInfoPage() {
+export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
   const [activeTab, setActiveTab] = useState<Tab>("info");
 
   return (
@@ -99,7 +100,7 @@ export default function UserInfoPage() {
 
         {/* Main content */}
         <main className="flex-1">
-          {activeTab === "info" && <UserInfoTab />}
+          {activeTab === "info" && <UserInfoTab userInfo={userInfo} />}
           {activeTab === "address" && <AddressTab />}
           {activeTab === "orders" && <OrdersTab />}
           {activeTab === "password" && <ChangePasswordTab />}

@@ -1,8 +1,9 @@
 "use client";
 
 import { FaRegUserCircle } from "react-icons/fa";
+import { UserInfo } from "@/types/user";
 
-export default function UserInfoTab() {
+export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Avatar + Points + Edit */}
@@ -26,6 +27,7 @@ export default function UserInfoTab() {
           <input
             type="text"
             disabled
+            value={userInfo?.displayName || ""}
             className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none cursor-not-allowed"
           />
         </div>
@@ -49,7 +51,7 @@ export default function UserInfoTab() {
           <input
             type="email"
             disabled
-            defaultValue="ryanz1292004@gmail.com"
+            value={userInfo?.email || ""}
             className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none cursor-not-allowed"
           />
         </div>
@@ -60,6 +62,7 @@ export default function UserInfoTab() {
           <input
             type="tel"
             disabled
+            value={userInfo?.phoneNumber || ""}
             placeholder="Chưa cập nhật"
             className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-4 outline-none cursor-not-allowed"
           />
