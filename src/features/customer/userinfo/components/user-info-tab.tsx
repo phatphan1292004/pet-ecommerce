@@ -1,11 +1,50 @@
 "use client";
 
+import { useState } from "react";
 import { FaRegUserCircle } from "react-icons/fa";
+import { Field, Input, Label } from "@headlessui/react";
 import { UserInfo } from "@/types/user";
+import { useToast } from "@/hooks";
+import { changeInfo } from "../servers/info";
 
 export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
+  const { showSuccess, showError } = useToast();
+  const [formData, setFormData] = useState({
+    displayName: userInfo?.displayName || "",
+    dateOfBirth: "",
+    phoneNumber: userInfo?.phoneNumber || "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await changeInfo(formData);
+
+      if (response.success) {
+        showSuccess(response.message);
+      } else {
+        showError(response.message);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      showError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* Avatar + Points + Edit */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -14,67 +53,70 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
           </div>
           <span className="text-neutral-4 text-base">0 điểm</span>
         </div>
-        <button className="bg-primary-1 hover:bg-primary-2 text-white font-semibold text-base px-6 py-2 rounded-md transition-colors">
-          Chỉnh sửa
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="bg-primary-1 hover:bg-primary-2 disabled:bg-neutral-5 text-white font-semibold text-base px-6 py-2 rounded-md transition-colors disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Đang lưu..." : "Chỉnh sửa"}
         </button>
       </div>
 
-      {/* Form */}
+      {/* Form Fields */}
       <div className="grid grid-cols-2 gap-x-6 gap-y-5">
         {/* Họ và tên */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-base text-neutral-3">Họ và tên</label>
-          <input
+        <Field>
+          <Label className="text-base text-neutral-3">Họ và tên</Label>
+          <Input
             type="text"
-            disabled
-            value={userInfo?.displayName || ""}
-            className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none cursor-not-allowed"
+            value={formData.displayName}
+            onChange={(e) => handleChange("displayName", e.target.value)}
+            className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
-        </div>
+        </Field>
 
         {/* Sinh nhật */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-base text-neutral-3">Sinh nhật</label>
-          <div className="relative">
-            <input
-              type="date"
-              disabled
-              placeholder="Chưa cập nhật"
-              className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-4 outline-none cursor-not-allowed"
-            />
-          </div>
-        </div>
-
-        {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-base text-neutral-3">Email</label>
-          <input
-            type="email"
-            disabled
-            value={userInfo?.email || ""}
-            className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none cursor-not-allowed"
+        <Field>
+          <Label className="text-base text-neutral-3">Sinh nhật</Label>
+          <Input
+            type="date"
+            value={formData.dateOfBirth}
+            onChange={(e) => handleChange("dateOfBirth", e.target.value)}
+            className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-4 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
-        </div>
+        </Field>
+
+        {/* Email - Disabled */}
+        <Field disabled>
+          <Label className="text-base text-neutral-3 data-disabled:text-neutral-3">Email</Label>
+          <Input
+            type="email"
+            value={userInfo?.email || ""}
+            className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none cursor-not-allowed data-disabled:opacity-60 data-disabled:cursor-not-allowed"
+          />
+        </Field>
 
         {/* Số điện thoại */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-base text-neutral-3">Số điện thoại</label>
-          <input
+        <Field>
+          <Label className="text-base text-neutral-3">Số điện thoại</Label>
+          <Input
             type="tel"
-            disabled
-            value={userInfo?.phoneNumber || ""}
-            placeholder="Chưa cập nhật"
-            className="bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-4 outline-none cursor-not-allowed"
+            value={formData.phoneNumber}
+            onChange={(e) => handleChange("phoneNumber", e.target.value)}
+            className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
-        </div>
+        </Field>
       </div>
 
-      {/* Xóa tài khoản */}
+      {/* Delete Account */}
       <div className="pt-2">
-        <button className="border border-primary-1 text-primary-1 hover:bg-primary-6 text-base font-medium px-5 py-2 rounded-md transition-colors">
+        <button
+          type="button"
+          className="border border-primary-1 text-primary-1 hover:bg-primary-6 text-base font-medium px-5 py-2 rounded-md transition-colors"
+        >
           Xóa tài khoản
         </button>
       </div>
-    </div>
+    </form>
   );
 }

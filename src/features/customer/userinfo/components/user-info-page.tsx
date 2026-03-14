@@ -1,20 +1,50 @@
 "use client";
-
-import { useState } from "react";
 import Link from "next/link";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
 import { FaBoxOpen, FaLock } from "react-icons/fa";
+import type { IconType } from "react-icons";
 import UserInfoTab from "./user-info-tab";
 import AddressTab from "./address-tab";
 import OrdersTab from "./orders-tab";
 import ChangePasswordTab from "./change-password-tab";
 import { UserInfo } from "@/types/user";
 
-type Tab = "info" | "address" | "orders" | "password";
+interface TabItem {
+  id: string;
+  label: string;
+  icon: IconType;
+  render: (userInfo: UserInfo) => React.ReactNode;
+}
 
 export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
-  const [activeTab, setActiveTab] = useState<Tab>("info");
+  const tabs: TabItem[] = [
+    {
+      id: "info",
+      label: "Thông tin",
+      icon: FaRegUserCircle,
+      render: (info) => <UserInfoTab userInfo={info} />,
+    },
+    {
+      id: "address",
+      label: "Quản lý địa chỉ",
+      icon: FaLocationDot,
+      render: () => <AddressTab />,
+    },
+    {
+      id: "orders",
+      label: "Đơn hàng của tôi",
+      icon: FaBoxOpen,
+      render: () => <OrdersTab />,
+    },
+    {
+      id: "password",
+      label: "Đổi mật khẩu",
+      icon: FaLock,
+      render: () => <ChangePasswordTab />,
+    },
+  ];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -27,85 +57,51 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
         <span className="text-neutral-1">Tài khoản</span>
       </nav>
 
-      <div className="flex gap-20">
-        {/* Sidebar */}
-        <aside className="w-52 shrink-0">
-          <ul className="flex flex-col gap-5">
-            <li>
-              <button
-                onClick={() => setActiveTab("info")}
-                className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-lg font-medium transition-colors ${
-                  activeTab === "info"
-                    ? "text-primary-1"
-                    : "text-neutral-3 hover:text-primary-1"
-                }`}
-              >
-                <FaRegUserCircle
-                  size={18}
-                  className={activeTab === "info" ? "text-primary-1" : "text-neutral-4"}
-                />
-                Thông tin
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("address")}
-                className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  activeTab === "address"
-                    ? "text-primary-1"
-                    : "text-neutral-3 hover:text-primary-1"
-                }`}
-              >
-                <FaLocationDot
-                  size={18}
-                  className={activeTab === "address" ? "text-primary-1" : "text-neutral-4"}
-                />
-                Quản lý địa chỉ
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("orders")}
-                className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  activeTab === "orders"
-                    ? "text-primary-1"
-                    : "text-neutral-3 hover:text-primary-1"
-                }`}
-              >
-                <FaBoxOpen
-                  size={18}
-                  className={activeTab === "orders" ? "text-primary-1" : "text-neutral-4"}
-                />
-                Đơn hàng của tôi
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab("password")}
-                className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  activeTab === "password"
-                    ? "text-primary-1"
-                    : "text-neutral-3 hover:text-primary-1"
-                }`}
-              >
-                <FaLock
-                  size={18}
-                  className={activeTab === "password" ? "text-primary-1" : "text-neutral-4"}
-                />
-                Đổi mật khẩu
-              </button>
-            </li>
-          </ul>
-        </aside>
+      <TabGroup>
+        <div className="flex gap-20">
+          {/* Sidebar - Tab List */}
+          <aside className="w-52 shrink-0">
+            <TabList className="flex flex-col gap-5">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <Tab
+                    key={tab.id}
+                    className={({ selected }) =>
+                      `flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors outline-none ${
+                        selected
+                          ? "text-primary-1"
+                          : "text-neutral-3 hover:text-primary-1"
+                      }`
+                    }
+                  >
+                    {({ selected }) => (
+                      <>
+                        <Icon
+                          size={18}
+                          className={selected ? "text-primary-1" : "text-neutral-4"}
+                        />
+                        {tab.label}
+                      </>
+                    )}
+                  </Tab>
+                );
+              })}
+            </TabList>
+          </aside>
 
-        {/* Main content */}
-        <main className="flex-1">
-          {activeTab === "info" && <UserInfoTab userInfo={userInfo} />}
-          {activeTab === "address" && <AddressTab />}
-          {activeTab === "orders" && <OrdersTab />}
-          {activeTab === "password" && <ChangePasswordTab />}
-        </main>
-      </div>
+          {/* Main content - Tab Panels */}
+          <main className="flex-1">
+            <TabPanels>
+              {tabs.map((tab) => (
+                <TabPanel key={tab.id}>
+                  {tab.render(userInfo)}
+                </TabPanel>
+              ))}
+            </TabPanels>
+          </main>
+        </div>
+      </TabGroup>
     </div>
   );
 }

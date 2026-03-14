@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { ToastProvider } from "@/components/toast-provider";
 import { getCategories } from "@/features/guest/category";
 
 const primaryFont = Josefin_Sans({
@@ -31,6 +32,7 @@ export default async function RootLayout({
       <body
         className={`${primaryFont.variable} ${primaryFont.className} antialiased flex flex-col min-h-screen`}
       >
+        <ToastProvider />
         <Header isLoggedIn={isLoggedIn} categories={categories} />
         <main className="flex-1 bg-white">{children}</main>
         <Footer />
