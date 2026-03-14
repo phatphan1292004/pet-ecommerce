@@ -8,43 +8,43 @@ import ProductCard, { type Product } from "./product-card";
 
 const SAMPLE_PRODUCTS: Product[] = [
   {
-    id: 1,
+    _id: "1",
     name: "Sữa Tắm Thơm Lâu Cho Chó Mèo YÚ Spa Chai 400ml",
     price: 480000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 2,
+    _id: "2",
     name: "4.5KG - Thức ăn chó Nutrience SubZero Small Breed Prairie...",
     price: 1430000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 3,
+    _id: "3",
     name: "1.3KG - Thức ăn cho chó con PEDIGREE - vị Gà, Trứng và Sữ...",
     price: 149000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 4,
+    _id: "4",
     name: "Đồ chơi cần câu CattyMan lò xo lông vũ màu cam Petmall",
     price: 159000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 5,
+    _id: "5",
     name: "Đồ chơi cần câu CattyMan lò xo lông vũ màu xanh trắng...",
     price: 159000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 6,
+    _id: "6",
     name: "Hạt mềm Zenith cho mèo trưởng thành vị cá hồi 1.2KG",
     price: 320000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
   },
   {
-    id: 7,
+    _id: "7",
     name: "Vòng cổ chó mèo có chuông đính đá dễ thương nhiều màu",
     price: 85000,
     image: "https://plus.unsplash.com/premium_photo-1772955479826-614b2b120b78?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
@@ -99,7 +99,7 @@ export default function ProductSection({
         <div className="flex gap-3">
           {products.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               className="flex-[0_0_calc(20%-0.6rem)] min-w-0"
             >
               <ProductCard product={product} />

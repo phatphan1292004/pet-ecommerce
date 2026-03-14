@@ -173,7 +173,7 @@ export default function Header({ isLoggedIn, categories }: HeaderProps) {
 
               {/* Floating search bar */}
               {searchOpen && (
-                <div className="absolute top-full right-0 mt-5 w-72 bg-white border border-neutral-20 rounded-lg shadow-lg flex items-center gap-2 px-4 py-2.5 z-50 focus-within:border-primary-3 transition-colors">
+                <div className="absolute top-full right-0 mt-5 w-80 bg-white border border-neutral-20 rounded-lg shadow-lg flex items-center gap-2 px-4 py-2.5 z-50 focus-within:border-primary-3 transition-colors">
                   <IoSearchOutline
                     size={18}
                     className="text-neutral-5 shrink-0"

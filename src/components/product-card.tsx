@@ -1,11 +1,16 @@
 import Image from "next/image";
+import Link from "next/link";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
 
 export interface Product {
-  id: number;
+  _id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  discount?: number;
+  review?: number;
   image: string;
+  slug?: string;
 }
 
 interface ProductCardProps {
@@ -14,9 +19,21 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const formattedPrice = product.price.toLocaleString("vi-VN") + "₫";
+  const formattedOriginalPrice = product.originalPrice?.toLocaleString("vi-VN") + "₫";
+  const savings = product.originalPrice ? product.originalPrice - product.price : 0;
+  const formattedSavings = savings > 0 ? `Tiết kiệm ${savings.toLocaleString("vi-VN")}` : "";
+  const productLink = product.slug ? `/products/${product.slug}` : "#";
 
   return (
-    <div className="bg-white rounded-xl p-3 flex flex-col gap-2 hover:shadow-md transition-shadow border border-neutral-7">
+    <Link href={productLink}>
+      <div className="bg-white rounded-xl p-3 flex flex-col gap-2 hover:shadow-md transition-shadow border border-neutral-7 relative cursor-pointer">
+      {/* Discount Badge */}
+      {product.discount && product.discount > 0 && (
+        <div className="absolute top-2 right-2 bg-yellow-300 text-neutral-1 font-bold text-xs px-2 py-1 rounded z-10">
+          -{product.discount}%
+        </div>
+      )}
+
       {/* Image */}
       <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-neutral-10">
         <Image
@@ -27,16 +44,38 @@ export default function ProductCard({ product }: ProductCardProps) {
         />
       </div>
 
-      {/* Price + Wishlist */}
+      {/* Price section */}
       <div className="flex items-center justify-between mt-1">
-        <span className="text-primary-1 font-bold text-base">{formattedPrice}</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-primary-1 font-bold text-base">{formattedPrice}</span>
+          {(formattedOriginalPrice || formattedSavings) && (
+            <div className="flex items-center gap-2">
+              {formattedOriginalPrice && (
+                <span className="text-neutral-5 text-sm line-through">
+                  {formattedOriginalPrice}
+                </span>
+              )}
+              {formattedSavings && (
+                <span className="text-primary-1 text-sm font-medium">{formattedSavings}</span>
+              )}
+            </div>
+          )}
+        </div>
         <button className="text-neutral-5 hover:text-primary-1 transition-colors">
           <FaHeart size={16} />
         </button>
       </div>
 
+      {/* Rating */}
+      {/* {product.review && (
+        <div className="flex items-center gap-1">
+          <span className="text-yellow-400 text-sm">★</span>
+          <span className="text-neutral-4 text-xs">{product.review}/5</span>
+        </div>
+      )} */}
+
       {/* Name */}
-      <p className="text-neutral-1 text-sm leading-snug line-clamp-2 min-h-[2.5rem]">
+      <p className="text-neutral-1 text-sm leading-snug line-clamp-2 min-h-10">
         {product.name}
       </p>
 
@@ -45,6 +84,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <FaShoppingCart size={14} />
         MUA
       </button>
-    </div>
+      </div>
+    </Link>
   );
 }
