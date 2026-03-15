@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { FaHeart, FaShoppingCart, FaStar } from 'react-icons/fa';
+import { FaShoppingCart, FaStar } from 'react-icons/fa';
 import { ProductDetail } from '../servers';
 import { IoMdHeartEmpty } from 'react-icons/io';
+import { useCartStore } from '@/store';
+import { useToast } from '@/hooks';
 
 interface ProductDetailProps {
   product: ProductDetail;
@@ -14,6 +16,8 @@ interface ProductDetailProps {
 
 export default function ProductDetailPage({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
+  const addItem = useCartStore((state) => state.addItem);
+  const { showSuccess, showWarning } = useToast();
 
   const specificationLabels: { [key: string]: string } = {
     productName: 'Tên sản phẩm',
@@ -53,6 +57,24 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
     if (quantity > 1) {
       setQuantity(quantity - 1);
     }
+  };
+
+  const handleAddToCart = () => {
+    if ((product.stock ?? 1) <= 0) {
+      showWarning('Sản phẩm hiện đang hết hàng');
+      return;
+    }
+
+    addItem({
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      slug: product.slug,
+      quantity,
+    });
+
+    showSuccess(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
   };
 
   return (
@@ -190,9 +212,13 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
               </div>
 
               <div className="flex gap-3">
-                <button className="flex-1 flex items-center justify-center gap-2 bg-primary-1 hover:bg-primary-2 text-white font-semibold py-3 rounded-lg transition-colors">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={(product.stock ?? 1) <= 0}
+                  className="flex-1 flex items-center justify-center gap-2 bg-primary-1 hover:bg-primary-2 disabled:bg-neutral-6 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
+                >
                   <FaShoppingCart size={18} />
-                  Mua ngay
+                  Thêm vào giỏ
                 </button>
                 <button className="flex items-center justify-center gap-2 px-6 py-3 border border-neutral-7 text-neutral-4 hover:text-primary-1 hover:border-primary-1 rounded-lg transition-colors">
                   <IoMdHeartEmpty size={18} />
@@ -245,7 +271,7 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
                     <div className="space-y-3">
                       {Object.entries(product.specifications).map(([key, value]) => (
                         <div key={key} className="flex gap-8 py-1">
-                          <span className="text-neutral-4 w-32 flex-shrink-0">{specificationLabels[key] || key}</span>
+                          <span className="text-neutral-4 w-32 shrink-0">{specificationLabels[key] || key}</span>
                           <span className="text-neutral-1">{String(value)}</span>
                         </div>
                       ))}

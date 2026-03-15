@@ -9,6 +9,7 @@ import {
   IoSearchOutline,
   IoCloseOutline,
 } from "react-icons/io5";
+import { useCartStore } from "@/store";
 import { logout } from "@/features/guest/logout";
 import { Category } from "@/types/category";
 import CategoryDropdown from "./category-dropdown";
@@ -19,7 +20,7 @@ interface HeaderProps {
 }
 
 export default function Header({ isLoggedIn, categories }: HeaderProps) {
-  const [cartCount] = useState(1);
+  const cartCount = useCartStore((state) => state.totalItems);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);

@@ -1,6 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
+import { useCartStore } from "@/store";
+import { useToast } from "@/hooks";
 
 export interface Product {
   _id: string;
@@ -18,11 +22,30 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const addItem = useCartStore((state) => state.addItem);
+  const { showSuccess } = useToast();
+
   const formattedPrice = product.price.toLocaleString("vi-VN") + "₫";
   const formattedOriginalPrice = product.originalPrice?.toLocaleString("vi-VN") + "₫";
   const savings = product.originalPrice ? product.originalPrice - product.price : 0;
   const formattedSavings = savings > 0 ? `Tiết kiệm ${savings.toLocaleString("vi-VN")}` : "";
   const productLink = product.slug ? `/products/${product.slug}` : "#";
+
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    addItem({
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      slug: product.slug,
+      quantity: 1,
+    });
+
+    showSuccess("Đã thêm sản phẩm vào giỏ hàng");
+  };
 
   return (
     <Link href={productLink}>
@@ -80,7 +103,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       </p>
 
       {/* Buy button */}
-      <button className="flex items-center justify-center gap-2 bg-primary-6 hover:bg-primary-5 text-primary-1 font-semibold text-sm py-2 rounded-full transition-colors mt-auto border border-primary-5">
+      <button
+        onClick={handleAddToCart}
+        className="flex items-center justify-center gap-2 bg-primary-6 hover:bg-primary-5 text-primary-1 font-semibold text-sm py-2 rounded-full transition-colors mt-auto border border-primary-5"
+      >
         <FaShoppingCart size={14} />
         MUA
       </button>
