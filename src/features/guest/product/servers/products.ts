@@ -1,7 +1,7 @@
 'use server'
 
 import { get } from "@/integrations/storeClient";
-import { Product } from "@/components/product-card";
+import { Product } from "@/features/guest/product/components/product-card";
 
 export interface ProductDetail extends Product {
   brand?: string;

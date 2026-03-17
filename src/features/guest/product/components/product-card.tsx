@@ -89,16 +89,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
       </div>
 
-      {/* Rating */}
-      {/* {product.review && (
-        <div className="flex items-center gap-1">
-          <span className="text-yellow-400 text-sm">★</span>
-          <span className="text-neutral-4 text-xs">{product.review}/5</span>
-        </div>
-      )} */}
-
       {/* Name */}
-      <p className="text-neutral-1 text-sm leading-snug line-clamp-2 min-h-10">
+      <p className="text-neutral-1 text-sm leading-snug line-clamp-2 min-h-10 mt-2">
         {product.name}
       </p>
 

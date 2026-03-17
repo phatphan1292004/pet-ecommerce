@@ -39,6 +39,12 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
       render: () => <OrdersTab />,
     },
     {
+      id: "love",
+      label: "Sản phẩm yêu thích",
+      icon: FaLock,
+      render: () => <ChangePasswordTab />,
+    },
+    {
       id: "password",
       label: "Đổi mật khẩu",
       icon: FaLock,
@@ -79,7 +85,9 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
                       <>
                         <Icon
                           size={18}
-                          className={selected ? "text-primary-1" : "text-neutral-4"}
+                          className={
+                            selected ? "text-primary-1" : "text-neutral-4"
+                          }
                         />
                         {tab.label}
                       </>
@@ -94,9 +102,7 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
           <main className="flex-1">
             <TabPanels>
               {tabs.map((tab) => (
-                <TabPanel key={tab.id}>
-                  {tab.render(userInfo)}
-                </TabPanel>
+                <TabPanel key={tab.id}>{tab.render(userInfo)}</TabPanel>
               ))}
             </TabPanels>
           </main>
