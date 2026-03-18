@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddAddressModal } from "@/features/customer/userinfo/components";
 import { useCartStore } from "@/store";
-
-const PROVINCES = ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cần Thơ", "Hải Phòng"];
-const WARDS = ["Phường 1", "Phường 2", "Phường 3", "Xã An Phú", "Xã Bình Chánh"];
+import { getProvinces, getWardsByProvinceId } from "../../userinfo/servers";
+import { LocationOption } from "../../userinfo/servers/location";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
 
 export default function CartShippingContent() {
   const totalPrice = useCartStore((state) => state.totalPrice);
   const [openAddressModal, setOpenAddressModal] = useState(false);
+  const [provinces, setProvinces] = useState<LocationOption[]>([]);
+  const [wards, setWards] = useState<LocationOption[]>([]);
+  const [selectedProvinceId, setSelectedProvinceId] = useState("");
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
   const [form, setForm] = useState({
     savedAddress: "",
     fullName: "",
@@ -28,6 +32,83 @@ export default function CartShippingContent() {
   const set = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProvinces = async () => {
+      setIsLoadingProvinces(true);
+      try {
+        const data = await getProvinces();
+        if (isMounted) {
+          setProvinces(data);
+        }
+      } catch {
+        if (isMounted) {
+          setProvinces([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingProvinces(false);
+        }
+      }
+    };
+
+    void fetchProvinces();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!selectedProvinceId) {
+      setWards([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const fetchWards = async () => {
+      setIsLoadingWards(true);
+      try {
+        const data = await getWardsByProvinceId(selectedProvinceId);
+        if (isMounted) {
+          setWards(data);
+        }
+      } catch {
+        if (isMounted) {
+          setWards([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingWards(false);
+        }
+      }
+    };
+
+    void fetchWards();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProvinceId]);
+
+  const handleProvinceChange = (provinceId: string) => {
+    setSelectedProvinceId(provinceId);
+    const selectedProvince = provinces.find((province) => province.id === provinceId);
+    set("province", selectedProvince?.name ?? "");
+    set("ward", "");
+  };
+
+  const handleWardChange = (wardId: string) => {
+    const selectedWard = wards.find((ward) => ward.id === wardId);
+    set("ward", selectedWard?.name ?? "");
+  };
+
+  const selectedWardId = wards.find((ward) => ward.name === form.ward)?.id ?? "";
 
   return (
     <>
@@ -64,26 +145,35 @@ export default function CartShippingContent() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <select
-              value={form.province}
-              onChange={(e) => set("province", e.target.value)}
+              value={selectedProvinceId}
+              onChange={(e) => handleProvinceChange(e.target.value)}
               className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-4 outline-none focus:border-primary-3 transition-colors"
             >
-              <option value="">Chọn tỉnh/thành phố</option>
-              {PROVINCES.map((province) => (
-                <option key={province} value={province}>
-                  {province}
+              <option value="" disabled>
+                {isLoadingProvinces ? "Đang tải tỉnh/thành phố..." : "Chọn tỉnh/thành phố"}
+              </option>
+              {provinces.map((province) => (
+                <option key={province.id} value={province.id}>
+                  {province.name}
                 </option>
               ))}
             </select>
             <select
-              value={form.ward}
-              onChange={(e) => set("ward", e.target.value)}
+              value={selectedWardId}
+              onChange={(e) => handleWardChange(e.target.value)}
+              disabled={!selectedProvinceId || isLoadingWards}
               className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-4 outline-none focus:border-primary-3 transition-colors"
             >
-              <option value="">Chọn phường/xã</option>
-              {WARDS.map((ward) => (
-                <option key={ward} value={ward}>
-                  {ward}
+              <option value="" disabled>
+                {!selectedProvinceId
+                  ? "Chọn tỉnh/thành phố trước"
+                  : isLoadingWards
+                    ? "Đang tải phường/xã..."
+                    : "Chọn phường/xã"}
+              </option>
+              {wards.map((ward) => (
+                <option key={ward.id} value={ward.id}>
+                  {ward.name}
                 </option>
               ))}
             </select>

@@ -1,5 +1,6 @@
 import { UserInfoPage } from "@/features/customer";
 import { getUserInfo } from "@/features/customer/userinfo/servers/info";
+import { getUserAddresses } from "@/features/customer/userinfo/servers/address";
 import { redirect } from "next/navigation";
 
 export default async function Page() {
@@ -8,6 +9,8 @@ export default async function Page() {
   if (!userInfo) {
     redirect("/login");
   }
+
+  const addresses = await getUserAddresses();
   
-  return <UserInfoPage userInfo={userInfo} />;
+  return <UserInfoPage userInfo={userInfo} addresses={addresses} />;
 }

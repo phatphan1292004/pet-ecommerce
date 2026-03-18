@@ -10,15 +10,22 @@ import AddressTab from "./address-tab";
 import OrdersTab from "./orders-tab";
 import ChangePasswordTab from "./change-password-tab";
 import { UserInfo } from "@/types/user";
+import { UserAddress } from "@/types/address";
 
 interface TabItem {
   id: string;
   label: string;
   icon: IconType;
-  render: (userInfo: UserInfo) => React.ReactNode;
+  render: (userInfo: UserInfo, addresses: UserAddress[]) => React.ReactNode;
 }
 
-export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
+export default function UserInfoPage({
+  userInfo,
+  addresses,
+}: {
+  userInfo: UserInfo;
+  addresses: UserAddress[];
+}) {
   const tabs: TabItem[] = [
     {
       id: "info",
@@ -30,7 +37,7 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
       id: "address",
       label: "Quản lý địa chỉ",
       icon: FaLocationDot,
-      render: () => <AddressTab />,
+      render: (_info, userAddresses) => <AddressTab initialAddresses={userAddresses} />,
     },
     {
       id: "orders",
@@ -102,7 +109,7 @@ export default function UserInfoPage({ userInfo }: { userInfo: UserInfo }) {
           <main className="flex-1">
             <TabPanels>
               {tabs.map((tab) => (
-                <TabPanel key={tab.id}>{tab.render(userInfo)}</TabPanel>
+                <TabPanel key={tab.id}>{tab.render(userInfo, addresses)}</TabPanel>
               ))}
             </TabPanels>
           </main>
