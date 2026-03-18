@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Input, Listbox, ListboxButton, ListboxOption, ListboxOptions, Textarea } from "@headlessui/react";
 import { AddAddressModal } from "@/features/customer/userinfo/components";
 import { useCartStore } from "@/store";
 import { getProvinces, getWardsByProvinceId } from "../../userinfo/servers";
@@ -116,23 +117,29 @@ export default function CartShippingContent() {
         <div className="space-y-4">
           <p className="text-base font-semibold text-primary-1">Thông tin người nhận</p>
 
-          <select
-            value={form.savedAddress}
-            onChange={(e) => set("savedAddress", e.target.value)}
-            className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-4 outline-none focus:border-primary-3 transition-colors"
-          >
-            <option value="">Chọn địa chỉ đã lưu</option>
-          </select>
+          <Listbox value={form.savedAddress} onChange={(value: string) => set("savedAddress", value)}>
+            <div className="relative">
+              <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3">
+                <span className={form.savedAddress ? "text-neutral-1" : "text-neutral-4"}>
+                  {form.savedAddress || "Chọn địa chỉ đã lưu"}
+                </span>
+                <span className="text-neutral-4">v</span>
+              </ListboxButton>
+              <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                <div className="px-4 py-3 text-sm text-neutral-5">Chưa có địa chỉ đã lưu</div>
+              </ListboxOptions>
+            </div>
+          </Listbox>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <input
+            <Input
               type="text"
               placeholder="Họ tên"
               value={form.fullName}
               onChange={(e) => set("fullName", e.target.value)}
               className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
             />
-            <input
+            <Input
               type="tel"
               placeholder="Số điện thoại"
               value={form.phone}
@@ -144,42 +151,79 @@ export default function CartShippingContent() {
           <p className="text-base font-semibold text-primary-1">Địa chỉ</p>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <select
-              value={selectedProvinceId}
-              onChange={(e) => handleProvinceChange(e.target.value)}
-              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-4 outline-none focus:border-primary-3 transition-colors"
-            >
-              <option value="" disabled>
-                {isLoadingProvinces ? "Đang tải tỉnh/thành phố..." : "Chọn tỉnh/thành phố"}
-              </option>
-              {provinces.map((province) => (
-                <option key={province.id} value={province.id}>
-                  {province.name}
-                </option>
-              ))}
-            </select>
-            <select
+            <Listbox value={selectedProvinceId} onChange={handleProvinceChange} disabled={isLoadingProvinces}>
+              <div className="relative">
+                <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
+                  <span className={selectedProvinceId ? "text-neutral-1" : "text-neutral-4"}>
+                    {selectedProvinceId
+                      ? provinces.find((province) => province.id === selectedProvinceId)?.name
+                      : isLoadingProvinces
+                        ? "Đang tải tỉnh/thành phố..."
+                        : "Chọn tỉnh/thành phố"}
+                  </span>
+                  <span className="text-neutral-4">v</span>
+                </ListboxButton>
+                <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                  {provinces.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-neutral-5">
+                      {isLoadingProvinces ? "Đang tải tỉnh/thành phố..." : "Không có dữ liệu"}
+                    </div>
+                  ) : (
+                    provinces.map((province) => (
+                      <ListboxOption
+                        key={province.id}
+                        value={province.id}
+                        className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
+                      >
+                        {province.name}
+                      </ListboxOption>
+                    ))
+                  )}
+                </ListboxOptions>
+              </div>
+            </Listbox>
+            <Listbox
               value={selectedWardId}
-              onChange={(e) => handleWardChange(e.target.value)}
+              onChange={handleWardChange}
               disabled={!selectedProvinceId || isLoadingWards}
-              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-4 outline-none focus:border-primary-3 transition-colors"
             >
-              <option value="" disabled>
-                {!selectedProvinceId
-                  ? "Chọn tỉnh/thành phố trước"
-                  : isLoadingWards
-                    ? "Đang tải phường/xã..."
-                    : "Chọn phường/xã"}
-              </option>
-              {wards.map((ward) => (
-                <option key={ward.id} value={ward.id}>
-                  {ward.name}
-                </option>
-              ))}
-            </select>
+              <div className="relative">
+                <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
+                  <span className={selectedWardId ? "text-neutral-1" : "text-neutral-4"}>
+                    {selectedWardId
+                      ? wards.find((ward) => ward.id === selectedWardId)?.name
+                      : !selectedProvinceId
+                        ? "Chọn phường/xã"
+                        : isLoadingWards
+                          ? "Đang tải phường/xã..."
+                          : "Chọn phường/xã"}
+                  </span>
+                  <span className="text-neutral-4">v</span>
+                </ListboxButton>
+                <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                  {!selectedProvinceId ? (
+                    <div className="px-4 py-3 text-sm text-neutral-5">Vui lòng chọn tỉnh/thành phố trước</div>
+                  ) : wards.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-neutral-5">
+                      {isLoadingWards ? "Đang tải phường/xã..." : "Không có dữ liệu"}
+                    </div>
+                  ) : (
+                    wards.map((ward) => (
+                      <ListboxOption
+                        key={ward.id}
+                        value={ward.id}
+                        className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
+                      >
+                        {ward.name}
+                      </ListboxOption>
+                    ))
+                  )}
+                </ListboxOptions>
+              </div>
+            </Listbox>
           </div>
 
-          <input
+          <Input
             type="text"
             placeholder="Địa chỉ"
             value={form.address}
@@ -187,7 +231,7 @@ export default function CartShippingContent() {
             className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
           />
 
-          <textarea
+          <Textarea
             placeholder="Ghi chú"
             value={form.note}
             onChange={(e) => set("note", e.target.value)}

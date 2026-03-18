@@ -1,3 +1,7 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 interface CartOrderSummaryProps {
   totalPrice: number;
   shippingFee: number;
@@ -11,6 +15,17 @@ export default function CartOrderSummary({
   grandTotal,
   formatCurrency,
 }: CartOrderSummaryProps) {
+  const router = useRouter();
+  const canGoToShipping = grandTotal > 0;
+
+  const handlePlaceOrder = () => {
+    if (!canGoToShipping) {
+      return;
+    }
+
+    router.push("/cart/shipping");
+  };
+
   return (
     <aside className="h-fit rounded-2xl border border-neutral-7 p-5">
       <h2 className="mb-4 text-lg font-bold text-neutral-1">Tóm tắt đơn hàng</h2>
@@ -31,7 +46,12 @@ export default function CartOrderSummary({
         <span>{formatCurrency(grandTotal)}</span>
       </div>
 
-      <button className="mt-6 w-full rounded-xl bg-primary-1 py-3 font-semibold text-white transition-colors hover:bg-primary-2">
+      <button
+        type="button"
+        onClick={handlePlaceOrder}
+        disabled={!canGoToShipping}
+        className="mt-6 w-full rounded-xl bg-primary-1 py-3 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-7"
+      >
         Đặt hàng
       </button>
     </aside>

@@ -84,7 +84,7 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                     onClick={() => handleSetDefault(item._id)}
                     className="rounded-md border border-primary-1 px-4 py-2 text-sm font-medium text-primary-1 hover:bg-primary-6 transition-colors"
                   >
-                    Set làm địa chỉ mặc định
+                    Đặt làm địa chỉ mặc định
                   </button>
                 ) : null}
 
