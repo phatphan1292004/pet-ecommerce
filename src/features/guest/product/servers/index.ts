@@ -1,3 +1,8 @@
-export { getNewProducts, getLatestProducts, getProductBySlug } from "./products";
-export type { ProductDetail } from "./products";
+export {
+	getLatestProducts,
+	getProductBySlug,
+	getProductsBySubcategory,
+	getFilteredProducts,
+} from "./products";
+export type { ProductDetail, FilterProductsParams } from "./products";
 

@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FaHeart, FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart } from "react-icons/fa";
 import { useCartStore } from "@/store";
 import { useToast } from "@/hooks";
+import { GoHeart } from "react-icons/go";
 
 export interface Product {
   _id: string;
@@ -85,7 +86,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
         <button className="text-neutral-5 hover:text-primary-1 transition-colors">
-          <FaHeart size={16} />
+          <GoHeart size={16} />
         </button>
       </div>
 
