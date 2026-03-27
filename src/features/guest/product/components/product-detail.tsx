@@ -9,6 +9,7 @@ import { ProductDetail } from '../servers';
 import { IoMdHeartEmpty } from 'react-icons/io';
 import { useCartStore } from '@/store';
 import { useToast } from '@/hooks';
+import { syncOpenCartItem } from '@/features/customer/cart/servers';
 
 interface ProductDetailProps {
   product: ProductDetail;
@@ -59,7 +60,7 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if ((product.stock ?? 1) <= 0) {
       showWarning('Sản phẩm hiện đang hết hàng');
       return;
@@ -75,6 +76,19 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
     });
 
     showSuccess(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+
+    const result = await syncOpenCartItem({
+      productId: product._id,
+      quantity,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      slug: product.slug,
+    });
+
+    if (!result.success) {
+      showWarning('Chưa đồng bộ được giỏ hàng lên hệ thống');
+    }
   };
 
   return (

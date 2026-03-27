@@ -22,7 +22,7 @@ interface CategorySidebarProps {
   draftMinPrice: number;
   draftMaxPrice: number;
   formatPrice: (value: number) => string;
-  onToggleBrand: (brandName: string) => void;
+  onToggleBrand: (brandId: string) => void;
   onToggleOrigin: (origin: string) => void;
   onDraftMinPriceChange: (value: number) => void;
   onDraftMaxPriceChange: (value: number) => void;
@@ -115,8 +115,8 @@ export default function CategorySidebar({
               <input
                 type="checkbox"
                 className="accent-primary-1"
-                checked={selectedBrands.includes(brand.name)}
-                onChange={() => onToggleBrand(brand.name)}
+                checked={selectedBrands.includes(brand.id)}
+                onChange={() => onToggleBrand(brand.id)}
               />
               {brand.name}
             </label>

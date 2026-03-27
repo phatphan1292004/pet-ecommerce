@@ -6,6 +6,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { useCartStore } from "@/store";
 import { useToast } from "@/hooks";
 import { GoHeart } from "react-icons/go";
+import { syncOpenCartItem } from "@/features/customer/cart/servers";
 
 export interface Product {
   _id: string;
@@ -24,7 +25,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
-  const { showSuccess } = useToast();
+  const { showSuccess, showWarning } = useToast();
 
   const formattedPrice = product.price.toLocaleString("vi-VN") + "₫";
   const formattedOriginalPrice = product.originalPrice?.toLocaleString("vi-VN") + "₫";
@@ -32,7 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const formattedSavings = savings > 0 ? `Tiết kiệm ${savings.toLocaleString("vi-VN")}` : "";
   const productLink = product.slug ? `/products/${product.slug}` : "#";
 
-  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -46,6 +47,19 @@ export default function ProductCard({ product }: ProductCardProps) {
     });
 
     showSuccess("Đã thêm sản phẩm vào giỏ hàng");
+
+    const result = await syncOpenCartItem({
+      productId: product._id,
+      quantity: 1,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      slug: product.slug,
+    });
+
+    if (!result.success) {
+      showWarning("Chưa đồng bộ được giỏ hàng lên hệ thống");
+    }
   };
 
   return (

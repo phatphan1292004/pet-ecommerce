@@ -23,6 +23,7 @@ interface CartState {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  setItems: (items: CartItem[]) => void;
   addItem: (item: AddToCartInput) => void;
   removeItem: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
@@ -46,6 +47,15 @@ export const useCartStore = create<CartState>()(
       items: [],
       totalItems: 0,
       totalPrice: 0,
+
+      setItems: (items) =>
+        set(() => {
+          const normalizedItems = items.map((item) => ({
+            ...item,
+            quantity: Math.max(1, item.quantity || 1),
+          }));
+          return recalculate(normalizedItems);
+        }),
 
       addItem: (item) =>
         set((state) => {

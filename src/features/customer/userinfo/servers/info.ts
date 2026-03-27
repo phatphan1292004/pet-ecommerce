@@ -1,6 +1,6 @@
 "use server";
 import { cookies } from "next/headers";
-import { get, put } from "@/integrations/storeClient";
+import { get, patch } from "@/integrations/storeClient";
 import { UserInfo } from "@/types/user";
 
 export const getUserInfo = async (): Promise<UserInfo | null> => {
@@ -14,7 +14,9 @@ export const getUserInfo = async (): Promise<UserInfo | null> => {
 interface ChangeInfoInput {
   displayName: string;
   phoneNumber: string;
-  dateOfBirth: string;
+  birthDate?: string;
+  photoURL?: string;
+  gender?: string;
 }
 
 export const changeInfo = async (
@@ -38,10 +40,12 @@ export const changeInfo = async (
     }
 
     // API call to update user info
-    const res = await put(`/customers/${userId}`, {
+    const res = await patch(`/customers/${userId}`, {
       displayName: data.displayName,
       phoneNumber: data.phoneNumber,
-      dateOfBirth: data.dateOfBirth,
+      photoURL: data.photoURL,
+      birthDate: data.birthDate,
+      gender: data.gender,
     });
 
     if (res?.data) {

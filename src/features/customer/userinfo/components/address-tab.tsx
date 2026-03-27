@@ -71,8 +71,8 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                   <span>{item.phone}</span>
                 </div>
 
-                <p className="text-sm text-neutral-3 font-medium">{item.type}</p>
-                <p className="text-sm">
+                <p className="text-sm text-neutral-1 font-medium">{item.type}</p>
+                <p className="text-sm text-neutral-1">
                   {item.address}, {item.ward}, {item.province}
                 </p>
               </div>
