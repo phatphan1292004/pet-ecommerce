@@ -18,7 +18,7 @@ export default function CartItemsTable({
 }: CartItemsTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-7">
-      <div className="hidden grid-cols-[1fr_180px_140px_70px] items-center bg-neutral-10 px-6 py-4 text-sm font-semibold text-neutral-2 md:grid">
+      <div className="hidden grid-cols-[1fr_180px_140px_70px] items-center bg-neutral-10 px-6 py-4 text-sm font-semibold text-neutral-1 md:grid">
         <span>Sản phẩm</span>
         <span className="text-left">Số lượng</span>
         <span className="text-left">Giá</span>
@@ -54,7 +54,7 @@ export default function CartItemsTable({
                 >
                   -
                 </button>
-                <span className="min-w-10 border-x border-neutral-7 px-3 py-2 text-center text-neutral-2">
+                <span className="min-w-10 border-x border-neutral-7 px-3 py-2 text-center text-neutral-1">
                   {item.quantity}
                 </span>
                 <button

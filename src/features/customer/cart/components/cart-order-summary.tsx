@@ -30,7 +30,7 @@ export default function CartOrderSummary({
     <aside className="h-fit rounded-2xl border border-neutral-7 p-5">
       <h2 className="mb-4 text-lg font-bold text-neutral-1">Tóm tắt đơn hàng</h2>
 
-      <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-2">
+      <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
         <div className="flex items-center justify-between">
           <span>Tiền sản phẩm</span>
           <span className="font-semibold">{formatCurrency(totalPrice)}</span>

@@ -1,9 +1,10 @@
-"use client";
-
 import Link from "next/link";
 import { CartProgress, CartShippingContent } from "@/features/customer/cart/components";
+import { getUserAddresses } from "@/features/customer/userinfo/servers/address";
 
-export default function CartShippingPage() {
+export default async function CartShippingPage() {
+  const initialSavedAddresses = await getUserAddresses();
+
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-4">
@@ -21,7 +22,7 @@ export default function CartShippingPage() {
 
         <h1 className="mb-5 text-3xl font-bold uppercase text-neutral-1">GIAO HÀNG</h1>
 
-        <CartShippingContent />
+        <CartShippingContent initialSavedAddresses={initialSavedAddresses} />
       </section>
     </div>
   );
