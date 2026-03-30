@@ -30,6 +30,7 @@ interface CreateOrderFromOpenCartInput {
   arrivalPhone: string;
   arrivalAddress: string;
   status?: string;
+  paymentMethod?: string;
   arrivalTime?: string;
   note?: string;
 }
@@ -263,6 +264,7 @@ export const createOrderFromOpenCart = async (
     customerId: input.customerId || userId,
     cartId: input.cartId || detectedCartId,
     status: input.status || "paid_later",
+    paymentMethod: input.paymentMethod,
     arrivalName: input.arrivalName,
     arrivalPhone: input.arrivalPhone,
     arrivalAddress: input.arrivalAddress,
@@ -282,6 +284,13 @@ export const createOrderFromOpenCart = async (
 
   if (!response) {
     return { success: false, message: "Failed to create order from open cart" };
+  }
+
+  if (payload.cartId) {
+    await tryRequests([
+      () => patch(`/carts/${userId}/close`, { cartId: payload.cartId, status: "close" }),
+      () => patch(`/carts/${userId}/close`, { cartId: payload.cartId }),
+    ]);
   }
 
   const data = (response as { data?: { orderId?: string; id?: string; _id?: string } })?.data;

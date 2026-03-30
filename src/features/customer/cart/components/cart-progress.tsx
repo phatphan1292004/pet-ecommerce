@@ -8,21 +8,24 @@ interface CartProgressProps {
   currentStep?: CartStep;
 }
 
-const stepStyles = (isActive: boolean) =>
-  isActive
-    ? {
-        circle: "bg-primary-1 text-white",
-        text: "text-neutral-2",
-      }
-    : {
-        circle: "bg-neutral-7 text-neutral-4",
-        text: "text-neutral-4",
-      };
+const stepStyles = (status: "active" | "completed" | "inactive") => {
+  if (status === "inactive") {
+    return {
+      circle: "bg-neutral-7 text-neutral-4",
+      text: "text-neutral-4",
+    };
+  }
+
+  return {
+    circle: "bg-primary-1 text-white",
+    text: "text-neutral-2",
+  };
+};
 
 export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
-  const cart = stepStyles(currentStep === 1);
-  const shipping = stepStyles(currentStep === 2);
-  const payment = stepStyles(currentStep === 3);
+  const cart = stepStyles(currentStep === 1 ? "active" : currentStep > 1 ? "completed" : "inactive");
+  const shipping = stepStyles(currentStep === 2 ? "active" : currentStep > 2 ? "completed" : "inactive");
+  const payment = stepStyles(currentStep === 3 ? "active" : "inactive");
 
   return (
     <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
@@ -55,10 +58,16 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
       </div>
 
       <div className="relative flex flex-col items-center gap-2">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
-          <IoCard size={18} />
-        </span>
-        <span className={`text-sm font-semibold ${payment.text}`}>Thanh toán</span>
+        <Link
+          href="/cart/payment"
+          aria-current={currentStep === 3 ? "step" : undefined}
+          className="flex flex-col items-center gap-2"
+        >
+          <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
+            <IoCard size={18} />
+          </span>
+          <span className={`text-sm font-semibold ${payment.text}`}>Thanh toán</span>
+        </Link>
       </div>
     </div>
   );

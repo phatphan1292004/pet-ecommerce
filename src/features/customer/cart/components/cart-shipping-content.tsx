@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Input, Listbox, ListboxButton, ListboxOption, ListboxOptions, Textarea } from "@headlessui/react";
+import {
+  Input,
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+  Textarea,
+} from "@headlessui/react";
 import { useRouter } from "next/navigation";
 import { AddAddressModal } from "@/features/customer/userinfo/components";
-import { createOrderFromOpenCart } from "@/features/customer/cart/servers";
+import { checkoutStorageKey, type CheckoutOrderPayload } from "@/features/customer/cart/checkout-storage";
 import { useToast } from "@/hooks";
 import { useCartStore } from "@/store";
 import { getProvinces, getWardsByProvinceId } from "../../userinfo/servers";
 import { LocationOption } from "../../userinfo/servers/location";
 import { UserAddress } from "@/types/address";
+import { FaAngleDown } from "react-icons/fa";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
 
@@ -21,11 +29,13 @@ export default function CartShippingContent({
   initialSavedAddresses,
 }: CartShippingContentProps) {
   const router = useRouter();
-  const { showSuccess, showWarning } = useToast();
+  const { showWarning } = useToast();
   const totalPrice = useCartStore((state) => state.totalPrice);
   const [openAddressModal, setOpenAddressModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>(initialSavedAddresses);
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>(
+    initialSavedAddresses,
+  );
   const [provinces, setProvinces] = useState<LocationOption[]>([]);
   const [wards, setWards] = useState<LocationOption[]>([]);
   const [selectedProvinceId, setSelectedProvinceId] = useState("");
@@ -49,7 +59,9 @@ export default function CartShippingContent({
   };
 
   const applySavedAddress = (selectedAddress: UserAddress) => {
-    const provinceId = provinces.find((province) => province.name === selectedAddress.province)?.id || "";
+    const provinceId =
+      provinces.find((province) => province.name === selectedAddress.province)
+        ?.id || "";
 
     setForm((prev) => ({
       ...prev,
@@ -65,7 +77,9 @@ export default function CartShippingContent({
   };
 
   const handleSavedAddressChange = (addressId: string) => {
-    const selectedAddress = savedAddresses.find((address) => address._id === addressId);
+    const selectedAddress = savedAddresses.find(
+      (address) => address._id === addressId,
+    );
     if (!selectedAddress) {
       set("savedAddress", "");
       return;
@@ -153,7 +167,9 @@ export default function CartShippingContent({
 
   const handleProvinceChange = (provinceId: string) => {
     setSelectedProvinceId(provinceId);
-    const selectedProvince = provinces.find((province) => province.id === provinceId);
+    const selectedProvince = provinces.find(
+      (province) => province.id === provinceId,
+    );
     set("province", selectedProvince?.name ?? "");
     set("ward", "");
   };
@@ -163,16 +179,18 @@ export default function CartShippingContent({
     set("ward", selectedWard?.name ?? "");
   };
 
-  const selectedWardId = wards.find((ward) => ward.name === form.ward)?.id ?? "";
+  const selectedWardId =
+    wards.find((ward) => ward.name === form.ward)?.id ?? "";
   const hasRequiredShippingFields =
     Boolean(form.fullName.trim()) &&
     Boolean(form.phone.trim()) &&
     Boolean(form.province.trim()) &&
     Boolean(form.ward.trim()) &&
     Boolean(form.address.trim());
-  const canCheckout = hasRequiredShippingFields && grandTotal > 0 && !isSubmitting;
+  const canCheckout =
+    hasRequiredShippingFields && grandTotal > 0 && !isSubmitting;
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (!hasRequiredShippingFields) {
       showWarning("Vui lòng điền đầy đủ thông tin giao hàng");
       return;
@@ -183,8 +201,7 @@ export default function CartShippingContent({
       return;
     }
 
-    const payload = {
-      status: "paid_later",
+    const payload: CheckoutOrderPayload = {
       arrivalName: form.fullName.trim(),
       arrivalPhone: form.phone.trim(),
       arrivalAddress: `${form.address.trim()}, ${form.ward.trim()}, ${form.province.trim()}`,
@@ -192,42 +209,43 @@ export default function CartShippingContent({
     };
 
     setIsSubmitting(true);
-
-    try {
-      const result = await createOrderFromOpenCart(payload);
-
-      if (!result.success) {
-        showWarning(result.message || "Không thể tạo đơn hàng");
-        return;
-      }
-
-      showSuccess("Đã gửi thông tin thanh toán lên hệ thống");
-      router.push("/userinfo");
-    } finally {
-      setIsSubmitting(false);
-    }
+    sessionStorage.setItem(checkoutStorageKey, JSON.stringify(payload));
+    router.push("/cart/payment");
+    setIsSubmitting(false);
   };
 
   return (
     <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <p className="text-base font-semibold text-primary-1">Thông tin người nhận</p>
+          <p className="text-base font-semibold text-primary-1">
+            Thông tin người nhận
+          </p>
 
-          <Listbox value={form.savedAddress} onChange={handleSavedAddressChange}>
+          <Listbox
+            value={form.savedAddress}
+            onChange={handleSavedAddressChange}
+          >
             <div className="relative">
               <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3">
-                <span className={form.savedAddress ? "text-neutral-1" : "text-neutral-4"}>
+                <span
+                  className={
+                    form.savedAddress ? "text-neutral-1" : "text-neutral-4"
+                  }
+                >
                   {form.savedAddress
-                    ? savedAddresses.find((address) => address._id === form.savedAddress)?.fullName ||
-                      "Chọn địa chỉ đã lưu"
+                    ? savedAddresses.find(
+                        (address) => address._id === form.savedAddress,
+                      )?.fullName || "Chọn địa chỉ đã lưu"
                     : "Chọn địa chỉ đã lưu"}
                 </span>
-                <span className="text-neutral-4">v</span>
+                <FaAngleDown className="text-neutral-2" />
               </ListboxButton>
               <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
                 {savedAddresses.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-neutral-5">Chưa có địa chỉ đã lưu</div>
+                  <div className="px-4 py-3 text-sm text-neutral-5">
+                    Chưa có địa chỉ đã lưu
+                  </div>
                 ) : (
                   savedAddresses.map((address) => (
                     <ListboxOption
@@ -235,7 +253,9 @@ export default function CartShippingContent({
                       value={address._id}
                       className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
                     >
-                      <div className="text-sm font-medium">{address.fullName} - {address.phone}</div>
+                      <div className="text-sm font-medium">
+                        {address.fullName} - {address.phone}
+                      </div>
                       <div className="text-xs text-neutral-4">
                         {address.address}, {address.ward}, {address.province}
                       </div>
@@ -266,22 +286,34 @@ export default function CartShippingContent({
           <p className="text-base font-semibold text-primary-1">Địa chỉ</p>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Listbox value={selectedProvinceId} onChange={handleProvinceChange} disabled={isLoadingProvinces}>
+            <Listbox
+              value={selectedProvinceId}
+              onChange={handleProvinceChange}
+              disabled={isLoadingProvinces}
+            >
               <div className="relative">
                 <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
-                  <span className={selectedProvinceId ? "text-neutral-1" : "text-neutral-4"}>
+                  <span
+                    className={
+                      selectedProvinceId ? "text-neutral-1" : "text-neutral-4"
+                    }
+                  >
                     {selectedProvinceId
-                      ? provinces.find((province) => province.id === selectedProvinceId)?.name
+                      ? provinces.find(
+                          (province) => province.id === selectedProvinceId,
+                        )?.name
                       : isLoadingProvinces
                         ? "Đang tải tỉnh/thành phố..."
                         : "Chọn tỉnh/thành phố"}
                   </span>
-                  <span className="text-neutral-4">v</span>
+                  <FaAngleDown className="text-neutral-2"/>
                 </ListboxButton>
                 <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
                   {provinces.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-neutral-5">
-                      {isLoadingProvinces ? "Đang tải tỉnh/thành phố..." : "Không có dữ liệu"}
+                      {isLoadingProvinces
+                        ? "Đang tải tỉnh/thành phố..."
+                        : "Không có dữ liệu"}
                     </div>
                   ) : (
                     provinces.map((province) => (
@@ -304,7 +336,11 @@ export default function CartShippingContent({
             >
               <div className="relative">
                 <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
-                  <span className={selectedWardId ? "text-neutral-1" : "text-neutral-4"}>
+                  <span
+                    className={
+                      selectedWardId ? "text-neutral-1" : "text-neutral-4"
+                    }
+                  >
                     {selectedWardId
                       ? wards.find((ward) => ward.id === selectedWardId)?.name
                       : !selectedProvinceId
@@ -313,14 +349,18 @@ export default function CartShippingContent({
                           ? "Đang tải phường/xã..."
                           : "Chọn phường/xã"}
                   </span>
-                  <span className="text-neutral-4">v</span>
+                  <FaAngleDown className="text-neutral-2" />
                 </ListboxButton>
                 <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
                   {!selectedProvinceId ? (
-                    <div className="px-4 py-3 text-sm text-neutral-5">Vui lòng chọn tỉnh/thành phố trước</div>
+                    <div className="px-4 py-3 text-sm text-neutral-5">
+                      Vui lòng chọn tỉnh/thành phố trước
+                    </div>
                   ) : wards.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-neutral-5">
-                      {isLoadingWards ? "Đang tải phường/xã..." : "Không có dữ liệu"}
+                      {isLoadingWards
+                        ? "Đang tải phường/xã..."
+                        : "Không có dữ liệu"}
                     </div>
                   ) : (
                     wards.map((ward) => (
@@ -370,11 +410,15 @@ export default function CartShippingContent({
           <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
             <div className="flex items-center justify-between">
               <span>Tiền sản phẩm</span>
-              <span className="font-semibold">{formatCurrency(totalPrice)}</span>
+              <span className="font-semibold">
+                {formatCurrency(totalPrice)}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Phí vận chuyển</span>
-              <span className="font-semibold">{formatCurrency(shippingFee)}</span>
+              <span className="font-semibold">
+                {formatCurrency(shippingFee)}
+              </span>
             </div>
           </div>
 
