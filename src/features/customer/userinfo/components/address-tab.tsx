@@ -37,7 +37,7 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-neutral-1">Địa chỉ của tôi</h3>
+        <h3 className="text-lg font-semibold text-neutral-1">Địa chỉ của tôi</h3>
         <button
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 bg-primary-1 hover:bg-primary-2 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"

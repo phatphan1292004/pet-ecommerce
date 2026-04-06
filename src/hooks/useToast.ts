@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { toast, ToastOptions } from "react-toastify";
 
 const defaultOptions: ToastOptions = {
@@ -12,33 +13,33 @@ const defaultOptions: ToastOptions = {
 };
 
 export const useToast = () => {
-  const showSuccess = (message: string, options?: ToastOptions) => {
+  const showSuccess = useCallback((message: string, options?: ToastOptions) => {
     toast.success(message, {
       ...defaultOptions,
       ...options,
     });
-  };
+  }, []);
 
-  const showError = (message: string, options?: ToastOptions) => {
+  const showError = useCallback((message: string, options?: ToastOptions) => {
     toast.error(message, {
       ...defaultOptions,
       ...options,
     });
-  };
+  }, []);
 
-  const showInfo = (message: string, options?: ToastOptions) => {
+  const showInfo = useCallback((message: string, options?: ToastOptions) => {
     toast.info(message, {
       ...defaultOptions,
       ...options,
     });
-  };
+  }, []);
 
-  const showWarning = (message: string, options?: ToastOptions) => {
+  const showWarning = useCallback((message: string, options?: ToastOptions) => {
     toast.warning(message, {
       ...defaultOptions,
       ...options,
     });
-  };
+  }, []);
 
   return {
     showSuccess,

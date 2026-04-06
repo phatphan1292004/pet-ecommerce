@@ -1,15 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { FaShoppingCart, FaStar } from 'react-icons/fa';
+import { FaShoppingCart, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { ProductDetail } from '../servers';
 import { IoMdHeartEmpty } from 'react-icons/io';
 import { useCartStore } from '@/store';
 import { useToast } from '@/hooks';
 import { syncOpenCartItem } from '@/features/customer/cart/servers';
+import {
+  CommentForm,
+  CommentList,
+  createReview,
+  getReviews,
+  type UiReview,
+} from '@/features/customer/review';
+
+
+type Comment = UiReview;
+type Reply = UiReview['replies'][number];
 
 interface ProductDetailProps {
   product: ProductDetail;
@@ -17,8 +28,17 @@ interface ProductDetailProps {
 
 export default function ProductDetailPage({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
+
+  // Get all images (combine main image with additional images)
+  const allImages = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.image];
 
   const specificationLabels: { [key: string]: string } = {
     productName: 'Tên sản phẩm',
@@ -52,6 +72,101 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
     if (quantity < (product.stock || 999)) {
       setQuantity(quantity + 1);
     }
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleSelectImage = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadReviews = async () => {
+      const result = await getReviews({ productId: product._id });
+      if (!isMounted) return;
+
+      if (result.success && result.data) {
+        setComments(result.data);
+      } else {
+        showWarning('Không tải được bình luận');
+      }
+    };
+
+    void loadReviews();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product._id, showWarning]);
+
+  const handleAddComment = async (rating: number, content: string) => {
+    if (!content.trim()) {
+      showWarning('Vui lòng nhập nội dung bình luận');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    const result = await createReview({
+      productId: product._id,
+      rating,
+      comment: content.trim(),
+    });
+
+    if (result.success) {
+      const newComment: Comment =
+        result.data || {
+          id: Date.now().toString(),
+          author: 'Bạn',
+          rating,
+          content: content.trim(),
+          date: new Date().toLocaleDateString('vi-VN'),
+          replies: [],
+        };
+
+      setComments((prev) => [newComment, ...prev]);
+      showSuccess('Bình luận đã được gửi');
+    } else {
+      showWarning(result.message || 'Không gửi được bình luận');
+    }
+
+    setIsSubmittingReview(false);
+  };
+
+  const handleReplyToggle = (commentId: string) => {
+    setReplyingTo(replyingTo === commentId ? null : commentId);
+  };
+
+  const handleAddReply = (commentId: string, content: string) => {
+    setComments(
+      comments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              replies: [
+                ...comment.replies,
+                {
+                  id: Date.now().toString(),
+                  author: 'Bạn',
+                  content,
+                  date: new Date().toLocaleDateString('vi-VN'),
+                },
+              ],
+            }
+          : comment
+      )
+    );
+
+    setReplyingTo(null);
+    showSuccess('Trả lời đã được gửi');
   };
 
   const decrementQuantity = () => {
@@ -115,9 +230,10 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Image Section */}
           <div className="flex flex-col gap-4">
-            <div className="relative w-full aspect-square bg-neutral-10 rounded-lg overflow-hidden">
+            {/* Main Image with Slide Controls */}
+            <div className="relative w-full max-w-150 aspect-square bg-neutral-10 rounded-lg overflow-hidden group">
               <Image
-                src={product.image}
+                src={allImages[currentImageIndex]}
                 alt={product.name}
                 fill
                 className="object-contain p-4"
@@ -128,13 +244,46 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
                   -{product.discount}%
                 </div>
               )}
+              
+              {/* Slide Navigation Buttons */}
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <FaChevronLeft size={20} className="text-neutral-1" />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <FaChevronRight size={20} className="text-neutral-1" />
+                  </button>
+                </>
+              )}
             </div>
+
             {/* Thumbnail Images */}
-            {product.images && product.images.length > 1 && (
+            {allImages.length > 1 && (
               <div className="flex gap-2">
-                {product.images.map((img, idx) => (
-                  <div key={idx} className="w-20 h-20 rounded-lg overflow-hidden bg-neutral-10 cursor-pointer border border-neutral-7 hover:border-primary-1">
-                    <Image src={img} alt={`${product.name} ${idx}`} width={80} height={80} className="object-contain p-2" />
+                {allImages.map((img, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectImage(idx)}
+                    className={`w-20 h-20 rounded-lg overflow-hidden bg-neutral-10 cursor-pointer transition-all ${
+                      currentImageIndex === idx
+                        ? 'border-2 border-primary-1'
+                        : 'border-2 border-neutral-7 hover:border-primary-1'
+                    }`}
+                  >
+                    <Image
+                      src={img}
+                      alt={`${product.name} ${idx}`}
+                      width={80}
+                      height={80}
+                      className="object-contain p-2 w-full h-full"
+                    />
                   </div>
                 ))}
               </div>
@@ -308,14 +457,28 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
                 )}
               </TabPanel>
 
-              <Tab.Panel className="text-neutral-3">
-                <div className="text-center py-12">
-                  <p className="text-neutral-4 mb-4">Chưa có đánh giá nào</p>
-                  <button className="bg-primary-1 hover:bg-primary-2 text-white px-6 py-2 rounded-lg transition-colors">
-                    Viết đánh giá
-                  </button>
+              <TabPanel>
+                <div className="space-y-8">
+                  {/* Comment Form */}
+                  <CommentForm
+                    onSubmit={handleAddComment}
+                    isLoading={isSubmittingReview}
+                  />
+
+                  {/* Comments List */}
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-1 mb-4">
+                      Bình luận ({comments.length})
+                    </h3>
+                    <CommentList
+                      comments={comments}
+                      replyingTo={replyingTo}
+                      onReplyToggle={handleReplyToggle}
+                      onReplySubmit={handleAddReply}
+                    />
+                  </div>
                 </div>
-              </Tab.Panel>
+              </TabPanel>
             </TabPanels>
           </TabGroup>
         </div>

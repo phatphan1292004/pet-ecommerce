@@ -65,7 +65,7 @@ export default function OrdersTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h3 className="text-base font-semibold text-neutral-1">Đơn hàng của tôi</h3>
+      <h3 className="text-lg font-semibold text-neutral-1">Đơn hàng của tôi</h3>
 
       <div className="flex gap-2 border-b border-neutral-20">
         {TABS.map((tab) => (

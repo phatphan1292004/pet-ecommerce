@@ -1,0 +1,55 @@
+'use client';
+
+import { useState } from 'react';
+import { FaTimes } from 'react-icons/fa';
+
+interface ReplyFormProps {
+  commentAuthor: string;
+  onSubmit: (content: string) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+export default function ReplyForm({
+  commentAuthor,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: ReplyFormProps) {
+  const [replyText, setReplyText] = useState('');
+
+  const handleSubmit = () => {
+    onSubmit(replyText);
+    setReplyText('');
+  };
+
+  return (
+    <div className="mt-4 p-4 bg-neutral-9 rounded-lg">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-neutral-4">
+          Trả lời bình luận từ {commentAuthor}
+        </p>
+        <button
+          onClick={onCancel}
+          className="text-neutral-4 hover:text-neutral-1"
+        >
+          <FaTimes size={16} />
+        </button>
+      </div>
+      <textarea
+        value={replyText}
+        onChange={(e) => setReplyText(e.target.value)}
+        placeholder="Nhập trả lời của bạn..."
+        className="w-full px-3 py-2 border border-neutral-6 rounded-lg focus:outline-none focus:border-primary-1 resize-none text-sm mb-2"
+        rows={3}
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={isLoading || !replyText.trim()}
+        className="bg-primary-1 hover:bg-primary-2 disabled:bg-neutral-6 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors disabled:cursor-not-allowed"
+      >
+        {isLoading ? 'Đang gửi...' : 'Gửi trả lời'}
+      </button>
+    </div>
+  );
+}

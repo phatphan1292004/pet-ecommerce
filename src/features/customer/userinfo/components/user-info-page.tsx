@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
@@ -26,6 +27,8 @@ export default function UserInfoPage({
   userInfo: UserInfo;
   addresses: UserAddress[];
 }) {
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
   const tabs: TabItem[] = [
     {
       id: "info",
@@ -59,6 +62,8 @@ export default function UserInfoPage({
     },
   ];
 
+  const currentTabLabel = tabs[selectedTabIndex]?.label || "Tài khoản";
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Breadcrumb */}
@@ -67,10 +72,14 @@ export default function UserInfoPage({
           Trang chủ
         </Link>
         <span className="mx-1">{">"}</span>
-        <span className="text-neutral-1">Tài khoản</span>
+        <Link href="/userinfo" className="hover:text-primary-1 transition-colors">
+          Thông tin cá nhân
+        </Link>
+        <span className="mx-1">{">"}</span>
+        <span className="text-neutral-1">{currentTabLabel}</span>
       </nav>
 
-      <TabGroup>
+      <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
         <div className="flex gap-20">
           {/* Sidebar - Tab List */}
           <aside className="w-52 shrink-0">
