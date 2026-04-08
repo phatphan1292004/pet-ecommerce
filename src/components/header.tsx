@@ -24,7 +24,6 @@ export default function Header({ isLoggedIn, categories, brands }: HeaderProps) 
   const cartCount = useCartStore((state) => state.totalItems);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  console.log("Header rendered with props:", { isLoggedIn, categories, brands });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

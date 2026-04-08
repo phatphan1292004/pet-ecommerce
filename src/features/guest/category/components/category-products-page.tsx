@@ -16,9 +16,9 @@ import {
 interface CategoryProductsPageProps {
   sidebarCategories: SidebarCategory[];
   currentCategorySlug: string;
-  currentSubcategorySlug: string;
+  currentSubcategorySlug?: string;
   categoryName: string;
-  subcategoryName: string;
+  subcategoryName?: string;
   brandFilters: CategoryBrandFilterOption[];
   initialSelectedBrandIds: string[];
   initialSelectedOrigins: string[];
@@ -29,6 +29,8 @@ interface CategoryProductsPageProps {
 
 const formatPrice = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 const OBJECT_ID_REGEX = /^[a-f\d]{24}$/i;
+const DEFAULT_MIN_PRICE = 0;
+const DEFAULT_MAX_PRICE = 5_000_000;
 
 const normalizeBrandToken = (value: string): string =>
   value
@@ -53,20 +55,8 @@ export default function CategoryProductsPage({
   const pathname = usePathname();
   const currentSearchParams = useSearchParams();
 
-  const minPrice =
-    products.length > 0
-      ? products.reduce(
-          (min, item) => Math.min(min, item.price),
-          products[0].price,
-        )
-      : 0;
-  const maxPrice =
-    products.length > 0
-      ? products.reduce(
-          (max, item) => Math.max(max, item.price),
-          products[0].price,
-        )
-      : 5_000_000;
+  const minPrice = DEFAULT_MIN_PRICE;
+  const maxPrice = DEFAULT_MAX_PRICE;
 
   const [selectedBrands, setSelectedBrands] = useState<string[]>(initialSelectedBrandIds);
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>(initialSelectedOrigins);
@@ -160,9 +150,18 @@ export default function CategoryProductsPage({
           Trang chu
         </Link>
         <FaChevronRight size={10} />
-        <span>{categoryName}</span>
-        <FaChevronRight size={10} />
-        <span className="text-neutral-1 font-semibold">{subcategoryName}</span>
+        <Link
+          href={`/category/${currentCategorySlug}`}
+          className="hover:text-primary-1 transition-colors"
+        >
+          {categoryName}
+        </Link>
+        {subcategoryName && (
+          <>
+            <FaChevronRight size={10} />
+            <span className="text-neutral-1 font-semibold">{subcategoryName}</span>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-7">

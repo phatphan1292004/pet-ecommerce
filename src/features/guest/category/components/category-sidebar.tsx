@@ -13,7 +13,7 @@ interface SidebarCategory extends Omit<Category, "subcategories"> {
 interface CategorySidebarProps {
   categories: SidebarCategory[];
   currentCategorySlug: string;
-  currentSubcategorySlug: string;
+  currentSubcategorySlug?: string;
   brandFilters: CategoryBrandFilterOption[];
   selectedBrands: string[];
   selectedOrigins: string[];
@@ -50,6 +50,7 @@ export default function CategorySidebar({
   onResetFilter,
 }: CategorySidebarProps) {
   const [openCategorySlug, setOpenCategorySlug] = useState(currentCategorySlug);
+  const selectedSubcategorySlug = currentSubcategorySlug ?? "";
 
   return (
     <div className="space-y-8">
@@ -64,24 +65,34 @@ export default function CategorySidebar({
 
             return (
               <div key={item._id} className="rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setOpenCategorySlug((prev) => (prev === item.slug ? "" : item.slug))}
+                <div
                   className={`w-full px-3 py-2 rounded-xl font-semibold text-sm flex items-center justify-between transition-colors ${
                     isOpen
                       ? "bg-primary-6 text-primary-1"
                       : "text-neutral-1 bg-neutral-10 hover:bg-neutral-7"
                   }`}
                 >
-                  <span>{item.name}</span>
-                  {isOpen ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
-                </button>
+                  <Link
+                    href={`/category/${item.slug}`}
+                    className="flex-1 text-left"
+                  >
+                    {item.name}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setOpenCategorySlug((prev) => (prev === item.slug ? "" : item.slug))}
+                    className="ml-2"
+                    aria-label={isOpen ? "Thu nho danh muc" : "Mo rong danh muc"}
+                  >
+                    {isOpen ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
+                  </button>
+                </div>
 
                 {isOpen && (
                   <div className="pl-3 pt-2 space-y-1">
                     {item.subcategories.map((sub) => {
                       const isSelected =
-                        item.slug === currentCategorySlug && sub.slug === currentSubcategorySlug;
+                        item.slug === currentCategorySlug && sub.slug === selectedSubcategorySlug;
 
                       return (
                         <Link
@@ -109,7 +120,7 @@ export default function CategorySidebar({
         <h3 className="text-xs uppercase tracking-[0.2em] text-neutral-5 font-bold mb-4">
           Thương hiệu
         </h3>
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 max-h-64 overflow-y-auto pr-2">
           {brandFilters.map((brand) => (
             <label key={brand.id} className="flex items-center gap-2 text-sm text-neutral-1">
               <input

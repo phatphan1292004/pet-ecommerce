@@ -50,7 +50,6 @@ export default function ProductDetailPage({
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
 
-  console.log('Initial Comments:', initialComments);
   // Get all images (combine main image with additional images)
   const allImages = product.images && product.images.length > 0 
     ? product.images 
