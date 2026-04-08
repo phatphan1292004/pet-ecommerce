@@ -129,7 +129,7 @@ export const put = async (
 
 export const del = async (
   url: string,
-  params?: any,
+  data?: any,
   defaultReturn?: any,
   onError?: (error: any) => any
 ) => {
@@ -137,7 +137,7 @@ export const del = async (
     const res = await storeClient.request({
       method: "DELETE",
       url,
-      params,
+      data,
     });
     if (res.status === 200) {
       return res.data;

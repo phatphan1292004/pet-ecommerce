@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
@@ -13,8 +13,10 @@ import { syncOpenCartItem } from '@/features/customer/cart/servers';
 import {
   CommentForm,
   CommentList,
+  createReply,
   createReview,
-  getReviews,
+  deleteReview,
+  updateReview,
   type UiReview,
 } from '@/features/customer/review';
 
@@ -24,17 +26,31 @@ type Reply = UiReview['replies'][number];
 
 interface ProductDetailProps {
   product: ProductDetail;
+  initialComments: Comment[];
+  isLoggedIn: boolean;
+  currentUserId?: string;
 }
 
-export default function ProductDetailPage({ product }: ProductDetailProps) {
+export default function ProductDetailPage({
+  product,
+  initialComments,
+  isLoggedIn,
+  currentUserId,
+}: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<Comment[]>(initialComments);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [replySubmittingId, setReplySubmittingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editSubmittingId, setEditSubmittingId] = useState<string | null>(null);
+  const [replyEditingId, setReplyEditingId] = useState<string | null>(null);
+  const [replyEditSubmittingId, setReplyEditSubmittingId] = useState<string | null>(null);
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
 
+  console.log('Initial Comments:', initialComments);
   // Get all images (combine main image with additional images)
   const allImages = product.images && product.images.length > 0 
     ? product.images 
@@ -86,28 +102,12 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
     setCurrentImageIndex(index);
   };
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadReviews = async () => {
-      const result = await getReviews({ productId: product._id });
-      if (!isMounted) return;
-
-      if (result.success && result.data) {
-        setComments(result.data);
-      } else {
-        showWarning('Không tải được bình luận');
-      }
-    };
-
-    void loadReviews();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [product._id, showWarning]);
-
   const handleAddComment = async (rating: number, content: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để bình luận');
+      return;
+    }
+
     if (!content.trim()) {
       showWarning('Vui lòng nhập nội dung bình luận');
       return;
@@ -125,6 +125,7 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
       const newComment: Comment =
         result.data || {
           id: Date.now().toString(),
+          customerId: currentUserId,
           author: 'Bạn',
           rating,
           content: content.trim(),
@@ -142,31 +143,217 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
   };
 
   const handleReplyToggle = (commentId: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để trả lời');
+      return;
+    }
+
     setReplyingTo(replyingTo === commentId ? null : commentId);
+    setEditingId(null);
+    setReplyEditingId(null);
   };
 
-  const handleAddReply = (commentId: string, content: string) => {
-    setComments(
-      comments.map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              replies: [
-                ...comment.replies,
-                {
-                  id: Date.now().toString(),
-                  author: 'Bạn',
-                  content,
-                  date: new Date().toLocaleDateString('vi-VN'),
-                },
-              ],
-            }
-          : comment
-      )
-    );
+  const handleAddReply = async (commentId: string, content: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để trả lời');
+      return;
+    }
 
+    if (!content.trim()) {
+      showWarning('Vui lòng nhập nội dung trả lời');
+      return;
+    }
+
+    setReplySubmittingId(commentId);
+
+    const result = await createReply(commentId, {
+      comment: content.trim(),
+      productId: product._id,
+      parentId: commentId,
+      level: 1,
+      rating: 0,
+    });
+
+    if (result.success) {
+      const newReply: Reply =
+        result.data || {
+          id: Date.now().toString(),
+          author: 'Bạn',
+          content: content.trim(),
+          date: new Date().toLocaleDateString('vi-VN'),
+        };
+
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: [...comment.replies, newReply],
+              }
+            : comment
+        )
+      );
+
+      setReplyingTo(null);
+      showSuccess('Trả lời đã được gửi');
+    } else {
+      showWarning(result.message || 'Không gửi được trả lời');
+    }
+
+    setReplySubmittingId(null);
+  };
+
+  const handleReplyEditToggle = (replyId: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để chỉnh sửa trả lời');
+      return;
+    }
+
+    setReplyEditingId(replyEditingId === replyId ? null : replyId);
     setReplyingTo(null);
-    showSuccess('Trả lời đã được gửi');
+    setEditingId(null);
+  };
+
+  const handleReplyEditSubmit = async (replyId: string, content: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để chỉnh sửa trả lời');
+      return;
+    }
+
+    if (!content.trim()) {
+      showWarning('Vui lòng nhập nội dung trả lời');
+      return;
+    }
+
+    setReplyEditSubmittingId(replyId);
+
+    const result = await updateReview(replyId, {
+      comment: content.trim(),
+    });
+
+    if (result.success) {
+      const updated = result.data;
+      setComments((prev) =>
+        prev.map((comment) => ({
+          ...comment,
+          replies: comment.replies.map((reply) =>
+            reply.id === replyId
+              ? {
+                  ...reply,
+                  content: updated?.content ?? content.trim(),
+                  date: updated?.date ?? reply.date,
+                }
+              : reply
+          ),
+        }))
+      );
+      setReplyEditingId(null);
+      showSuccess('Trả lời đã được cập nhật');
+    } else {
+      showWarning(result.message || 'Không cập nhật được trả lời');
+    }
+
+    setReplyEditSubmittingId(null);
+  };
+
+  const handleReplyDelete = async (replyId: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để xóa trả lời');
+      return;
+    }
+
+    const shouldDelete = window.confirm('Bạn có chắc chắn muốn xóa trả lời này?');
+    if (!shouldDelete) {
+      return;
+    }
+
+    const result = await deleteReview(replyId, currentUserId);
+
+    if (result.success) {
+      setComments((prev) =>
+        prev.map((comment) => ({
+          ...comment,
+          replies: comment.replies.filter((reply) => reply.id !== replyId),
+        }))
+      );
+      setReplyEditingId(null);
+      showSuccess('Đã xóa trả lời');
+    } else {
+      showWarning(result.message || 'Không xóa được trả lời');
+    }
+  };
+
+  const handleEditToggle = (commentId: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để chỉnh sửa bình luận');
+      return;
+    }
+
+    setEditingId(editingId === commentId ? null : commentId);
+    setReplyingTo(null);
+  };
+
+  const handleEditSubmit = async (commentId: string, rating: number, content: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để chỉnh sửa bình luận');
+      return;
+    }
+
+    if (!content.trim()) {
+      showWarning('Vui lòng nhập nội dung bình luận');
+      return;
+    }
+
+    setEditSubmittingId(commentId);
+
+    const result = await updateReview(commentId, {
+      rating,
+      comment: content.trim(),
+    });
+
+    if (result.success) {
+      const updated = result.data;
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                rating: updated?.rating ?? rating,
+                content: updated?.content ?? content.trim(),
+                date: updated?.date ?? comment.date,
+              }
+            : comment
+        )
+      );
+      setEditingId(null);
+      showSuccess('Bình luận đã được cập nhật');
+    } else {
+      showWarning(result.message || 'Không cập nhật được bình luận');
+    }
+
+    setEditSubmittingId(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để xóa bình luận');
+      return;
+    }
+
+    const shouldDelete = window.confirm('Bạn có chắc chắn muốn xóa bình luận này?');
+    if (!shouldDelete) {
+      return;
+    }
+
+    const result = await deleteReview(commentId, currentUserId);
+
+    if (result.success) {
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+      setEditingId(null);
+      showSuccess('Đã xóa bình luận');
+    } else {
+      showWarning(result.message || 'Không xóa được bình luận');
+    }
   };
 
   const decrementQuantity = () => {
@@ -463,6 +650,7 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
                   <CommentForm
                     onSubmit={handleAddComment}
                     isLoading={isSubmittingReview}
+                    isLoggedIn={isLoggedIn}
                   />
 
                   {/* Comments List */}
@@ -473,8 +661,21 @@ export default function ProductDetailPage({ product }: ProductDetailProps) {
                     <CommentList
                       comments={comments}
                       replyingTo={replyingTo}
+                      replySubmittingId={replySubmittingId}
+                      editingId={editingId}
+                      editSubmittingId={editSubmittingId}
+                      replyEditingId={replyEditingId}
+                      replyEditSubmittingId={replyEditSubmittingId}
+                      isLoggedIn={isLoggedIn}
+                      currentUserId={currentUserId}
                       onReplyToggle={handleReplyToggle}
                       onReplySubmit={handleAddReply}
+                      onEditToggle={handleEditToggle}
+                      onEditSubmit={handleEditSubmit}
+                      onDelete={handleDeleteComment}
+                      onReplyEditToggle={handleReplyEditToggle}
+                      onReplyEditSubmit={handleReplyEditSubmit}
+                      onReplyDelete={handleReplyDelete}
                     />
                   </div>
                 </div>
