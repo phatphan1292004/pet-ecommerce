@@ -13,16 +13,18 @@ import { useCartStore } from "@/store";
 import { logout } from "@/features/guest/logout";
 import { Category } from "@/types/category";
 import CategoryDropdown from "./category-dropdown";
-
+import { BrandItem } from "@/features/guest/brand";
 interface HeaderProps {
   isLoggedIn: boolean;
   categories: Category[] | null;
+  brands?: BrandItem[] | null; 
 }
 
-export default function Header({ isLoggedIn, categories }: HeaderProps) {
+export default function Header({ isLoggedIn, categories, brands }: HeaderProps) {
   const cartCount = useCartStore((state) => state.totalItems);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  console.log("Header rendered with props:", { isLoggedIn, categories, brands });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function Header({ isLoggedIn, categories }: HeaderProps) {
             <span>Hợp tác cùng Pet Spots</span>
             <span className="hidden sm:inline">-</span>
             <span className="flex items-center gap-1">
-              📞 Đặt hàng nhanh <strong>0909090909</strong>
+              Đặt hàng nhanh <strong>0909090909</strong>
             </span>
           </div>
           {/* User Icon */}
@@ -143,6 +145,26 @@ export default function Header({ isLoggedIn, categories }: HeaderProps) {
                 categorySlug={category.slug}
               />
             ))}
+
+            {brands && brands.length > 0 && (
+              <div className="relative group">
+                <button className="flex items-center gap-1 text-neutral-1 hover:text-primary-1 transition-colors">
+                  Thương hiệu
+                  <FaChevronDown size={16} />
+                </button>
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  {brands.map((brand) => (
+                    <Link
+                      key={brand._id}
+                      href={`/brands/${brand.slug}`}
+                      className="block px-4 py-2 hover:bg-neutral-10 text-neutral-1"
+                    >
+                      {brand.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Liên hệ - Static */}
             <div className="relative group">

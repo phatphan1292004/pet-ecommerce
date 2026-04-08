@@ -7,6 +7,7 @@ export interface BrandItem {
   id?: string;
   name: string;
   slug?: string;
+  icon?: string;
   is_active?: boolean;
   isActive?: boolean;
 }

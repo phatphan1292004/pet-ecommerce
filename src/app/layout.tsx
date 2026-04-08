@@ -6,6 +6,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { ToastProvider } from "@/components/toast-provider";
 import { getCategories } from "@/features/guest/category";
+import { getBrands } from "@/features/guest/brand";
 
 const primaryFont = Josefin_Sans({
   variable: "--font-josefin-sans",
@@ -26,6 +27,7 @@ export default async function RootLayout({
   const userId = cookieStore.get("userId")?.value;
   const isLoggedIn = !!userId;
   const categories = await getCategories();
+  const brands = await getBrands();
 
   return (
     <html lang="vi">
@@ -33,7 +35,7 @@ export default async function RootLayout({
         className={`${primaryFont.variable} ${primaryFont.className} antialiased flex flex-col min-h-screen`}
       >
         <ToastProvider />
-        <Header isLoggedIn={isLoggedIn} categories={categories} />
+        <Header isLoggedIn={isLoggedIn} categories={categories} brands={brands} />
         <main className="flex-1 bg-white">{children}</main>
         <Footer />
       </body>
