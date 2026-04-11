@@ -42,7 +42,7 @@ export default function ReplyForm({
         value={replyText}
         onChange={(e) => setReplyText(e.target.value)}
         placeholder="Nhập trả lời của bạn..."
-        className="w-full px-3 py-2 border border-neutral-5 rounded-lg focus:outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1/15 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)] resize-none text-sm mb-2"
+        className="w-full px-3 py-2 border border-neutral-20 rounded-lg focus:outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1/15 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)] resize-none text-sm mb-2"
         disabled={!isLoggedIn}
         rows={3}
       />

@@ -64,7 +64,7 @@ export default function CommentForm({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Chia sẻ trải nghiệm của bạn với sản phẩm này..."
-          className="w-full px-4 py-3 border border-neutral-5 rounded-lg focus:outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1/15 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)] resize-none"
+          className="w-full px-4 py-3 border border-neutral-20 rounded-lg focus:outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1/15 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)] resize-none"
           disabled={!isLoggedIn}
           rows={4}
         />

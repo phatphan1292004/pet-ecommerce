@@ -130,7 +130,7 @@ export default function CommentItem({
   onReplyDelete,
 }: CommentItemProps) {
   return (
-    <div className="border border-neutral-5 rounded-lg p-4">
+    <div className="border border-neutral-20 rounded-lg p-4">
       {/* Main Comment */}
       <div className="mb-3">
         <div className="flex items-start justify-between mb-2">
@@ -164,24 +164,6 @@ export default function CommentItem({
                 />
               ))}
             </div>
-            {isEditable && !isEditing && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={onEditToggle}
-                  className="text-neutral-4 hover:text-primary-1"
-                  aria-label={`Edit review ${id}`}
-                >
-                  <FaEdit size={14} />
-                </button>
-                <button
-                  onClick={onDelete}
-                  className="text-neutral-4 hover:text-red-500"
-                  aria-label={`Delete review ${id}`}
-                >
-                  <FaTrash size={14} />
-                </button>
-              </div>
-            )}
           </div>
         </div>
         {isEditing ? (
@@ -200,13 +182,37 @@ export default function CommentItem({
 
       {/* Reply Button */}
       {!isEditing && (
-        <button
-          onClick={onReplyToggle}
-          className="flex items-center gap-2 text-primary-1 hover:text-primary-2 text-sm font-medium"
-        >
-          <FaReply size={14} />
-          Trả lời
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onReplyToggle}
+            className="inline-flex items-center gap-1 text-primary-1 hover:text-primary-2 text-xs font-medium leading-none"
+          >
+            <FaReply size={14} className="flex-shrink-0 align-middle" />
+            <span className="leading-none align-middle">Trả lời</span>
+          </button>
+          {isEditable && !isEditing && (
+            <div className="flex items-center gap-2 text-neutral-5">
+              <button
+                onClick={onEditToggle}
+                className="inline-flex items-center gap-1 hover:text-primary-1 text-xs leading-none"
+                aria-label={`Edit review ${id}`}
+                title="Chỉnh sửa"
+              >
+                <FaEdit size={14} className="flex-shrink-0 align-middle" />
+                <span className="text-xs leading-none align-middle">Sửa</span>
+              </button>
+              <button
+                onClick={onDelete}
+                className="inline-flex items-center gap-1 hover:text-red-500 text-xs leading-none"
+                aria-label={`Delete review ${id}`}
+                title="Xóa"
+              >
+                <FaTrash size={14} className="flex-shrink-0 align-middle" />
+                <span className="text-xs leading-none align-middle">Xóa</span>
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Reply Form */}

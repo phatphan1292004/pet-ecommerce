@@ -1,7 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import Image from "next/image";
+import { useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -111,8 +110,6 @@ interface OrdersTableProps {
 }
 
 export default function OrdersTable({ orders }: OrdersTableProps) {
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-
   const columns = useMemo<ColumnDef<Order>[]>(
     () => [
       {
@@ -197,22 +194,18 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         header: "",
         cell: ({ row }) => {
           const orderId = row.original._id || row.original.id || "";
-          const isExpanded = expandedOrderId === orderId;
           return (
-            <button
-              type="button"
-              onClick={() =>
-                setExpandedOrderId((prev) => (prev === orderId ? null : orderId))
-              }
-              className="min-w-[110px] text-primary-1 hover:text-primary-2 transition-colors text-sm"
+            <a
+              href={`/userinfo/orders/${orderId}`}
+              className="min-w-[110px] inline-block text-primary-1 hover:text-primary-2 transition-colors text-sm"
             >
-              {isExpanded ? "Ẩn chi tiết" : "Xem chi tiết"}
-            </button>
+              Xem chi tiết
+            </a>
           );
         },
       },
     ],
-    [expandedOrderId]
+    []
   );
 
   const columnAlign: Record<string, "left" | "center" | "right"> = {
@@ -254,85 +247,24 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
           ))}
         </thead>
         <tbody className="divide-y divide-neutral-7 text-neutral-1">
-          {table.getRowModel().rows.map((row) => {
-            const order = row.original;
-            const orderId = order._id || order.id || "";
-            const isExpanded = expandedOrderId === orderId;
-            const items = getOrderItems(order);
-
-            return (
-              <Fragment key={row.id}>
-                <tr className="align-top">
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className={`px-4 py-4 ${
-                        columnAlign[cell.column.id] === "center"
-                          ? "text-center"
-                          : columnAlign[cell.column.id] === "right"
-                            ? "text-right"
-                            : "text-left"
-                      }`}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="bg-neutral-10">
-                  <td colSpan={columns.length} className="px-4 py-0">
-                    <div
-                      className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
-                        isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      <div className="py-4">
-                        {items.length === 0 ? (
-                          <p className="text-sm text-neutral-4">Không có sản phẩm.</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {items.map((item, index) => (
-                              <div
-                                key={`${item.productId || item._id || index}`}
-                                className="flex items-center justify-between gap-4"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="relative h-20 w-20 overflow-hidden rounded-lg border border-neutral-7 bg-neutral-10">
-                                    {item.image ? (
-                                      <Image
-                                        src={item.image}
-                                        alt={item.name || "Sản phẩm"}
-                                        fill
-                                        className="object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex h-full w-full items-center justify-center text-xs text-neutral-4">
-                                        No image
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-semibold text-neutral-1">
-                                      {item.name || "Sản phẩm"}
-                                    </p>
-                                    <p className="text-xs text-neutral-4">SL: {item.quantity || 0}</p>
-                                  </div>
-                                </div>
-                                <div className="text-sm font-semibold text-neutral-1">
-                                  {formatCurrency(
-                                    (Number(item.price) || 0) * (Number(item.quantity) || 0)
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </Fragment>
-            );
-          })}
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="align-top">
+              {row.getVisibleCells().map((cell) => (
+                <td
+                  key={cell.id}
+                  className={`px-4 py-4 ${
+                    columnAlign[cell.column.id] === "center"
+                      ? "text-center"
+                      : columnAlign[cell.column.id] === "right"
+                        ? "text-right"
+                        : "text-left"
+                  }`}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

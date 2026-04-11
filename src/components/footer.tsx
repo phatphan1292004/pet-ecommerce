@@ -20,8 +20,8 @@ export default function Footer() {
             </div>
             <div className="text-neutral-black space-y-2">
               <p className="font-semibold">Công Ty TNHH MTV Pet Spots Việt Nam</p>
-              <p className="text-sm">Địa chỉ: 123/23</p>
-              <p className="text-sm">Mã số Doanh nghiệp: 123123</p>
+              <p className="text-sm">Địa chỉ: 475 Man Thiện, Thủ Đức, TP. Hồ Chí Minh</p>
+              <p className="text-sm">Mã số Doanh nghiệp: 328725</p>
             </div>
           </div>
 
@@ -58,7 +58,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-neutral-1">
               <li>
                 <Link href="/using-website" className="hover:text-primary-1 transition-colors">
-                  Sử Dụng Website ODeli
+                  Sử Dụng Website PetSpots
                 </Link>
               </li>
               <li>

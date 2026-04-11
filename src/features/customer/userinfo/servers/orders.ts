@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { get } from "@/integrations/storeClient";
+import { get, patch } from "@/integrations/storeClient";
 import type { Order } from "@/types/order";
 
 interface ActionResult<T> {
@@ -42,5 +42,55 @@ export const getOrdersByCustomer = async (
     success: Boolean(res?.data),
     message: res?.message || "",
     data,
+  };
+};
+
+export const getOrderById = async (orderId: string): Promise<ActionResult<Order | null>> => {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) {
+    return { success: false, message: "User not authenticated", data: null };
+  }
+
+  const res = await get(`/order/${orderId}`);
+  const data = res?.data as Order | undefined;
+
+  return {
+    success: Boolean(res?.data),
+    message: res?.message || "",
+    data: data || null,
+  };
+};
+
+interface UpdateOrderDeliveryInput {
+  arrivalName: string;
+  arrivalPhone: string;
+  arrivalAddress: string;
+}
+
+export const updateOrderDeliveryInfo = async (
+  orderId: string,
+  input: UpdateOrderDeliveryInput
+): Promise<ActionResult<Order | null>> => {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) {
+    return { success: false, message: "User not authenticated", data: null };
+  }
+
+  const res = await patch(`/order/${orderId}`, {
+    firebaseUid: userId,
+    arrivalName: input.arrivalName,
+    arrivalPhone: input.arrivalPhone,
+    arrivalAddress: input.arrivalAddress,
+  });
+
+  const data = res?.data as Order | undefined;
+  return {
+    success: Boolean(res?.data),
+    message: res?.message || "",
+    data: data || null,
   };
 };

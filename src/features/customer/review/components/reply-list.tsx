@@ -81,7 +81,7 @@ export default function ReplyList({
   if (replies.length === 0) return null;
 
   return (
-    <div className="mt-4 pl-4 border-l-2 border-neutral-6 space-y-3">
+    <div className="mt-4 pl-4 border-l-2 border-primary-1 space-y-3">
       {replies.map((reply) => (
         <div key={reply.id} className="bg-neutral-9 p-3 rounded-lg">
           <div className="flex items-start justify-between mb-2">
@@ -111,17 +111,21 @@ export default function ReplyList({
                   <>
                     <button
                       onClick={() => onEditToggle(reply.id)}
-                      className="text-neutral-4 hover:text-primary-1"
+                      className="inline-flex items-center gap-1 text-neutral-5 hover:text-primary-1 text-xs leading-none"
                       aria-label={`Edit reply ${reply.id}`}
+                      title="Chỉnh sửa"
                     >
-                      <FaEdit size={12} />
+                      <FaEdit size={12} className="flex-shrink-0 align-middle" />
+                      <span className="text-xs leading-none align-middle">Sửa</span>
                     </button>
                     <button
                       onClick={() => onDelete(reply.id)}
-                      className="text-neutral-4 hover:text-red-500"
+                      className="inline-flex items-center gap-1 text-neutral-5 hover:text-red-500 text-xs leading-none"
                       aria-label={`Delete reply ${reply.id}`}
+                      title="Xóa"
                     >
-                      <FaTrash size={12} />
+                      <FaTrash size={12} className="flex-shrink-0 align-middle" />
+                      <span className="text-xs leading-none align-middle">Xóa</span>
                     </button>
                   </>
                 )}

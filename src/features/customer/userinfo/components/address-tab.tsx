@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FaMapMarkerAlt, FaPlus } from "react-icons/fa";
+import { FaMapMarkerAlt, FaPlus, FaEdit, FaTimes } from "react-icons/fa";
 import AddAddressModal from "./add-address-modal";
 import { UserAddress } from "@/types/address";
+import { useToast } from "@/hooks";
+import { deleteAddress } from "../servers/address";
 
 interface AddressTabProps {
   initialAddresses: UserAddress[];
@@ -12,6 +14,8 @@ interface AddressTabProps {
 export default function AddressTab({ initialAddresses }: AddressTabProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [addresses, setAddresses] = useState<UserAddress[]>(initialAddresses);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { showSuccess, showError } = useToast();
 
   const handleAddressCreated = (newAddress: UserAddress) => {
     setAddresses((prev) => {
@@ -57,8 +61,34 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
           {addresses.map((item) => (
             <div
               key={item._id}
-              className="rounded-xl border border-neutral-20 p-6 flex flex-col gap-4"
+              className="relative rounded-xl border border-neutral-20 p-6 flex flex-col gap-4"
             >
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?");
+                  if (!ok) return;
+                  try {
+                    setDeletingId(item._id);
+                    const res = await deleteAddress(item._id);
+                    if (res.success) {
+                      setAddresses((prev) => prev.filter((a) => a._id !== item._id));
+                      showSuccess(res.message || "Xóa địa chỉ thành công");
+                    } else {
+                      showError(res.message || "Không xóa được địa chỉ");
+                    }
+                  } catch {
+                    showError("Lỗi khi xóa địa chỉ");
+                  } finally {
+                    setDeletingId(null);
+                  }
+                }}
+                disabled={deletingId === item._id}
+                aria-label="Xóa địa chỉ"
+                className="absolute top-4 right-4 inline-flex items-center justify-center w-8 h-8 rounded-md border border-neutral-20 bg-white text-neutral-4 hover:bg-neutral-50 shadow-sm"
+              >
+                <FaTimes size={14} />
+              </button>
               <div className="space-y-2 text-neutral-2">
                 <div className="flex items-center gap-2 text-sm text-neutral-3">
                   {item.isDefault ? (
@@ -77,23 +107,30 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                 </p>
               </div>
 
-              <div className="self-end flex items-center gap-2">
+              <div className="self-end flex items-center gap-3">
                 {!item.isDefault ? (
                   <button
                     type="button"
                     onClick={() => handleSetDefault(item._id)}
-                    className="rounded-md border border-primary-1 px-4 py-2 text-sm font-medium text-primary-1 hover:bg-primary-6 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-md border border-primary-1 px-3 py-2 text-sm font-medium text-primary-1 hover:bg-primary-6 transition-colors"
+                    aria-label="Đặt làm mặc định"
                   >
-                    Đặt làm địa chỉ mặc định
+                    Đặt mặc định
                   </button>
                 ) : null}
 
-                <button
-                  type="button"
-                  className="rounded-md bg-primary-1 px-5 py-2 text-sm font-medium text-white hover:bg-primary-2 transition-colors"
-                >
-                  Chỉnh sửa
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary-1 px-4 py-2 text-sm font-medium text-white hover:bg-primary-2 transition-colors shadow-sm"
+                    aria-label="Chỉnh sửa địa chỉ"
+                  >
+                    <FaEdit size={14} className="inline-block align-middle" />
+                    <span className="align-middle">Chỉnh sửa</span>
+                  </button>
+
+                  
+                </div>
               </div>
             </div>
           ))}
