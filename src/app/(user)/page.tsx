@@ -10,10 +10,7 @@ export default async function Home() {
       <HeroSlider />
       <div className="container mx-auto">
         <ProductSection />
-        <ProductSection 
-          title="SẢN PHẨM MỚI"
-          products={newProducts || []}
-        />
+        <ProductSection title="SẢN PHẨM MỚI" products={newProducts || []} />
       </div>
     </div>
   );

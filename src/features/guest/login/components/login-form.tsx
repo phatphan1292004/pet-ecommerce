@@ -25,7 +25,7 @@ export default function LoginForm() {
     try {
       const result = await signIn(form.email, form.password);
       if (result) {
-        router.push("/");
+        router.push(result.redirectTo);
       } else {
         setError("Email hoặc mật khẩu không đúng.");
       }
