@@ -8,6 +8,29 @@ export interface AdminUserRole {
   description?: string;
 }
 
+export interface AdminUserAddress {
+  id?: string;
+  address?: string;
+  ward?: string;
+  province?: string;
+  district?: string;
+}
+
+export interface AdminUserOrder {
+  id: string;
+  customerId?: string;
+  cartId?: string;
+  status?: string;
+  paymentMethod?: string;
+  arrivalName?: string;
+  arrivalPhone?: string;
+  arrivalAddress?: string;
+  arrivalTime?: string;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AdminUser {
   id: string;
   firebaseUid?: string;
@@ -18,6 +41,8 @@ export interface AdminUser {
   birthDate?: string;
   gender?: string;
   role?: AdminUserRole;
+  addresses?: AdminUserAddress[];
+  orders?: AdminUserOrder[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -55,9 +80,6 @@ interface GetAdminUsersInput {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
-
-const toStringValue = (value: unknown): string =>
-  typeof value === "string" ? value : "";
 
 const toPositiveInteger = (value: unknown, fallback: number): number => {
   const numeric = Number(value);
@@ -120,6 +142,77 @@ const normalizeRole = (value: unknown): AdminUserRole | undefined => {
   };
 };
 
+const normalizeAddress = (value: unknown): AdminUserAddress | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = getFirstString(value.id, value._id);
+  const address = getFirstString(value.address, value.street);
+  const ward = getFirstString(value.ward);
+  const province = getFirstString(value.province, value.city);
+  const district = getFirstString(value.district);
+
+  if (!id && !address && !ward && !province && !district) {
+    return null;
+  }
+
+  return {
+    id,
+    address,
+    ward,
+    province,
+    district,
+  };
+};
+
+const normalizeAddresses = (value: unknown): AdminUserAddress[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => normalizeAddress(item))
+    .filter((item): item is AdminUserAddress => Boolean(item));
+};
+
+const normalizeOrder = (value: unknown): AdminUserOrder | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = getFirstString(value.id, value._id, value.orderId);
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+    customerId: getFirstString(value.customerId),
+    cartId: getFirstString(value.cartId),
+    status: getFirstString(value.status),
+    paymentMethod: getFirstString(value.paymentMethod),
+    arrivalName: getFirstString(value.arrivalName),
+    arrivalPhone: getFirstString(value.arrivalPhone),
+    arrivalAddress: getFirstString(value.arrivalAddress),
+    arrivalTime: getFirstString(value.arrivalTime),
+    note: getFirstString(value.note),
+    createdAt: getFirstString(value.createdAt),
+    updatedAt: getFirstString(value.updatedAt),
+  };
+};
+
+const normalizeOrders = (value: unknown): AdminUserOrder[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => normalizeOrder(item))
+    .filter((item): item is AdminUserOrder => Boolean(item));
+};
+
 const normalizeUser = (value: unknown): AdminUser | null => {
   if (!isRecord(value)) {
     return null;
@@ -133,6 +226,8 @@ const normalizeUser = (value: unknown): AdminUser | null => {
   }
 
   const role = normalizeRole(value.role);
+  const addresses = normalizeAddresses(value.addresses);
+  const orders = normalizeOrders(value.orders);
 
   return {
     id,
@@ -150,6 +245,8 @@ const normalizeUser = (value: unknown): AdminUser | null => {
     birthDate: getFirstString(value.birthDate, value.dateOfBirth),
     gender: getFirstString(value.gender),
     role,
+    addresses,
+    orders,
     createdAt: getFirstString(value.createdAt),
     updatedAt: getFirstString(value.updatedAt),
   };

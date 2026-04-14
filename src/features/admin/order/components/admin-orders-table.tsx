@@ -8,7 +8,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { FiAlertTriangle, FiEye, FiLoader, FiTrash2 } from "react-icons/fi";
+import { FiAlertTriangle, FiEye, FiLoader, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 import {
   formatCurrency,
   formatDateTime,
@@ -106,6 +106,15 @@ function ActionCell({ order, onOrderDeleted }: ActionCellProps) {
         >
           {isPending ? <FiLoader className="animate-spin" size={13} /> : <FiTrash2 size={13} />}
           {isPending ? "Đang xóa" : ""}
+        </button>
+
+        <button
+          type="button"
+          className="inline-flex items-center rounded-lg border border-neutral-20 bg-white px-2.5 py-2.5 text-neutral-4 transition hover:border-primary-4 hover:text-neutral-2"
+          title="Tùy chọn"
+          aria-label="Tùy chọn"
+        >
+          <FiMoreVertical size={13} />
         </button>
       </div>
 
@@ -269,7 +278,7 @@ export default function AdminOrdersTable({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-2xl border border-neutral-20 bg-white">
-        <table className="min-w-245 text-left text-sm">
+        <table className="w-full min-w-245 text-left text-sm">
           <thead className="bg-neutral-10 text-xs font-semibold uppercase text-neutral-4">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>

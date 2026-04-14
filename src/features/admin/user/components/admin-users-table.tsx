@@ -8,7 +8,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { FiEye, FiMail, FiPhone, FiShield } from "react-icons/fi";
+import { FiEye, FiMail, FiMapPin, FiMoreVertical, FiPhone, FiShield } from "react-icons/fi";
 import type { AdminUser, AdminUsersMeta } from "@/features/admin/user/servers";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
@@ -77,6 +77,20 @@ const getRoleBadgeClass = (roleLabel: string) => {
   }
 
   return "border-sky-200 bg-sky-50 text-sky-700";
+};
+
+const getAddressText = (user: AdminUser) => {
+  const firstAddress = user.addresses?.[0];
+
+  if (!firstAddress) {
+    return "--";
+  }
+
+  const parts = [firstAddress.address, firstAddress.ward, firstAddress.province]
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item));
+
+  return parts.length > 0 ? parts.join(", ") : "--";
 };
 
 const buildPageList = (currentPage: number, totalPages: number): number[] => {
@@ -189,6 +203,18 @@ export default function AdminUsersTable({
         },
       },
       {
+        id: "address",
+        header: "Địa chỉ",
+        cell: ({ row }) => (
+          <p className="max-w-[320px] text-sm text-neutral-4">
+            <span className="inline-flex items-start gap-1.5">
+              <FiMapPin size={13} className="mt-0.5 shrink-0 text-neutral-4" />
+              <span className="line-clamp-2">{getAddressText(row.original)}</span>
+            </span>
+          </p>
+        ),
+      },
+      {
         id: "createdAt",
         header: "Tạo lúc",
         cell: ({ row }) => (
@@ -201,7 +227,7 @@ export default function AdminUsersTable({
         id: "actions",
         header: "Hành động",
         cell: ({ row }) => (
-          <div className="text-right">
+          <div className="flex items-center justify-end gap-2">
             <Link
               href={`/admin/user/${row.original.id}`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
@@ -209,6 +235,15 @@ export default function AdminUsersTable({
             >
               <FiEye size={13} />
             </Link>
+
+            <button
+              type="button"
+              className="inline-flex items-center rounded-lg border border-neutral-20 bg-white px-2.5 py-2.5 text-neutral-4 transition hover:border-primary-4 hover:text-neutral-2"
+              title="Tùy chọn"
+              aria-label="Tùy chọn"
+            >
+              <FiMoreVertical size={13} />
+            </button>
           </div>
         ),
       },
@@ -253,7 +288,7 @@ export default function AdminUsersTable({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-2xl border border-neutral-20 bg-white">
-        <table className="min-w-190 text-left text-sm">
+        <table className="w-full min-w-220 text-left text-sm">
           <thead className="bg-neutral-10 text-xs font-semibold uppercase text-neutral-4">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
