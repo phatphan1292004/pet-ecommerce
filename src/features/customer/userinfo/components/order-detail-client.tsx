@@ -16,6 +16,32 @@ interface OrderDetailClientProps {
 const formatCurrency = (v?: number) =>
   typeof v === "number" ? `${v.toLocaleString("vi-VN")} đ` : "--";
 
+const getPaymentLabel = (method?: string) => {
+  if (!method) {
+    return "--";
+  }
+
+  const normalized = method.toLowerCase();
+
+  if (normalized === "cod") {
+    return "COD";
+  }
+  if (normalized === "bank") {
+    return "Chuyển khoản";
+  }
+  if (normalized === "vietqr") {
+    return "VietQR";
+  }
+  if (normalized === "momo") {
+    return "Momo";
+  }
+  if (normalized === "vnpay") {
+    return "VNPAY";
+  }
+
+  return method;
+};
+
 const getItems = (order: Order): OrderItem[] =>
   order.cart?.products || order.products || order.items || order.cartItems || [];
 
@@ -191,7 +217,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
               <FaCreditCard size={14} />
               <p className="text-xs uppercase tracking-wide">Phương thức</p>
             </div>
-            <p className="mt-2 font-medium text-neutral-1">{order.paymentMethod || "--"}</p>
+            <p className="mt-2 font-medium text-neutral-1">{getPaymentLabel(order.paymentMethod)}</p>
           </div>
           <div className="rounded-xl border border-neutral-20 p-4">
             <div className="flex items-center gap-2 text-neutral-4">

@@ -7,6 +7,7 @@ import { createOrderFromOpenCart } from "@/features/customer/cart/servers";
 import { useToast } from "@/hooks";
 import { useCartStore } from "@/store";
 import { checkoutStorageKey, type CheckoutOrderPayload } from "@/features/customer/cart/checkout-storage";
+import { buildVietQRImageUrl, getVietQRConfig } from "@/integrations/vietqr";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
 
@@ -19,18 +20,25 @@ const paymentMethods = [
     imageAlt: "COD",
   },
   {
-    id: "bank",
-    label: "Chuyển khoản ngân hàng",
-    description: "Nhân viên sẽ liên hệ để cung cấp thông tin tài khoản.",
-    image: "/payment/bank.svg",
-    imageAlt: "Chuyển khoản ngân hàng",
+    id: "vietqr",
+    label: "VietQR chuyển khoản",
+    description: "Quét VietQR để chuyển khoản nhanh, đúng nội dung.",
+    image: "/payment/VietQR_Logo.svg.png",
+    imageAlt: "VietQR chuyển khoản",
   },
   {
-    id: "wallet",
-    label: "Ví điện tử",
-    description: "Hoàn tất thanh toán qua ví điện tử.",
-    image: "/payment/wallet.svg",
-    imageAlt: "Ví điện tử",
+    id: "momo",
+    label: "Ví Momo",
+    description: "Thanh toán nhanh qua cổng Momo.",
+    image: "/payment/MoMo_Logo_App.svg",
+    imageAlt: "Ví Momo",
+  },
+  {
+    id: "vnpay",
+    label: "Cổng thanh toán VNPAY",
+    description: "Thanh toán online qua cổng VNPAY.",
+    image: "/payment/vnpay.svg",
+    imageAlt: "Cổng VNPAY",
   },
 ] as const;
 
@@ -39,6 +47,7 @@ type PaymentMethod = (typeof paymentMethods)[number]["id"];
 export default function CartPaymentContent() {
   const router = useRouter();
   const { showSuccess, showWarning } = useToast();
+  const vietQRConfig = useMemo(() => getVietQRConfig(), []);
   const totalPrice = useCartStore((state) => state.totalPrice);
   const clearCart = useCartStore((state) => state.clearCart);
   const [shippingData, setShippingData] = useState<CheckoutOrderPayload | null>(null);
@@ -88,7 +97,54 @@ export default function CartPaymentContent() {
     return shippingData.arrivalAddress;
   }, [shippingData]);
 
-  const canPlaceOrder = Boolean(shippingData) && grandTotal > 0 && !isSubmitting;
+  const transferContent = useMemo(() => {
+    if (!shippingData) {
+      return vietQRConfig.transferPrefix;
+    }
+
+    const phoneTail = shippingData.arrivalPhone.replace(/\D/g, "").slice(-4) || "0000";
+    return `${vietQRConfig.transferPrefix} ${phoneTail}`;
+  }, [shippingData, vietQRConfig.transferPrefix]);
+
+  const vietQRImageUrl = useMemo(
+    () =>
+      buildVietQRImageUrl({
+        bankId: vietQRConfig.bankId,
+        accountNo: vietQRConfig.accountNo,
+        accountName: vietQRConfig.accountName,
+        template: vietQRConfig.template,
+        amount: grandTotal,
+        addInfo: transferContent,
+      }),
+    [
+      grandTotal,
+      transferContent,
+      vietQRConfig.accountName,
+      vietQRConfig.accountNo,
+      vietQRConfig.bankId,
+      vietQRConfig.template,
+    ]
+  );
+
+  const canPlaceOrder =
+    Boolean(shippingData) &&
+    grandTotal > 0 &&
+    !isSubmitting &&
+    (paymentMethod !== "vietqr" || vietQRConfig.isConfigured);
+
+  const copyText = async (value: string, fieldName: string) => {
+    if (!value.trim()) {
+      showWarning(`Chưa có ${fieldName} để sao chép`);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      showSuccess(`Đã sao chép ${fieldName}`);
+    } catch {
+      showWarning("Không thể sao chép, vui lòng thử lại");
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!shippingData) {
@@ -98,6 +154,11 @@ export default function CartPaymentContent() {
 
     if (grandTotal <= 0) {
       showWarning("Giỏ hàng đang trống");
+      return;
+    }
+
+    if (paymentMethod === "vietqr" && !vietQRConfig.isConfigured) {
+      showWarning("VietQR chưa được cấu hình. Vui lòng liên hệ quản trị viên.");
       return;
     }
 
@@ -119,7 +180,11 @@ export default function CartPaymentContent() {
 
       clearCart();
       sessionStorage.removeItem(checkoutStorageKey);
-      showSuccess("Đã gửi thông tin thanh toán lên hệ thống");
+      if (paymentMethod === "vietqr") {
+        showSuccess("Đã tạo đơn hàng. Vui lòng hoàn tất chuyển khoản qua VietQR.");
+      } else {
+        showSuccess("Đã gửi thông tin thanh toán lên hệ thống");
+      }
       router.push("/userinfo");
     } finally {
       setIsSubmitting(false);
@@ -180,8 +245,8 @@ export default function CartPaymentContent() {
                   className="h-4 w-4 self-center accent-primary-1"
                 />
                 <span className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-7 bg-white">
-                    <Image src={method.image} alt={method.imageAlt} width={28} height={28} />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
+                    <Image src={method.image} alt={method.imageAlt} width={35} height={35} />
                   </span>
                   <span>
                     <span className="block text-sm font-semibold text-neutral-1">{method.label}</span>
@@ -191,6 +256,87 @@ export default function CartPaymentContent() {
               </label>
             ))}
           </div>
+
+          {paymentMethod === "vietqr" ? (
+            <div className="mt-4 rounded-xl border border-primary-1/20 bg-primary-3/10 p-4">
+              <h3 className="text-sm font-semibold text-neutral-1">Thanh toán bằng VietQR</h3>
+
+              {vietQRConfig.isConfigured ? (
+                <div className="mt-3 grid gap-4 lg:grid-cols-[320px_1fr]">
+                  <div className="mx-auto w-full max-w-[320px] rounded-xl border border-neutral-7 bg-white p-2">
+                    {vietQRImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={vietQRImageUrl}
+                        alt="VietQR chuyển khoản"
+                        className="h-auto w-full rounded-lg"
+                      />
+                    ) : (
+                      <div className="flex h-51 items-center justify-center text-center text-sm text-neutral-4">
+                        Không thể tạo mã QR
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 text-sm text-neutral-2">
+                    <div className="grid gap-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">Ngân hàng</p>
+                      <p className="font-semibold">{vietQRConfig.bankName || vietQRConfig.bankId}</p>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">Số tài khoản</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">{vietQRConfig.accountNo}</p>
+                        <button
+                          type="button"
+                          onClick={() => copyText(vietQRConfig.accountNo, "số tài khoản")}
+                          className="rounded-md border border-neutral-7 bg-white px-2 py-1 text-xs font-semibold text-neutral-2 transition hover:border-primary-2 hover:text-primary-1"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">Chủ tài khoản</p>
+                      <p className="font-semibold">{vietQRConfig.accountName || "--"}</p>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">Số tiền</p>
+                      <p className="font-semibold text-primary-1">{formatCurrency(grandTotal)}</p>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">Nội dung chuyển khoản</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{transferContent}</p>
+                        <button
+                          type="button"
+                          onClick={() => copyText(transferContent, "nội dung chuyển khoản")}
+                          className="rounded-md border border-neutral-7 bg-white px-2 py-1 text-xs font-semibold text-neutral-2 transition hover:border-primary-2 hover:text-primary-1"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="rounded-lg border border-dashed border-primary-1/30 bg-white px-3 py-2 text-xs text-neutral-4">
+                      Vui lòng chuyển đúng số tiền và đúng nội dung để hệ thống xác nhận nhanh hơn.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  Chưa cấu hình VietQR. Vui lòng thêm các biến môi trường:
+                  <span className="mt-1 block font-semibold">
+                    NEXT_PUBLIC_VIETQR_BANK_ID, NEXT_PUBLIC_VIETQR_ACCOUNT_NO, NEXT_PUBLIC_VIETQR_ACCOUNT_NAME
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 

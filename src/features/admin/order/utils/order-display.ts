@@ -133,6 +133,15 @@ export const getPaymentMethodLabel = (method?: string) => {
   if (normalized === "bank") {
     return "Chuyển khoản";
   }
+  if (normalized === "vietqr") {
+    return "VietQR";
+  }
+  if (normalized === "momo") {
+    return "Momo";
+  }
+  if (normalized === "vnpay") {
+    return "VNPAY";
+  }
   if (normalized === "wallet") {
     return "Ví điện tử";
   }
