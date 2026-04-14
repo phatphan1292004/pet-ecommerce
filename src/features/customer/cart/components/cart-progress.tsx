@@ -28,16 +28,16 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
   const payment = stepStyles(currentStep === 3 ? "active" : "inactive");
 
   return (
-    <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+    <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-6">
       <div className="relative flex flex-col items-center gap-2">
         <Link href="/cart" aria-current={currentStep === 1 ? "step" : undefined} className="flex flex-col items-center gap-2">
           <span className={`flex h-11 w-11 items-center justify-center rounded-full ${cart.circle}`}>
             <IoCartOutline size={22} />
           </span>
-          <span className={`text-sm font-semibold ${cart.text}`}>Giỏ hàng</span>
+          <span className={`text-xs font-semibold sm:text-sm ${cart.text}`}>Giỏ hàng</span>
         </Link>
         <div
-          className={`pointer-events-none absolute top-5 left-[calc(70%+22px)] hidden h-px w-[calc(50%-22px)] md:block ${
+          className={`pointer-events-none absolute top-5 left-[calc(50%+22px)] h-px w-[calc(100%-44px)] ${
             currentStep >= 2 ? "bg-primary-1" : "bg-neutral-7"
           }`}
         />
@@ -48,10 +48,10 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
           <span className={`flex h-11 w-11 items-center justify-center rounded-full ${shipping.circle}`}>
             <FaTruck size={18} />
           </span>
-          <span className={`text-sm font-semibold ${shipping.text}`}>Giao hàng</span>
+          <span className={`text-xs font-semibold sm:text-sm ${shipping.text}`}>Giao hàng</span>
         </Link>
         <div
-          className={`pointer-events-none absolute top-5 left-[calc(70%+22px)] hidden h-px w-[calc(50%-22px)] md:block ${
+          className={`pointer-events-none absolute top-5 left-[calc(50%+22px)] h-px w-[calc(100%-44px)] ${
             currentStep >= 3 ? "bg-primary-1" : "bg-neutral-7"
           }`}
         />
@@ -66,7 +66,7 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
           <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
             <IoCard size={18} />
           </span>
-          <span className={`text-sm font-semibold ${payment.text}`}>Thanh toán</span>
+          <span className={`text-xs font-semibold sm:text-sm ${payment.text}`}>Thanh toán</span>
         </Link>
       </div>
     </div>

@@ -65,23 +65,25 @@ export default function OrdersTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h3 className="text-lg font-semibold text-neutral-1">Đơn hàng của tôi</h3>
+      <h3 className="text-base font-semibold text-neutral-1 sm:text-lg">Đơn hàng của tôi</h3>
 
-      <div className="flex gap-2 border-b border-neutral-20">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setSelectedTab(tab.key)}
-            className={`pb-2 px-3 text-base font-medium transition-colors border-b-2 -mb-px ${
-              selectedTab === tab.key
-                ? "border-primary-1 text-primary-1"
-                : "border-transparent text-neutral-4 hover:text-primary-1"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto border-b border-neutral-20">
+        <div className="flex min-w-max gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setSelectedTab(tab.key)}
+              className={`-mb-px border-b-2 px-3 pb-2 text-sm font-medium whitespace-nowrap transition-colors sm:text-base ${
+                selectedTab === tab.key
+                  ? "border-primary-1 text-primary-1"
+                  : "border-transparent text-neutral-4 hover:text-primary-1"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

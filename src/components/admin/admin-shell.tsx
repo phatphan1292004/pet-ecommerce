@@ -1,18 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
 import type { IconType } from "react-icons";
 import {
   FiBell,
+  FiChevronsLeft,
+  FiChevronsRight,
   FiGrid,
   FiMenu,
   FiShoppingBag,
   FiUsers,
   FiX,
 } from "react-icons/fi";
-import Image from "next/image";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -37,6 +39,10 @@ function isActivePath(pathname: string, href: string) {
 export default function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const desktopSidebarWidthClass = isSidebarCollapsed ? "lg:w-[5.5rem]" : "lg:w-80";
+  const desktopContentPaddingClass = isSidebarCollapsed ? "lg:pl-[5.5rem]" : "lg:pl-80";
 
   const pageTitle = useMemo(() => {
     const currentItem = navigationItems.find((item) =>
@@ -48,26 +54,56 @@ export default function AdminShell({ children }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-neutral-10 text-neutral-black">
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-neutral-20 bg-white transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-neutral-20 bg-white transition-[width,transform] duration-300 lg:translate-x-0 ${desktopSidebarWidthClass} ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-neutral-20 px-6">
+        <div
+          className={`flex h-16 items-center justify-between border-b border-neutral-20 ${
+            isSidebarCollapsed ? "px-2" : "px-4 lg:px-5"
+          }`}
+        >
           <Link
             href="/admin/dashboard"
-            className="text-xl font-semibold tracking-wide text-primary-1 mx-auto"
+            className="inline-flex items-center"
             onClick={() => setIsSidebarOpen(false)}
+            title="Trang chủ admin"
           >
-            <Image src="/logo.png" alt="ODeli Admin" width={100} height={50} />
+            <Image
+              src="/logo.png"
+              alt="ODeli Admin"
+              width={100}
+              height={50}
+              className={`h-auto transition-all ${
+                isSidebarCollapsed ? "w-9 lg:w-9" : "w-24 lg:w-24"
+              }`}
+            />
           </Link>
-          <button
-            type="button"
-            className="rounded-md p-2 text-neutral-3 transition hover:bg-neutral-10 lg:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-            aria-label="Dong menu"
-          >
-            <FiX size={20} />
-          </button>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="rounded-md p-2 text-neutral-3 transition hover:bg-neutral-10 lg:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Đóng menu"
+            >
+              <FiX size={20} />
+            </button>
+
+            <button
+              type="button"
+              className="hidden rounded-md p-2 text-neutral-3 transition hover:bg-neutral-10 lg:inline-flex"
+              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              aria-label={isSidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+              title={isSidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+            >
+              {isSidebarCollapsed ? (
+                <FiChevronsRight size={18} />
+              ) : (
+                <FiChevronsLeft size={18} />
+              )}
+            </button>
+          </div>
         </div>
 
         <nav className="space-y-1 p-4">
@@ -80,28 +116,29 @@ export default function AdminShell({ children }: AdminShellProps) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-4 text-[16px] font-medium transition ${
+                title={isSidebarCollapsed ? item.label : undefined}
+                className={`flex items-center rounded-xl py-4 text-[16px] font-medium transition ${
                   active
                     ? "bg-primary-1 text-white"
                     : "text-neutral-2 hover:bg-neutral-10"
-                }`}
+                } ${isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"}`}
               >
                 <Icon size={18} />
-                <span>{item.label}</span>
+                <span className={isSidebarCollapsed ? "lg:hidden" : ""}>{item.label}</span>
               </Link>
             );
           })}
         </nav>
       </aside>
 
-      <div className="lg:pl-80">
+      <div className={`transition-[padding] duration-300 ${desktopContentPaddingClass}`}>
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-neutral-20 bg-white/95 px-4 backdrop-blur sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
               className="rounded-md border border-neutral-20 p-2 text-neutral-3 transition hover:bg-neutral-10 lg:hidden"
               onClick={() => setIsSidebarOpen(true)}
-              aria-label="Mo menu"
+              aria-label="Mở menu"
             >
               <FiMenu size={20} />
             </button>
@@ -112,7 +149,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             <button
               type="button"
               className="rounded-full border border-neutral-20 p-2 text-neutral-3 transition hover:bg-neutral-10"
-              aria-label="Thong bao"
+              aria-label="Thông báo"
             >
               <FiBell size={18} />
             </button>
@@ -133,7 +170,7 @@ export default function AdminShell({ children }: AdminShellProps) {
           type="button"
           className="fixed inset-0 z-30 bg-neutral-black/40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
-          aria-label="Dong menu"
+          aria-label="Đóng menu"
         />
       ) : null}
     </div>

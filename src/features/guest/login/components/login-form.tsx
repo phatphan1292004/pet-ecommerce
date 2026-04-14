@@ -57,8 +57,8 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex flex-col items-center bg-white py-16 px-4">
-      <h1 className="text-2xl font-bold tracking-widest mb-8">ĐĂNG NHẬP</h1>
+    <div className="flex flex-col items-center bg-white px-4 py-10 sm:py-16">
+      <h1 className="mb-6 text-xl font-bold tracking-widest sm:mb-8 sm:text-2xl">ĐĂNG NHẬP</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
         {error && (
@@ -100,13 +100,13 @@ export default function LoginForm() {
       </form>
 
       {/* Social Login */}
-      <p className="mt-10 text-sm text-gray-500">Đăng nhập với</p>
-      <div className="flex gap-4 mt-3 w-full max-w-md">
-        <button onClick={handleFacebook} type="button" className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
+      <p className="mt-8 text-sm text-gray-500 sm:mt-10">Đăng nhập với</p>
+      <div className="mt-3 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:gap-4">
+        <button onClick={handleFacebook} type="button" className="flex flex-1 items-center justify-center gap-2 rounded border border-gray-300 py-3 text-sm font-medium transition-colors hover:bg-gray-50 sm:py-4">
           <FaFacebook className="text-blue-600 text-xl" />
           Facebook
         </button>
-        <button onClick={handleGoogle} type="button" className="flex-1 flex items-center justify-center gap-2 border border-gray-300 rounded py-4 text-sm font-medium hover:bg-gray-50 transition-colors">
+        <button onClick={handleGoogle} type="button" className="flex flex-1 items-center justify-center gap-2 rounded border border-gray-300 py-3 text-sm font-medium transition-colors hover:bg-gray-50 sm:py-4">
           <FaGoogle className="text-red-500 text-xl" />
           Google
         </button>

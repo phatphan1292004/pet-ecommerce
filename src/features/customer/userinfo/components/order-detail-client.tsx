@@ -78,8 +78,8 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8">
-      <nav className="flex items-center gap-2 text-sm text-neutral-4 mb-3">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+      <nav className="mb-3 flex flex-wrap items-center gap-2 text-xs text-neutral-4 sm:text-sm">
         <Link href="/" className="hover:text-neutral-1">
           Trang chủ
         </Link>
@@ -91,8 +91,8 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
         <span className="text-neutral-1">Chi tiết đơn hàng</span>
       </nav>
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
             href="/userinfo"
             className="inline-flex items-center gap-2 text-sm text-neutral-4 hover:text-neutral-1"
@@ -100,13 +100,13 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
             <FaArrowLeft size={12} />
             Quay lại
           </Link>
-          <h1 className="text-2xl font-semibold text-neutral-1">
+          <h1 className="text-lg font-semibold text-neutral-1 sm:text-2xl">
             Chi tiết đơn hàng #{orderId.slice(-6)}
           </h1>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-20 p-6 mb-6 bg-white">
+      <div className="mb-6 rounded-2xl border border-neutral-20 bg-white p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -212,7 +212,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-20 p-6 bg-white">
+      <div className="rounded-2xl border border-neutral-20 bg-white p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-neutral-1 mb-4">Sản phẩm</h2>
         <div className="space-y-4">
           {items.length === 0 ? (
@@ -221,7 +221,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
             items.map((it, i) => (
               <div
                 key={it.productId || it._id || i}
-                className="flex items-center justify-between gap-4"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
               >
                 <div className="flex items-center gap-4">
                   <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-neutral-20 bg-neutral-10">
@@ -234,7 +234,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
                     <p className="text-xs text-neutral-4">SL: {it.quantity || 0}</p>
                   </div>
                 </div>
-                <div className="text-sm font-semibold text-neutral-1">
+                <div className="text-left text-sm font-semibold text-neutral-1 sm:text-right">
                   {formatCurrency((Number(it.price) || 0) * (Number(it.quantity) || 0))}
                 </div>
               </div>

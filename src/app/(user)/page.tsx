@@ -8,7 +8,7 @@ export default async function Home() {
   return (
     <div>
       <HeroSlider />
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4">
         <ProductSection />
         <ProductSection title="SẢN PHẨM MỚI" products={newProducts || []} />
       </div>

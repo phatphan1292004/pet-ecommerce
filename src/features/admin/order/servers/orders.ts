@@ -196,7 +196,7 @@ export const getAdminOrders = async (
 
   return {
     success: Boolean(res?.success),
-    message: res?.message || "Không th? t?i danh sách don hàng",
+    message: res?.message || "Khï¿½ng th? t?i danh sï¿½ch don hï¿½ng",
     data: {
       items,
       meta,
@@ -208,7 +208,7 @@ export const getAdminOrderById = async (orderId: string): Promise<AdminOrderDeta
   if (!orderId || orderId.trim().length === 0) {
     return {
       success: false,
-      message: "ID don hàng không h?p l?",
+      message: "ID don hang khong hop le",
       data: null,
     };
   }
@@ -217,7 +217,7 @@ export const getAdminOrderById = async (orderId: string): Promise<AdminOrderDeta
 
   return {
     success: Boolean(res?.success),
-    message: res?.message || "Không th? t?i chi ti?t don hàng",
+    message: res?.message || "Khï¿½ng th? t?i chi ti?t don hï¿½ng",
     data: normalizeOrderDetail(res?.data),
   };
 };
@@ -228,7 +228,7 @@ export const deleteAdminOrder = async (
   if (!orderId || orderId.trim().length === 0) {
     return {
       success: false,
-      message: "ID don hàng không h?p l?",
+      message: "ID don hï¿½ng khï¿½ng h?p l?",
     };
   }
 
@@ -236,6 +236,6 @@ export const deleteAdminOrder = async (
 
   return {
     success: Boolean(res?.success),
-    message: res?.message || "Không th? xóa don hàng",
+    message: res?.message || "Khï¿½ng th? xï¿½a don hï¿½ng",
   };
 };

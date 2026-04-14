@@ -40,11 +40,11 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-neutral-1">Địa chỉ của tôi</h3>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-base font-semibold text-neutral-1 sm:text-lg">Địa chỉ của tôi</h3>
         <button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 bg-primary-1 hover:bg-primary-2 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary-1 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-2 sm:w-auto"
         >
           <FaPlus size={12} />
           Thêm địa chỉ
@@ -61,7 +61,7 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
           {addresses.map((item) => (
             <div
               key={item._id}
-              className="relative rounded-xl border border-neutral-20 p-6 flex flex-col gap-4"
+              className="relative flex flex-col gap-4 rounded-xl border border-neutral-20 p-4 sm:p-6"
             >
               <button
                 type="button"
@@ -107,12 +107,12 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                 </p>
               </div>
 
-              <div className="self-end flex items-center gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                 {!item.isDefault ? (
                   <button
                     type="button"
                     onClick={() => handleSetDefault(item._id)}
-                    className="inline-flex items-center gap-2 rounded-md border border-primary-1 px-3 py-2 text-sm font-medium text-primary-1 hover:bg-primary-6 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary-1 px-3 py-2 text-sm font-medium text-primary-1 transition-colors hover:bg-primary-6 sm:w-auto"
                     aria-label="Đặt làm mặc định"
                   >
                     Đặt mặc định
@@ -122,7 +122,7 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-md bg-primary-1 px-4 py-2 text-sm font-medium text-white hover:bg-primary-2 transition-colors shadow-sm"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary-1 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-2 sm:w-auto"
                     aria-label="Chỉnh sửa địa chỉ"
                   >
                     <FaEdit size={14} className="inline-block align-middle" />

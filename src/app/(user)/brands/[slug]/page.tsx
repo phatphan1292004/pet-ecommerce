@@ -88,8 +88,8 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
   const normalizedProducts = products.map((item) => mapToProductCard(item as RawProduct));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-sm text-neutral-4 mb-5 flex items-center gap-2">
+    <div className="container mx-auto px-4 py-5 sm:py-8">
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-neutral-4 sm:text-sm">
         <Link href="/" className="hover:text-primary-1 transition-colors">
           Trang chu
         </Link>
@@ -99,9 +99,9 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
         <span className="text-neutral-1 font-semibold">{selectedBrand.name}</span>
       </div>
 
-      <div className="bg-neutral-10 border border-neutral-7 rounded-2xl px-5 py-4 mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-7 bg-neutral-10 px-4 py-4 sm:px-5">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-1">Thuong hieu {selectedBrand.name}</h1>
+          <h1 className="text-xl font-bold text-neutral-1 sm:text-2xl">Thuong hieu {selectedBrand.name}</h1>
           <p className="text-sm text-neutral-4 mt-1">Danh sach san pham cua thuong hieu nay</p>
         </div>
         <div className="text-neutral-1 font-semibold">{normalizedProducts.length} san pham</div>
@@ -113,7 +113,7 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
           <p>Thuong hieu nay hien chua co san pham de hien thi.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {normalizedProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}

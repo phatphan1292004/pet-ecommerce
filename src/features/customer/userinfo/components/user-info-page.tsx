@@ -65,9 +65,9 @@ export default function UserInfoPage({
   const currentTabLabel = tabs[selectedTabIndex]?.label || "Tài khoản";
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-4 sm:py-6">
       {/* Breadcrumb */}
-      <nav className="text-base text-neutral-4 mb-6 flex items-center gap-1">
+      <nav className="mb-5 flex flex-wrap items-center gap-1 text-sm text-neutral-4 sm:mb-6 sm:text-base">
         <Link href="/" className="hover:text-primary-1 transition-colors">
           Trang chủ
         </Link>
@@ -80,20 +80,20 @@ export default function UserInfoPage({
       </nav>
 
       <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
-        <div className="flex gap-20">
+        <div className="flex flex-col gap-5 lg:flex-row lg:gap-12">
           {/* Sidebar - Tab List */}
-          <aside className="w-52 shrink-0">
-            <TabList className="flex flex-col gap-5">
+          <aside className="w-full lg:w-60 lg:shrink-0">
+            <TabList className="flex flex-wrap gap-2 pb-1 lg:flex-col lg:gap-4 lg:pb-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <Tab
                     key={tab.id}
                     className={({ selected }) =>
-                      `flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors outline-none ${
+                      `flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors outline-none lg:w-full lg:text-base ${
                         selected
-                          ? "text-primary-1"
-                          : "text-neutral-3 hover:text-primary-1"
+                          ? "bg-primary-6 text-primary-1"
+                          : "text-neutral-3 hover:bg-neutral-10 hover:text-primary-1"
                       }`
                     }
                   >
@@ -118,7 +118,9 @@ export default function UserInfoPage({
           <main className="flex-1">
             <TabPanels>
               {tabs.map((tab) => (
-                <TabPanel key={tab.id}>{tab.render(userInfo, addresses)}</TabPanel>
+                <TabPanel key={tab.id} className="outline-none">
+                  {tab.render(userInfo, addresses)}
+                </TabPanel>
               ))}
             </TabPanels>
           </main>

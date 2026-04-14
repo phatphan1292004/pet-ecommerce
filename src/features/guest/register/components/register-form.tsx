@@ -60,8 +60,8 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="flex flex-col items-center bg-white py-16 px-4">
-      <h1 className="text-2xl font-bold tracking-widest mb-8">ĐĂNG KÝ</h1>
+    <div className="flex flex-col items-center bg-white px-4 py-10 sm:py-16">
+      <h1 className="mb-6 text-xl font-bold tracking-widest sm:mb-8 sm:text-2xl">ĐĂNG KÝ</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
         {error && (
@@ -141,7 +141,7 @@ export default function RegisterForm() {
         </button>
       </form>
 
-      <p className="mt-6 text-sm text-gray-500">
+      <p className="mt-6 text-center text-sm text-gray-500">
         Bạn đã có tài khoản?{" "}
         <Link href="/login" className="text-red-600 hover:underline font-medium">
           Đăng nhập

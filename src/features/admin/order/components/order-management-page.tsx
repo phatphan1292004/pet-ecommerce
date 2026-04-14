@@ -80,11 +80,11 @@ export default function OrderManagementPage({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-5 shadow-sm">
+    <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-black">Quản lý đơn hàng</h2>
-          <p className="text-sm text-neutral-4">{titleDescription}</p>
+          <h2 className="text-base font-semibold text-neutral-black sm:text-lg">Quản lý đơn hàng</h2>
+          <p className="text-xs text-neutral-4 sm:text-sm">{titleDescription}</p>
         </div>
       </div>
 

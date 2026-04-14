@@ -197,7 +197,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
           return (
             <a
               href={`/userinfo/orders/${orderId}`}
-              className="min-w-[110px] inline-block text-primary-1 hover:text-primary-2 transition-colors text-sm"
+              className="inline-block min-w-26 text-sm text-primary-1 transition-colors hover:text-primary-2"
             >
               Xem chi tiết
             </a>
@@ -215,6 +215,14 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     actions: "right",
   };
 
+  const columnResponsiveClass: Record<string, string> = {
+    address: "hidden xl:table-cell",
+    payment: "hidden lg:table-cell",
+    items: "hidden md:table-cell",
+    createdAt: "hidden md:table-cell",
+  };
+
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: orders,
     columns,
@@ -223,7 +231,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-neutral-7">
-      <table className="min-w-full text-left text-sm">
+      <table className="min-w-235 text-left text-sm">
         <thead className="bg-neutral-10 text-xs font-semibold uppercase text-neutral-4">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -236,7 +244,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                       : columnAlign[header.column.id] === "right"
                         ? "text-right"
                         : "text-left"
-                  }`}
+                  } ${columnResponsiveClass[header.column.id] ?? ""}`}
                 >
                   {header.isPlaceholder
                     ? null
@@ -258,7 +266,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                       : columnAlign[cell.column.id] === "right"
                         ? "text-right"
                         : "text-left"
-                  }`}
+                  } ${columnResponsiveClass[cell.column.id] ?? ""}`}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>

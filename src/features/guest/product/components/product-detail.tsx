@@ -397,7 +397,7 @@ export default function ProductDetailPage({
       {/* Breadcrumb */}
       <div className="bg-white" >
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 text-neutral-4 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-4 sm:text-sm">
             <Link href="/" className="hover:text-primary-1">
               Trang chủ
             </Link>
@@ -412,12 +412,12 @@ export default function ProductDetailPage({
       </div>
 
       {/* Product Details */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
           {/* Image Section */}
           <div className="flex flex-col gap-4">
             {/* Main Image with Slide Controls */}
-            <div className="relative w-full max-w-150 aspect-square bg-neutral-10 rounded-lg overflow-hidden group">
+            <div className="group relative aspect-square w-full overflow-hidden rounded-lg bg-neutral-10">
               <Image
                 src={allImages[currentImageIndex]}
                 alt={product.name}
@@ -436,13 +436,13 @@ export default function ProductDetailPage({
                 <>
                   <button
                     onClick={handlePrevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-100 shadow-md transition-all hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <FaChevronLeft size={20} className="text-neutral-1" />
                   </button>
                   <button
                     onClick={handleNextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-100 shadow-md transition-all hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <FaChevronRight size={20} className="text-neutral-1" />
                   </button>
@@ -452,12 +452,12 @@ export default function ProductDetailPage({
 
             {/* Thumbnail Images */}
             {allImages.length > 1 && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {allImages.map((img, idx) => (
                   <div
                     key={idx}
                     onClick={() => handleSelectImage(idx)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden bg-neutral-10 cursor-pointer transition-all ${
+                    className={`h-18 w-18 shrink-0 cursor-pointer overflow-hidden rounded-lg bg-neutral-10 transition-all sm:h-20 sm:w-20 ${
                       currentImageIndex === idx
                         ? 'border-2 border-primary-1'
                         : 'border-2 border-neutral-7 hover:border-primary-1'
@@ -477,11 +477,11 @@ export default function ProductDetailPage({
           </div>
 
           {/* Info Section */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5 sm:gap-6">
             {/* Title and Rating */}
             <div>
-              <h1 className="text-2xl font-bold text-neutral-1 mb-3">{product.name}</h1>
-              <div className="flex items-center gap-3">
+              <h1 className="mb-3 text-xl font-bold text-neutral-1 sm:text-2xl">{product.name}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <FaStar key={i} size={16} className={i < (product.review || 0) ? 'text-yellow-400' : 'text-neutral-7'} />
@@ -493,8 +493,8 @@ export default function ProductDetailPage({
 
             {/* Price */}
             <div className="border-t border-b border-neutral-7 py-4">
-              <div className="flex items-center gap-4 mb-2">
-                <span className="text-3xl font-bold text-primary-1">{formattedPrice}</span>
+              <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-4">
+                <span className="text-2xl font-bold text-primary-1 sm:text-3xl">{formattedPrice}</span>
                 {formattedOriginalPrice && (
                   <span className="text-neutral-5 text-sm line-through">{formattedOriginalPrice}</span>
                 )}
@@ -503,38 +503,38 @@ export default function ProductDetailPage({
             </div>
 
             {/* Product Info */}
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {product.brand && (
-                <div className="flex justify-between py-2">
-                  <span className="text-neutral-4">Thương hiệu</span>
-                  <span className="text-neutral-1 font-medium">{product.brand}</span>
+                <div className="flex items-start justify-between gap-3 py-1.5">
+                  <span className="w-2/5 text-neutral-4">Thương hiệu</span>
+                  <span className="w-3/5 break-all text-right font-medium text-neutral-1">{product.brand}</span>
                 </div>
               )}
               {product.specifications?.origin && (
-                <div className="flex justify-between py-2">
-                  <span className="text-neutral-4">Nguồn gốc</span>
-                  <span className="text-neutral-1 font-medium">{product.specifications.origin}</span>
+                <div className="flex items-start justify-between gap-3 py-1.5">
+                  <span className="w-2/5 text-neutral-4">Nguồn gốc</span>
+                  <span className="w-3/5 text-right font-medium text-neutral-1">{product.specifications.origin}</span>
                 </div>
               )}
               {product.stock !== undefined && (
-                <div className="flex justify-between py-2">
-                  <span className="text-neutral-4">Kho hàng</span>
-                  <span className={`font-medium ${product.stock > 0 ? 'text-primary-1' : 'text-red-500'}`}>
+                <div className="flex items-start justify-between gap-3 py-1.5">
+                  <span className="w-2/5 text-neutral-4">Kho hàng</span>
+                  <span className={`w-3/5 text-right font-medium ${product.stock > 0 ? 'text-primary-1' : 'text-red-500'}`}>
                     {product.stock > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}
                   </span>
                 </div>
               )}
               {product.shipping && (
-                <div className="flex justify-between py-2">
-                  <span className="text-neutral-4">Vận chuyển</span>
-                  <span className="text-neutral-1 font-medium">{product.shipping}</span>
+                <div className="flex items-start justify-between gap-3 py-1.5">
+                  <span className="w-2/5 text-neutral-4">Vận chuyển</span>
+                  <span className="w-3/5 text-right font-medium text-neutral-1">{product.shipping}</span>
                 </div>
               )}
             </div>
 
             {/* Quantity and Actions */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-neutral-4">Số lượng</span>
                 <div className="flex items-center border border-neutral-7 rounded-lg">
                   <button
@@ -560,16 +560,16 @@ export default function ProductDetailPage({
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleAddToCart}
                   disabled={(product.stock ?? 1) <= 0}
-                  className="flex-1 flex items-center justify-center gap-2 bg-primary-1 hover:bg-primary-2 disabled:bg-neutral-6 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-1 py-3 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-6"
                 >
                   <FaShoppingCart size={18} />
                   Thêm vào giỏ
                 </button>
-                <button className="flex items-center justify-center gap-2 px-6 py-3 border border-neutral-7 text-neutral-4 hover:text-primary-1 hover:border-primary-1 rounded-lg transition-colors">
+                <button className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-neutral-7 text-neutral-4 transition-colors hover:border-primary-1 hover:text-primary-1">
                   <IoMdHeartEmpty size={18} />
                 </button>
               </div>
@@ -580,7 +580,7 @@ export default function ProductDetailPage({
         {/* Tabs */}
         <div className="mt-12 border-t border-neutral-7">
           <TabGroup>
-            <TabList className="flex gap-8 border-b border-neutral-7">
+            <TabList className="flex min-w-max gap-4 overflow-x-auto border-b border-neutral-7 sm:gap-8">
               <Tab
                 className={({ selected }) =>
                   `py-4 px-2 font-medium text-sm transition-colors outline-none ${
@@ -619,8 +619,8 @@ export default function ProductDetailPage({
                     <h3 className="text-lg font-bold text-neutral-1 mb-3">Thông tin sản phẩm</h3>
                     <div className="space-y-3">
                       {Object.entries(product.specifications).map(([key, value]) => (
-                        <div key={key} className="flex gap-8 py-1">
-                          <span className="text-neutral-4 w-32 shrink-0">{specificationLabels[key] || key}</span>
+                        <div key={key} className="flex flex-col gap-1 py-1 sm:flex-row sm:gap-8">
+                          <span className="w-32 shrink-0 text-neutral-4">{specificationLabels[key] || key}</span>
                           <span className="text-neutral-1">{String(value)}</span>
                         </div>
                       ))}

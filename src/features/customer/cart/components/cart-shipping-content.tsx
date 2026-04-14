@@ -393,13 +393,13 @@ export default function CartShippingContent({
             className="h-28 w-full resize-none rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
           />
 
-          <div className="flex items-center gap-4">
-            <button className="rounded-lg bg-primary-1 px-8 py-3 font-semibold text-white transition-colors hover:bg-primary-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <button className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8">
               Lưu
             </button>
             <button
               onClick={() => setOpenAddressModal(true)}
-              className="rounded-lg bg-primary-1 px-8 py-3 font-semibold text-white transition-colors hover:bg-primary-2"
+              className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8"
             >
               Thêm địa chỉ mới
             </button>

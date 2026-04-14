@@ -30,7 +30,7 @@ export default function HeroSlider() {
                 alt={slide.alt}
                 width={1920}
                 height={600}
-                className="w-full object-cover"
+                className="h-47.5 w-full object-cover sm:h-70 lg:h-auto"
                 priority
               />
             </div>
@@ -41,7 +41,7 @@ export default function HeroSlider() {
       {/* Prev button */}
       <button
         onClick={scrollPrev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow transition-colors z-10"
+        className="absolute left-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/70 text-gray-700 shadow transition-colors hover:bg-white sm:flex"
       >
         <FaChevronLeft size={14} />
       </button>
@@ -49,7 +49,7 @@ export default function HeroSlider() {
       {/* Next button */}
       <button
         onClick={scrollNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow transition-colors z-10"
+        className="absolute right-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/70 text-gray-700 shadow transition-colors hover:bg-white sm:flex"
       >
         <FaChevronRight size={14} />
       </button>

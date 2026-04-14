@@ -18,7 +18,7 @@ export default async function UserLayout({
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <Header isLoggedIn={isLoggedIn} categories={categories} brands={brands} />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 overflow-x-hidden">{children}</main>
       <Footer />
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FaChevronRight } from "react-icons/fa";
+import { IoCloseOutline } from "react-icons/io5";
 import CategorySidebar from "@/features/guest/category/components/category-sidebar";
 import ProductCard, {
   type Product,
@@ -62,6 +63,7 @@ export default function CategoryProductsPage({
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>(initialSelectedOrigins);
   const [draftMinPrice, setDraftMinPrice] = useState(initialMinPrice ?? minPrice);
   const [draftMaxPrice, setDraftMaxPrice] = useState(initialMaxPrice ?? maxPrice);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const brandTokenToId = useMemo(() => {
     const map = new Map<string, string>();
@@ -144,8 +146,8 @@ export default function CategoryProductsPage({
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-sm text-neutral-4 mb-5 flex items-center gap-2">
+    <div className="container mx-auto px-4 py-5 sm:py-8">
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-neutral-4 sm:text-sm">
         <Link href="/" className="hover:text-primary-1 transition-colors">
           Trang chu
         </Link>
@@ -164,8 +166,8 @@ export default function CategoryProductsPage({
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-7">
-        <aside>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-7">
+        <aside className="hidden lg:block">
           <CategorySidebar
             categories={sidebarCategories}
             currentCategorySlug={currentCategorySlug}
@@ -192,15 +194,22 @@ export default function CategoryProductsPage({
         </aside>
 
         <section>
-          <div className="bg-neutral-10 border border-neutral-7 rounded-2xl px-5 py-4 mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-neutral-1 font-semibold">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-7 bg-neutral-10 px-4 py-4 sm:px-5">
+            <div className="font-semibold text-neutral-1">
               {products.length} sản phẩm
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(true)}
+                className="rounded-xl border border-neutral-20 bg-white px-3 py-2 text-neutral-2 lg:hidden"
+              >
+                Bộ lọc
+              </button>
               <span className="text-neutral-5 uppercase tracking-widest">
                 Sap xep
               </span>
-              <select className="bg-white border border-neutral-7 text-neutral-1 rounded-xl px-3 py-2 outline-none">
+              <select className="rounded-xl border border-neutral-7 bg-white px-3 py-2 text-neutral-1 outline-none">
                 <option>Phu hop nhat</option>
                 <option>Gia tang dan</option>
                 <option>Gia giam dan</option>
@@ -219,7 +228,7 @@ export default function CategoryProductsPage({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {products.map((product) => (
                 <ProductCard key={product._id} product={product} />
               ))}
@@ -227,6 +236,63 @@ export default function CategoryProductsPage({
           )}
         </section>
       </div>
+
+      {mobileFiltersOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-neutral-black/45"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-label="Đóng bộ lọc"
+          />
+
+          <div className="absolute left-0 top-0 h-full w-[88%] max-w-sm overflow-y-auto bg-white p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-2">
+                Bộ lọc
+              </h2>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="rounded-md border border-neutral-20 p-1.5 text-neutral-3"
+                aria-label="Đóng"
+              >
+                <IoCloseOutline size={18} />
+              </button>
+            </div>
+
+            <CategorySidebar
+              categories={sidebarCategories}
+              currentCategorySlug={currentCategorySlug}
+              currentSubcategorySlug={currentSubcategorySlug}
+              brandFilters={brandFilters}
+              selectedBrands={selectedBrands}
+              selectedOrigins={selectedOrigins}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              draftMinPrice={draftMinPrice}
+              draftMaxPrice={draftMaxPrice}
+              formatPrice={formatPrice}
+              onToggleBrand={(brandId) =>
+                toggleSelection(brandId, selectedBrands, setSelectedBrands)
+              }
+              onToggleOrigin={(origin) =>
+                toggleSelection(origin, selectedOrigins, setSelectedOrigins)
+              }
+              onDraftMinPriceChange={setDraftMinPrice}
+              onDraftMaxPriceChange={setDraftMaxPrice}
+              onApplyFilter={() => {
+                handleApplyFilter();
+                setMobileFiltersOpen(false);
+              }}
+              onResetFilter={() => {
+                handleResetFilter();
+                setMobileFiltersOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

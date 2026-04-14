@@ -1,37 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { FiAlertTriangle, FiEye, FiLoader, FiTrash2 } from "react-icons/fi";
-import {
-  formatCurrency,
-  formatDateTime,
-  getNameInitials,
-  getOrderStatusLabel,
-  getOrderStatusStyles,
-  getPaymentMethodLabel,
-  getShortOrderId,
-} from "@/features/admin/order/utils";
-import { deleteAdminOrder, type AdminOrder, type AdminOrdersMeta } from "@/features/admin/order/servers";
+import { FiEye, FiMail, FiPhone, FiShield } from "react-icons/fi";
+import type { AdminUser, AdminUsersMeta } from "@/features/admin/user/servers";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
-const getCustomerDisplayName = (order: AdminOrder) => {
-  if (order.arrivalName && order.arrivalName.trim().length > 0) {
-    return order.arrivalName.trim();
+const formatDateTime = (value?: string) => {
+  if (!value) {
+    return "--";
   }
 
-  if (order.customerId && order.customerId.trim().length > 0) {
-    return order.customerId;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
   }
 
-  return "Khách hàng";
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getDisplayName = (user: AdminUser) => {
+  if (user.displayName && user.displayName.trim().length > 0) {
+    return user.displayName.trim();
+  }
+
+  if (user.email && user.email.trim().length > 0) {
+    return user.email.split("@")[0] || user.email;
+  }
+
+  return "Nguoi dung";
+};
+
+const getNameInitials = (name: string) => {
+  const parts = name
+    .split(" ")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (parts.length === 0) {
+    return "ND";
+  }
+
+  return parts.map((item) => item.charAt(0).toUpperCase()).join("");
+};
+
+const getRoleLabel = (user: AdminUser) => {
+  const roleName = user.role?.name;
+  if (!roleName) {
+    return "USER";
+  }
+
+  return roleName.toUpperCase();
+};
+
+const getRoleBadgeClass = (roleLabel: string) => {
+  if (roleLabel.includes("ADMIN")) {
+    return "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  if (roleLabel.includes("STAFF")) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  return "border-sky-200 bg-sky-50 text-sky-700";
 };
 
 const buildPageList = (currentPage: number, totalPages: number): number[] => {
@@ -62,178 +107,118 @@ const buildPageList = (currentPage: number, totalPages: number): number[] => {
   ];
 };
 
-interface ActionCellProps {
-  order: AdminOrder;
-  onOrderDeleted?: (orderId: string) => void;
-}
-
-function ActionCell({ order, onOrderDeleted }: ActionCellProps) {
-  const [isPending, startTransition] = useTransition();
-  const [deleteError, setDeleteError] = useState<string>("");
-
-  const handleDelete = () => {
-    if (!window.confirm(`Bạn có chắc muốn xóa đơn hàng #${getShortOrderId(order._id, "--")}?`)) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteAdminOrder(order._id);
-      if (result.success) {
-        onOrderDeleted?.(order._id);
-      } else {
-        setDeleteError(result.message || "Xóa đơn hàng thất bại");
-        setTimeout(() => setDeleteError(""), 3000);
-      }
-    });
-  };
-
-  return (
-    <div className="min-w-24 text-right sm:min-w-51.25">
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          href={`/admin/order/${order._id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-        >
-          <FiEye size={13} />
-        </Link>
-
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isPending}
-          title={deleteError || "Xóa đơn hàng"}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isPending ? <FiLoader className="animate-spin" size={13} /> : <FiTrash2 size={13} />}
-          {isPending ? "Đang xóa" : ""}
-        </button>
-      </div>
-
-      {deleteError ? (
-        <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-rose-600">
-          <FiAlertTriangle size={12} />
-          {deleteError}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-interface AdminOrdersTableProps {
-  orders: AdminOrder[];
-  meta: AdminOrdersMeta;
+interface AdminUsersTableProps {
+  users: AdminUser[];
+  meta: AdminUsersMeta;
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
-  onOrderDeleted?: (orderId: string) => void;
 }
 
-export default function AdminOrdersTable({
-  orders,
+export default function AdminUsersTable({
+  users,
   meta,
   isLoading,
   onPageChange,
   onLimitChange,
-  onOrderDeleted,
-}: AdminOrdersTableProps) {
-  const columns = useMemo<ColumnDef<AdminOrder>[]>(
+}: AdminUsersTableProps) {
+  const columns = useMemo<ColumnDef<AdminUser>[]>(
     () => [
       {
-        id: "orderId",
-        header: "Mã đơn",
+        id: "user",
+        header: "Người dùng",
         cell: ({ row }) => {
-          const orderId = row.original._id;
-          const shortId = getShortOrderId(orderId, "--");
-          return (
-            <div>
-              <p className="font-semibold text-neutral-1">#{shortId}</p>
-              <p className="text-xs text-neutral-4">{formatDateTime(row.original.createdAt)}</p>
-            </div>
-          );
-        },
-      },
-      {
-        id: "customer",
-        header: "Khách hàng",
-        cell: ({ row }) => {
-          const customerName = getCustomerDisplayName(row.original);
-          const initials = getNameInitials(customerName);
+          const user = row.original;
+          const displayName = getDisplayName(user);
+          const initials = getNameInitials(displayName);
+          const photoURL = user.photoURL?.trim();
 
           return (
             <div className="flex min-w-56 items-center gap-3 sm:min-w-62.5">
-              {row.original.customerPhotoURL ? (
-                // Backend returns dynamic external avatar URLs, so plain img avoids strict domain config coupling.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={row.original.customerPhotoURL}
-                  alt={customerName}
-                  className="h-9 w-9 rounded-full border border-neutral-20 object-cover"
-                />
-              ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-5 text-xs font-semibold text-primary-1">
-                  {initials}
-                </div>
-              )}
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-neutral-20 bg-primary-5 text-xs font-semibold text-primary-1">
+                {photoURL ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoURL} alt={displayName} className="h-full w-full object-cover" />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
 
-              <div>
-                <p className="font-medium text-neutral-1">{customerName}</p>
-                <p className="text-xs text-neutral-4">{row.original.arrivalPhone || "--"}</p>
-                <p className="mt-0.5 line-clamp-1 text-xs text-neutral-4 lg:hidden">
-                  {row.original.arrivalAddress || "--"}
-                </p>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-neutral-1">{displayName}</p>
+                <p className="truncate text-xs text-neutral-4">ID: {user.id}</p>
               </div>
             </div>
           );
         },
       },
       {
-        id: "address",
-        header: "Địa chỉ nhận",
-        cell: ({ row }) => (
-          <p className="max-w-[320px] text-sm text-neutral-4">{row.original.arrivalAddress || "--"}</p>
-        ),
-      },
-      {
-        id: "payment",
-        header: "Thanh toán",
-        cell: ({ row }) => (
-          <span className="text-neutral-2">{getPaymentMethodLabel(row.original.paymentMethod)}</span>
-        ),
-      },
-      {
-        id: "total",
-        header: "Tổng tiền",
+        id: "contact",
+        header: "Liên hệ",
         cell: ({ row }) => {
-          const totalPrice = row.original.finalPrice ?? row.original.totalPrice;
-          return <span className="font-semibold text-neutral-1">{formatCurrency(totalPrice)}</span>;
+          const user = row.original;
+
+          return (
+            <div className="space-y-1 text-xs text-neutral-4 sm:text-sm">
+              <p className="flex items-center gap-1.5 break-all">
+                <FiMail size={13} />
+                {user.email || "--"}
+              </p>
+              <p className="flex items-center gap-1.5">
+                <FiPhone size={13} />
+                {user.phoneNumber || "--"}
+              </p>
+            </div>
+          );
         },
       },
       {
-        id: "status",
-        header: "Trạng thái",
+        id: "role",
+        header: "Vai trò",
+        cell: ({ row }) => {
+          const roleLabel = getRoleLabel(row.original);
+
+          return (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(roleLabel)}`}
+            >
+              <FiShield size={12} />
+              {roleLabel}
+            </span>
+          );
+        },
+      },
+      {
+        id: "createdAt",
+        header: "Tạo lúc",
         cell: ({ row }) => (
-          <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(
-              row.original.status,
-              { includeProcessing: false }
-            )}`}
-          >
-            {getOrderStatusLabel(row.original.status, { includeProcessing: false })}
+          <span className="text-sm font-medium text-neutral-2">
+            {formatDateTime(row.original.createdAt)}
           </span>
         ),
       },
       {
         id: "actions",
         header: "Hành động",
-        cell: ({ row }) => <ActionCell order={row.original} onOrderDeleted={onOrderDeleted} />,
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Link
+              href={`/admin/user/${row.original.id}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+              title="Chi tiết"
+            >
+              <FiEye size={13} />
+            </Link>
+          </div>
+        ),
       },
     ],
-    [onOrderDeleted]
+    [],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: orders,
+    data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -247,19 +232,18 @@ export default function AdminOrdersTable({
   });
 
   const columnAlign: Record<string, "left" | "right"> = {
-    total: "right",
-    status: "right",
+    role: "right",
+    createdAt: "right",
     actions: "right",
   };
 
   const columnResponsiveClass: Record<string, string> = {
-    address: "hidden lg:table-cell",
-    total: "hidden md:table-cell",
+    createdAt: "hidden lg:table-cell",
   };
 
   const displayPages = useMemo(
     () => buildPageList(meta.page, Math.max(meta.totalPages, 1)),
-    [meta.page, meta.totalPages]
+    [meta.page, meta.totalPages],
   );
 
   const hasRows = table.getRowModel().rows.length > 0;
@@ -269,7 +253,7 @@ export default function AdminOrdersTable({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-2xl border border-neutral-20 bg-white">
-        <table className="min-w-245 text-left text-sm">
+        <table className="min-w-190 text-left text-sm">
           <thead className="bg-neutral-10 text-xs font-semibold uppercase text-neutral-4">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -288,6 +272,7 @@ export default function AdminOrdersTable({
               </tr>
             ))}
           </thead>
+
           <tbody className="divide-y divide-neutral-20 text-neutral-1">
             {isLoading ? (
               <tr>
@@ -295,7 +280,7 @@ export default function AdminOrdersTable({
                   colSpan={table.getAllLeafColumns().length}
                   className="px-4 py-8 text-center text-sm text-neutral-4"
                 >
-                  Đang tải dữ liệu đơn hàng...
+                  Đang tải dữ liệu người dùng...
                 </td>
               </tr>
             ) : hasRows ? (
@@ -319,7 +304,7 @@ export default function AdminOrdersTable({
                   colSpan={table.getAllLeafColumns().length}
                   className="px-4 py-8 text-center text-sm text-neutral-4"
                 >
-                  Chưa có đơn hàng nào.
+                  Chưa có người dùng nào.
                 </td>
               </tr>
             )}
@@ -331,15 +316,15 @@ export default function AdminOrdersTable({
         <div>
           Hiển thị <span className="font-semibold text-neutral-1">{startItem}</span> -{" "}
           <span className="font-semibold text-neutral-1">{endItem}</span> trên tổng{" "}
-          <span className="font-semibold text-neutral-1">{meta.totalItems}</span> đơn hàng
+          <span className="font-semibold text-neutral-1">{meta.totalItems}</span> người dùng
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center xl:justify-end">
-          <label htmlFor="admin-order-page-size" className="text-xs text-neutral-4">
+          <label htmlFor="admin-user-page-size" className="text-xs text-neutral-4">
             Số dòng/trang
           </label>
           <select
-            id="admin-order-page-size"
+            id="admin-user-page-size"
             value={meta.limit}
             onChange={(event) => onLimitChange(Number(event.target.value))}
             className="rounded-lg border border-neutral-20 bg-white px-2 py-1 text-sm text-neutral-2 outline-none focus:border-primary-1"

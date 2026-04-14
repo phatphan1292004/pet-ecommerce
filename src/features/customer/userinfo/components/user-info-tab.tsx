@@ -99,7 +99,7 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* Avatar + Points + Edit */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <div className="relative w-24 h-24">
             <div className="w-24 h-24 rounded-full border-2 border-neutral-20 flex items-center justify-center bg-white overflow-hidden">
@@ -131,14 +131,14 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-primary-1 hover:bg-primary-2 disabled:bg-neutral-5 text-white font-semibold text-base px-6 py-2 rounded-md transition-colors disabled:cursor-not-allowed"
+          className="w-full rounded-md bg-primary-1 px-6 py-2 text-base font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-5 sm:w-auto"
         >
           {isLoading ? "Đang lưu..." : "Chỉnh sửa"}
         </button>
       </div>
 
       {/* Form Fields */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
         {/* Họ và tên */}
         <Field>
           <Label className="text-base text-neutral-3">Họ và tên</Label>
@@ -187,7 +187,7 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
       <div className="pt-2">
         <button
           type="button"
-          className="border border-primary-1 text-primary-1 hover:bg-primary-6 text-base font-medium px-5 py-2 rounded-md transition-colors"
+          className="w-full rounded-md border border-primary-1 px-5 py-2 text-base font-medium text-primary-1 transition-colors hover:bg-primary-6 sm:w-auto"
         >
           Xóa tài khoản
         </button>
