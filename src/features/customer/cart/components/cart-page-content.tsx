@@ -13,11 +13,19 @@ import { useCartStore, type CartItem } from "@/store";
 
 interface CartPageContentProps {
   initialItems: CartItem[];
+  initialCoupons: Array<{
+    code: string;
+    discountType: "percent" | "fixed";
+    discountValue: number;
+    minOrderValue?: number;
+    maxDiscount?: number;
+    description?: string;
+  }>;
 }
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
 
-export default function CartPageContent({ initialItems }: CartPageContentProps) {
+export default function CartPageContent({ initialItems, initialCoupons }: CartPageContentProps) {
   const { showWarning } = useToast();
   const items = useCartStore((state) => state.items);
   const setItems = useCartStore((state) => state.setItems);
@@ -71,6 +79,7 @@ export default function CartPageContent({ initialItems }: CartPageContentProps) 
             totalPrice={totalPrice}
             shippingFee={shippingFee}
             grandTotal={grandTotal}
+            availableCoupons={initialCoupons}
             formatCurrency={formatCurrency}
           />
         </div>

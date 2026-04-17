@@ -5,8 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createOrderFromOpenCart } from "@/features/customer/cart/servers";
 import { useToast } from "@/hooks";
-import { useCartStore } from "@/store";
-import { checkoutStorageKey, type CheckoutOrderPayload } from "@/features/customer/cart/checkout-storage";
+import { useCartStore, useCheckoutStore } from "@/store";
+import { buildCheckoutPricingPayload } from "@/features/customer/cart/checkout-storage";
 import { buildVietQRImageUrl, getVietQRConfig } from "@/integrations/vietqr";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
@@ -48,9 +48,10 @@ export default function CartPaymentContent() {
   const router = useRouter();
   const { showSuccess, showWarning } = useToast();
   const vietQRConfig = useMemo(() => getVietQRConfig(), []);
-  const totalPrice = useCartStore((state) => state.totalPrice);
   const clearCart = useCartStore((state) => state.clearCart);
-  const [shippingData, setShippingData] = useState<CheckoutOrderPayload | null>(null);
+  const shippingData = useCheckoutStore((state) => state.shippingData);
+  const pricingSummary = useCheckoutStore((state) => state.pricing);
+  const clearCheckout = useCheckoutStore((state) => state.clearCheckout);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const showWarningRef = useRef(showWarning);
@@ -59,35 +60,56 @@ export default function CartPaymentContent() {
     showWarningRef.current = showWarning;
   }, [showWarning]);
 
-  const shippingFee = 0;
-  const grandTotal = totalPrice + shippingFee;
-
   useEffect(() => {
-    const stored = sessionStorage.getItem(checkoutStorageKey);
-    if (!stored) {
+    if (!shippingData) {
       showWarningRef.current("Vui lòng nhập thông tin giao hàng trước");
       router.replace("/cart/shipping");
       return;
     }
 
-    try {
-      const parsed = JSON.parse(stored) as CheckoutOrderPayload;
-      const hasRequiredFields =
-        Boolean(parsed.arrivalName?.trim()) &&
-        Boolean(parsed.arrivalPhone?.trim()) &&
-        Boolean(parsed.arrivalAddress?.trim());
+    const hasRequiredFields =
+      Boolean(shippingData.arrivalName?.trim()) &&
+      Boolean(shippingData.arrivalPhone?.trim()) &&
+      Boolean(shippingData.arrivalAddress?.trim());
 
-      if (!hasRequiredFields) {
-        throw new Error("missing_fields");
-      }
-
-      setShippingData(parsed);
-    } catch {
-      sessionStorage.removeItem(checkoutStorageKey);
+    if (!hasRequiredFields) {
+      clearCheckout();
       showWarningRef.current("Vui lòng nhập lại thông tin giao hàng");
       router.replace("/cart/shipping");
     }
-  }, [router]);
+  }, [clearCheckout, router, shippingData]);
+
+  const checkoutSummary = useMemo(() => {
+    const subtotal =
+      typeof shippingData?.subtotal === "number"
+        ? shippingData.subtotal
+        : pricingSummary.subtotal;
+    const shippingFee =
+      typeof shippingData?.shippingFee === "number"
+        ? shippingData.shippingFee
+        : pricingSummary.shippingFee;
+    const couponDiscount =
+      typeof shippingData?.couponDiscount === "number"
+        ? shippingData.couponDiscount
+        : pricingSummary.couponDiscount;
+    const couponCode =
+      shippingData?.couponCode?.trim() ||
+      shippingData?.coupon?.trim() ||
+      pricingSummary.couponCode;
+
+    return buildCheckoutPricingPayload({
+      subtotal,
+      shippingFee,
+      couponCode,
+      couponDiscount,
+    });
+  }, [pricingSummary, shippingData]);
+
+  const subtotal = checkoutSummary.subtotal;
+  const shippingFee = checkoutSummary.shippingFee;
+  const discountValue = checkoutSummary.couponDiscount;
+  const couponCode = checkoutSummary.couponCode;
+  const grandTotal = checkoutSummary.grandTotal;
 
   const addressSummary = useMemo(() => {
     if (!shippingData) {
@@ -162,10 +184,19 @@ export default function CartPaymentContent() {
       return;
     }
 
+    const appliedCouponCode =
+      shippingData.couponCode?.trim() || shippingData.coupon?.trim() || couponCode;
+
     const payload = {
       ...shippingData,
       status: "pending",
       paymentMethod,
+      coupon: appliedCouponCode,
+      couponCode: appliedCouponCode,
+      couponDiscount: discountValue,
+      subtotal,
+      shippingFee,
+      grandTotal,
     };
 
     setIsSubmitting(true);
@@ -179,7 +210,7 @@ export default function CartPaymentContent() {
       }
 
       clearCart();
-      sessionStorage.removeItem(checkoutStorageKey);
+      clearCheckout();
       if (paymentMethod === "vietqr") {
         showSuccess("Đã tạo đơn hàng. Vui lòng hoàn tất chuyển khoản qua VietQR.");
       } else {
@@ -346,13 +377,24 @@ export default function CartPaymentContent() {
         <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
           <div className="flex items-center justify-between">
             <span>Tiền sản phẩm</span>
-            <span className="font-semibold">{formatCurrency(totalPrice)}</span>
+            <span className="font-semibold">{formatCurrency(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Phí vận chuyển</span>
             <span className="font-semibold">{formatCurrency(shippingFee)}</span>
           </div>
+          <div className="flex items-center justify-between">
+            <span>Giảm giá</span>
+            <span className="font-semibold text-primary-1">-{formatCurrency(discountValue)}</span>
+          </div>
         </div>
+
+        {couponCode ? (
+          <div className="mt-4 flex items-center justify-between text-sm text-neutral-2">
+            <span>Mã giảm giá</span>
+            <span className="font-semibold text-primary-1">{couponCode}</span>
+          </div>
+        ) : null}
 
         <div className="mt-4 flex items-center justify-between text-lg font-bold text-neutral-1">
           <span>Tổng cộng</span>

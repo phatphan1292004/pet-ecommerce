@@ -33,6 +33,24 @@ interface CreateOrderFromOpenCartInput {
   paymentMethod?: string;
   arrivalTime?: string;
   note?: string;
+  coupon?: string;
+  couponCode?: string;
+}
+
+export interface AvailableCoupon {
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
+interface AvailableCouponsData {
+  items: AvailableCoupon[];
 }
 
 const normalizeCartItems = (rawItems: unknown): CartItem[] => {
@@ -114,6 +132,123 @@ const tryRequests = async <T>(requests: Array<() => Promise<T>>): Promise<T | nu
 const toStringValue = (value: unknown): string =>
   typeof value === "string" || typeof value === "number" ? String(value) : "";
 
+const toNumberValue = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return undefined;
+};
+
+const normalizeCouponDiscountType = (value: unknown): "percent" | "fixed" | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (["percent", "percentage", "pct", "%"].includes(normalizedValue)) {
+    return "percent";
+  }
+
+  if (["fixed", "amount", "flat", "cash"].includes(normalizedValue)) {
+    return "fixed";
+  }
+
+  return undefined;
+};
+
+const normalizeAvailableCoupon = (value: unknown): AvailableCoupon | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const coupon = value as Record<string, unknown>;
+  const code = toStringValue(coupon.code || coupon.couponCode).trim();
+  const discountType = normalizeCouponDiscountType(coupon.discountType || coupon.type);
+  const discountValue = toNumberValue(coupon.discountValue ?? coupon.value ?? coupon.amount);
+
+  if (!code || !discountType || typeof discountValue !== "number" || discountValue <= 0) {
+    return null;
+  }
+
+  const description = toStringValue(coupon.description || coupon.note).trim();
+  const startDate = toStringValue(coupon.startDate || coupon.startsAt || coupon.validFrom).trim();
+  const endDate = toStringValue(coupon.endDate || coupon.endsAt || coupon.validUntil).trim();
+
+  return {
+    code: code.toUpperCase(),
+    discountType,
+    discountValue,
+    minOrderValue: toNumberValue(coupon.minOrderValue ?? coupon.minOrderAmount),
+    maxDiscount: toNumberValue(coupon.maxDiscount ?? coupon.maxDiscountValue ?? coupon.maxDiscountAmount),
+    description: description || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    isActive: typeof coupon.isActive === "boolean" ? coupon.isActive : undefined,
+  };
+};
+
+const normalizeAvailableCoupons = (value: unknown): AvailableCoupon[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => normalizeAvailableCoupon(item))
+      .filter((item): item is AvailableCoupon => Boolean(item));
+  }
+
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const payload = value as {
+    items?: unknown;
+    coupons?: unknown;
+    data?: unknown;
+  };
+
+  if (Array.isArray(payload.items)) {
+    return normalizeAvailableCoupons(payload.items);
+  }
+
+  if (Array.isArray(payload.coupons)) {
+    return normalizeAvailableCoupons(payload.coupons);
+  }
+
+  if (payload.data) {
+    return normalizeAvailableCoupons(payload.data);
+  }
+
+  const singleCoupon = normalizeAvailableCoupon(payload);
+  return singleCoupon ? [singleCoupon] : [];
+};
+
+const isCouponWithinDateRange = (coupon: AvailableCoupon): boolean => {
+  const now = Date.now();
+
+  if (coupon.startDate) {
+    const startAt = new Date(coupon.startDate).getTime();
+    if (!Number.isNaN(startAt) && now < startAt) {
+      return false;
+    }
+  }
+
+  if (coupon.endDate) {
+    const endAt = new Date(coupon.endDate).getTime();
+    if (!Number.isNaN(endAt) && now > endAt) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const getCartIdFromResponse = (response: unknown): string => {
   const data = (response as { data?: unknown })?.data;
 
@@ -134,6 +269,36 @@ const getCartIdFromResponse = (response: unknown): string => {
 const getCurrentUserId = async (): Promise<string> => {
   const cookieStore = await cookies();
   return cookieStore.get("userId")?.value || "";
+};
+
+export const getAvailableCoupons = async (): Promise<ActionResult<AvailableCouponsData>> => {
+  const response = await tryRequests([
+    () => get("/coupons"),
+    () => get("/coupons/available"),
+  ]);
+
+  if (!response) {
+    return {
+      success: false,
+      message: "Failed to load available coupons",
+      data: { items: [] },
+    };
+  }
+
+  const rawItems = (response as { data?: unknown })?.data;
+  const responseSuccess = (response as { success?: unknown })?.success;
+  const items = normalizeAvailableCoupons(rawItems).filter(
+    (coupon) => (coupon.isActive ?? true) && isCouponWithinDateRange(coupon)
+  );
+
+  return {
+    success: typeof responseSuccess === "boolean" ? responseSuccess : true,
+    message:
+      (response as { message?: string })?.message || "Available coupons loaded successfully",
+    data: {
+      items,
+    },
+  };
 };
 
 export const getOpenCart = async (): Promise<ActionResult<OpenCartData>> => {
@@ -259,6 +424,8 @@ export const createOrderFromOpenCart = async (
     () => get(`/carts/open/${userId}`),
   ]);
   const detectedCartId = getCartIdFromResponse(openCartResponse);
+  const resolvedCouponCode =
+    toStringValue(input.coupon).trim() || toStringValue(input.couponCode).trim() || undefined;
 
   const payload = {
     customerId: input.customerId || userId,
@@ -270,6 +437,7 @@ export const createOrderFromOpenCart = async (
     arrivalAddress: input.arrivalAddress,
     arrivalTime: input.arrivalTime,
     note: input.note,
+    coupon: resolvedCouponCode,
   };
 
   if (!payload.cartId) {

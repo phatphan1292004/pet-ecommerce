@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Input,
   Listbox,
@@ -11,9 +11,12 @@ import {
 } from "@headlessui/react";
 import { useRouter } from "next/navigation";
 import { AddAddressModal } from "@/features/customer/userinfo/components";
-import { checkoutStorageKey, type CheckoutOrderPayload } from "@/features/customer/cart/checkout-storage";
+import {
+  buildCheckoutPricingPayload,
+  type CheckoutOrderPayload,
+} from "@/features/customer/cart/checkout-storage";
 import { useToast } from "@/hooks";
-import { useCartStore } from "@/store";
+import { useCartStore, useCheckoutStore } from "@/store";
 import { getProvinces, getWardsByProvinceId } from "../../userinfo/servers";
 import { LocationOption } from "../../userinfo/servers/location";
 import { UserAddress } from "@/types/address";
@@ -31,6 +34,10 @@ export default function CartShippingContent({
   const router = useRouter();
   const { showWarning } = useToast();
   const totalPrice = useCartStore((state) => state.totalPrice);
+  const pricingSummary = useCheckoutStore((state) => state.pricing);
+  const setCheckoutShippingData = useCheckoutStore(
+    (state) => state.setShippingData,
+  );
   const [openAddressModal, setOpenAddressModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>(
@@ -50,9 +57,6 @@ export default function CartShippingContent({
     address: "",
     note: "",
   });
-
-  const shippingFee = 0;
-  const grandTotal = totalPrice + shippingFee;
 
   const set = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -165,6 +169,22 @@ export default function CartShippingContent({
     };
   }, [selectedProvinceId]);
 
+  const checkoutSummary = useMemo(
+    () =>
+      buildCheckoutPricingPayload({
+        subtotal: totalPrice,
+        shippingFee: pricingSummary.shippingFee,
+        couponCode: pricingSummary.couponCode,
+        couponDiscount: pricingSummary.couponDiscount,
+      }),
+    [
+      pricingSummary.couponCode,
+      pricingSummary.couponDiscount,
+      pricingSummary.shippingFee,
+      totalPrice,
+    ],
+  );
+
   const handleProvinceChange = (provinceId: string) => {
     setSelectedProvinceId(provinceId);
     const selectedProvince = provinces.find(
@@ -181,6 +201,11 @@ export default function CartShippingContent({
 
   const selectedWardId =
     wards.find((ward) => ward.name === form.ward)?.id ?? "";
+  const shippingFee = checkoutSummary.shippingFee;
+  const discountValue = checkoutSummary.couponDiscount;
+  const couponCode = checkoutSummary.couponCode;
+  const subtotal = checkoutSummary.subtotal;
+  const grandTotal = checkoutSummary.grandTotal;
   const hasRequiredShippingFields =
     Boolean(form.fullName.trim()) &&
     Boolean(form.phone.trim()) &&
@@ -206,10 +231,16 @@ export default function CartShippingContent({
       arrivalPhone: form.phone.trim(),
       arrivalAddress: `${form.address.trim()}, ${form.ward.trim()}, ${form.province.trim()}`,
       note: form.note.trim() || undefined,
+      coupon: couponCode,
+      couponCode,
+      couponDiscount: discountValue,
+      subtotal,
+      shippingFee,
+      grandTotal,
     };
 
     setIsSubmitting(true);
-    sessionStorage.setItem(checkoutStorageKey, JSON.stringify(payload));
+    setCheckoutShippingData(payload);
     router.push("/cart/payment");
     setIsSubmitting(false);
   };
@@ -411,7 +442,7 @@ export default function CartShippingContent({
             <div className="flex items-center justify-between">
               <span>Tiền sản phẩm</span>
               <span className="font-semibold">
-                {formatCurrency(totalPrice)}
+                {formatCurrency(subtotal)}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -420,7 +451,20 @@ export default function CartShippingContent({
                 {formatCurrency(shippingFee)}
               </span>
             </div>
+            <div className="flex items-center justify-between">
+              <span>Giảm giá</span>
+              <span className="font-semibold text-primary-1">
+                -{formatCurrency(discountValue)}
+              </span>
+            </div>
           </div>
+
+          {couponCode ? (
+            <div className="mt-4 flex items-center justify-between text-sm text-neutral-2">
+              <span>Mã giảm giá</span>
+              <span className="font-semibold text-primary-1">{couponCode}</span>
+            </div>
+          ) : null}
 
           <div className="mt-4 flex items-center justify-between text-lg font-bold text-neutral-1">
             <span>Tổng cộng</span>

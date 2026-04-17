@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { getOpenCart } from "@/features/customer/cart/servers";
+import { getAvailableCoupons, getOpenCart } from "@/features/customer/cart/servers";
 import CartPageContent from "@/features/customer/cart/components/cart-page-content";
 
 export default async function CartPage() {
   const openCartResponse = await getOpenCart();
+  const availableCouponsResponse = await getAvailableCoupons();
+
   const initialItems = openCartResponse.success && openCartResponse.data
     ? openCartResponse.data.items
+    : [];
+  const initialCoupons = availableCouponsResponse.success && availableCouponsResponse.data
+    ? availableCouponsResponse.data.items
     : [];
 
   return (
@@ -20,7 +25,7 @@ export default async function CartPage() {
         </div>
       </div>
 
-      <CartPageContent initialItems={initialItems} />
+      <CartPageContent initialItems={initialItems} initialCoupons={initialCoupons} />
     </div>
   );
 }
