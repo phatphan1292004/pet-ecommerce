@@ -405,7 +405,7 @@ export default function CouponManagementPage({
     <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-neutral-black sm:text-lg">Quan ly coupon</h2>
+          <h2 className="text-base font-semibold text-neutral-black sm:text-lg">Quản lý coupon</h2>
           <p className="text-xs text-neutral-4 sm:text-sm">{titleDescription}</p>
         </div>
 
@@ -415,7 +415,7 @@ export default function CouponManagementPage({
           className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-4 bg-primary-6 px-3 text-sm font-semibold text-primary-1 transition hover:border-primary-1"
         >
           <FiPlus size={15} />
-          Tao coupon
+          Tạo coupon
         </button>
       </div>
 
@@ -432,7 +432,7 @@ export default function CouponManagementPage({
             type="text"
             value={codeInput}
             onChange={(event) => setCodeInput(event.target.value)}
-            placeholder="Tim theo ma coupon"
+            placeholder="Tìm theo mã coupon"
             className="h-10 w-full rounded-lg border border-neutral-20 bg-white pl-9 pr-3 text-sm text-neutral-2 outline-none focus:border-primary-1"
           />
         </label>
@@ -441,7 +441,7 @@ export default function CouponManagementPage({
           type="text"
           value={typeInput}
           onChange={(event) => setTypeInput(event.target.value)}
-          placeholder="Loai giam gia (PERCENT/FIXED...)"
+          placeholder="Loại giảm giá (PERCENT/FIXED...)"
           className="h-10 rounded-lg border border-neutral-20 bg-white px-3 text-sm text-neutral-2 outline-none focus:border-primary-1"
         />
 
@@ -450,9 +450,9 @@ export default function CouponManagementPage({
           onChange={(event) => setStatusInput(event.target.value)}
           className="h-10 rounded-lg border border-neutral-20 bg-white px-3 text-sm text-neutral-2 outline-none focus:border-primary-1"
         >
-          <option value="all">Tat ca trang thai</option>
-          <option value="active">Dang hoat dong</option>
-          <option value="inactive">Da tat</option>
+          <option value="all">Tất cả trạng thái</option>
+          <option value="active">Đang hoạt động</option>
+          <option value="inactive">Đã tắt</option>
         </select>
 
         <div className="flex items-center gap-2 md:justify-end">
@@ -461,7 +461,7 @@ export default function CouponManagementPage({
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-4 bg-primary-6 px-3 text-sm font-semibold text-primary-1 transition hover:border-primary-1"
           >
             <FiFilter size={15} />
-            Loc
+            Lọc
           </button>
 
           <button
@@ -476,7 +476,7 @@ export default function CouponManagementPage({
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-neutral-20 bg-white px-3 text-sm font-medium text-neutral-2 transition hover:border-primary-1 hover:text-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FiRotateCcw size={15} />
-            Dat lai
+            Đặt lại
           </button>
         </div>
       </form>
@@ -510,11 +510,8 @@ export default function CouponManagementPage({
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-neutral-1 sm:text-base">
-                {editingCoupon ? "Cap nhat coupon" : "Tao coupon moi"}
+                {editingCoupon ? "Cập nhật coupon" : "Tạo coupon mới"}
               </h3>
-              <p className="text-xs text-neutral-4">
-                Dien thong tin coupon theo API backend /admin/coupons
-              </p>
             </div>
 
             <button
@@ -523,13 +520,13 @@ export default function CouponManagementPage({
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-20 bg-white px-3 text-sm text-neutral-2 transition hover:border-primary-1 hover:text-primary-1"
             >
               <FiX size={14} />
-              Dong
+              Đóng
             </button>
           </div>
 
           <form onSubmit={handleSubmitCoupon} className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Ma coupon *</span>
+              <span className="text-xs font-medium text-neutral-4">Mã coupon *</span>
               <input
                 type="text"
                 value={formValues.code}
@@ -541,7 +538,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Loai giam gia *</span>
+              <span className="text-xs font-medium text-neutral-4">Loại giảm giá *</span>
               <input
                 type="text"
                 value={formValues.discountType}
@@ -553,7 +550,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Gia tri giam gia *</span>
+              <span className="text-xs font-medium text-neutral-4">Giá trị giảm giá *</span>
               <input
                 type="number"
                 min="0"
@@ -567,19 +564,19 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">So luot su dung toi da</span>
+              <span className="text-xs font-medium text-neutral-4">Số lượt sử dụng tối đa</span>
               <input
                 type="number"
                 min="0"
                 value={formValues.usageLimit}
                 onChange={(event) => handleFieldChange("usageLimit", event.target.value)}
-                placeholder="Bo trong neu khong gioi han"
+                placeholder="Bỏ trong nếu không giới hạn"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Don toi thieu</span>
+              <span className="text-xs font-medium text-neutral-4">Đơn tối thiểu</span>
               <input
                 type="number"
                 min="0"
@@ -592,7 +589,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Giam toi da</span>
+              <span className="text-xs font-medium text-neutral-4">Giảm tối đa</span>
               <input
                 type="number"
                 min="0"
@@ -605,7 +602,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Bat dau</span>
+              <span className="text-xs font-medium text-neutral-4">Bắt đầu</span>
               <input
                 type="datetime-local"
                 value={formValues.startDate}
@@ -615,7 +612,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Ket thuc</span>
+              <span className="text-xs font-medium text-neutral-4">Kết thúc</span>
               <input
                 type="datetime-local"
                 value={formValues.endDate}
@@ -625,7 +622,7 @@ export default function CouponManagementPage({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
-              <span className="text-xs font-medium text-neutral-4">Mo ta</span>
+              <span className="text-xs font-medium text-neutral-4">Mô tả</span>
               <textarea
                 value={formValues.description}
                 onChange={(event) => handleFieldChange("description", event.target.value)}
@@ -642,7 +639,7 @@ export default function CouponManagementPage({
                 onChange={(event) => handleFieldChange("isActive", event.target.checked)}
                 className="h-4 w-4 rounded border-neutral-20 text-primary-1 focus:ring-primary-1"
               />
-              Kich hoat coupon
+              Kích hoạt coupon
             </label>
 
             {formError ? (
@@ -659,7 +656,7 @@ export default function CouponManagementPage({
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-neutral-20 bg-white px-3 text-sm font-medium text-neutral-2 transition hover:border-primary-1 hover:text-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FiX size={15} />
-                Huy
+                Hủy
               </button>
 
               <button
@@ -668,7 +665,7 @@ export default function CouponManagementPage({
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-4 bg-primary-6 px-3 text-sm font-semibold text-primary-1 transition hover:border-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FiSave size={15} />
-                {isSubmitting ? "Dang luu..." : editingCoupon ? "Cap nhat" : "Tao moi"}
+                {isSubmitting ? "Đang lưu..." : editingCoupon ? "Cập nhật" : "Tạo mới"}
               </button>
             </div>
           </form>

@@ -23,6 +23,14 @@ interface SyncOpenCartInput {
   slug?: string;
 }
 
+interface SyncOpenCartPricingInput {
+  coupon?: string;
+  couponCode?: string;
+  totalPrice: number;
+  totalDiscount?: number;
+  finalPrice?: number;
+}
+
 interface CreateOrderFromOpenCartInput {
   customerId?: string;
   cartId?: string;
@@ -114,23 +122,26 @@ const getRawOpenItems = (response: unknown): unknown => {
   return asObject.items || asObject.cartItems || asObject.products || [];
 };
 
-const tryRequests = async <T>(requests: Array<() => Promise<T>>): Promise<T | null> => {
-  for (const request of requests) {
-    try {
-      const result = await request();
-      if (result) {
-        return result;
-      }
-    } catch {
-      // Try fallback endpoint.
-    }
-  }
-
-  return null;
-};
-
 const toStringValue = (value: unknown): string =>
   typeof value === "string" || typeof value === "number" ? String(value) : "";
+
+const isExplicitFailure = (response: unknown): boolean => {
+  if (!response) {
+    return true;
+  }
+
+  const success = (response as { success?: unknown })?.success;
+  return typeof success === "boolean" ? !success : false;
+};
+
+const getResponseMessage = (response: unknown, fallback: string): string => {
+  if (!response || typeof response !== "object") {
+    return fallback;
+  }
+
+  const message = (response as { message?: unknown }).message;
+  return typeof message === "string" && message.trim().length > 0 ? message : fallback;
+};
 
 const toNumberValue = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -272,15 +283,12 @@ const getCurrentUserId = async (): Promise<string> => {
 };
 
 export const getAvailableCoupons = async (): Promise<ActionResult<AvailableCouponsData>> => {
-  const response = await tryRequests([
-    () => get("/coupons"),
-    () => get("/coupons/available"),
-  ]);
+  const response = await get("/coupons");
 
-  if (!response) {
+  if (isExplicitFailure(response)) {
     return {
       success: false,
-      message: "Failed to load available coupons",
+      message: getResponseMessage(response, "Failed to load available coupons"),
       data: { items: [] },
     };
   }
@@ -308,14 +316,14 @@ export const getOpenCart = async (): Promise<ActionResult<OpenCartData>> => {
     return { success: false, message: "User not authenticated", data: { items: [] } };
   }
 
-  const response = await tryRequests([
-    () => get(`/carts/${userId}?status=open`),
-    () => get(`/carts/${userId}/open`),
-    () => get(`/carts/open/${userId}`),
-  ]);
+  const response = await get(`/carts/${userId}`, { status: "open" });
 
-  if (!response) {
-    return { success: false, message: "Failed to load open cart", data: { items: [] } };
+  if (isExplicitFailure(response)) {
+    return {
+      success: false,
+      message: getResponseMessage(response, "Failed to load open cart"),
+      data: { items: [] },
+    };
   }
 
   const items = normalizeCartItems(getRawOpenItems(response));
@@ -377,6 +385,71 @@ export const updateOpenCartItem = async (
   return { success: true, message: "Open cart item updated" };
 };
 
+export const syncOpenCartPricing = async (
+  input: SyncOpenCartPricingInput
+): Promise<ActionResult<null>> => {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return { success: false, message: "User not authenticated" };
+  }
+
+  const openCartResponse = await get(`/carts/${userId}`, { status: "open" });
+
+  if (isExplicitFailure(openCartResponse)) {
+    return {
+      success: false,
+      message: getResponseMessage(openCartResponse, "Failed to load open cart"),
+    };
+  }
+
+  const cartId = getCartIdFromResponse(openCartResponse);
+  const resolvedCouponCode =
+    toStringValue(input.coupon).trim() || toStringValue(input.couponCode).trim();
+
+  const totalPrice = Math.max(0, toNumberValue(input.totalPrice) ?? 0);
+  const explicitFinalPrice = toNumberValue(input.finalPrice);
+  const requestedDiscount = Math.max(0, toNumberValue(input.totalDiscount) ?? 0);
+  const finalPrice = Math.max(
+    0,
+    typeof explicitFinalPrice === "number" ? explicitFinalPrice : totalPrice - requestedDiscount
+  );
+  const totalDiscount = Math.min(totalPrice, Math.max(0, totalPrice - finalPrice));
+
+  const payload: {
+    cartId?: string;
+    coupon: string;
+    couponCode: string;
+    totalPrice: number;
+    totalDiscount: number;
+    finalPrice: number;
+  } = {
+    coupon: resolvedCouponCode,
+    couponCode: resolvedCouponCode,
+    totalPrice,
+    totalDiscount,
+    finalPrice,
+  };
+
+  if (cartId) {
+    payload.cartId = cartId;
+  }
+
+  const response = await patch(`/carts/${userId}/open`, payload);
+
+  if (isExplicitFailure(response)) {
+    return {
+      success: false,
+      message: getResponseMessage(response, "Failed to sync open cart pricing"),
+    };
+  }
+
+  return {
+    success: true,
+    message: getResponseMessage(response, "Open cart pricing synced"),
+  };
+};
+
 export const removeOpenCartItem = async (productId: string): Promise<ActionResult<null>> => {
   const userId = await getCurrentUserId();
 
@@ -418,18 +491,22 @@ export const createOrderFromOpenCart = async (
     return { success: false, message: "User not authenticated" };
   }
 
-  const openCartResponse = await tryRequests([
-    () => get(`/carts/${userId}?status=open`),
-    () => get(`/carts/${userId}/open`),
-    () => get(`/carts/open/${userId}`),
-  ]);
+  const openCartResponse = await get(`/carts/${userId}`, { status: "open" });
+  if (isExplicitFailure(openCartResponse)) {
+    return {
+      success: false,
+      message: getResponseMessage(openCartResponse, "Failed to load open cart"),
+    };
+  }
+
   const detectedCartId = getCartIdFromResponse(openCartResponse);
+  const resolvedCartId = input.cartId || detectedCartId;
   const resolvedCouponCode =
     toStringValue(input.coupon).trim() || toStringValue(input.couponCode).trim() || undefined;
 
   const payload = {
     customerId: input.customerId || userId,
-    cartId: input.cartId || detectedCartId,
+    cartId: resolvedCartId,
     status: input.status || "paid_later",
     paymentMethod: input.paymentMethod,
     arrivalName: input.arrivalName,
@@ -438,34 +515,51 @@ export const createOrderFromOpenCart = async (
     arrivalTime: input.arrivalTime,
     note: input.note,
     coupon: resolvedCouponCode,
+    couponCode: resolvedCouponCode,
   };
 
   if (!payload.cartId) {
     return { success: false, message: "Không tìm thấy cartId để tạo đơn hàng" };
   }
 
-  const response = await tryRequests([
-    () => post(`/orders`, payload),
-    () => patch(`/carts/${userId}/checkout`, payload),
-    () => patch(`/carts/${userId}/close`, payload),
-  ]);
+  const orderResponse = await post(`/orders`, payload);
 
-  if (!response) {
-    return { success: false, message: "Failed to create order from open cart" };
+  if (isExplicitFailure(orderResponse)) {
+    return {
+      success: false,
+      message: getResponseMessage(orderResponse, "Failed to create order from open cart"),
+    };
   }
 
-  if (payload.cartId) {
-    await tryRequests([
-      () => patch(`/carts/${userId}/close`, { cartId: payload.cartId, status: "close" }),
-      () => patch(`/carts/${userId}/close`, { cartId: payload.cartId }),
-    ]);
+  let checkoutResponse = await patch(`/carts/${userId}/checkout`);
+
+  if (isExplicitFailure(checkoutResponse)) {
+    checkoutResponse = await patch(`/carts/${userId}/close`);
   }
 
-  const data = (response as { data?: { orderId?: string; id?: string; _id?: string } })?.data;
+  const checkoutStatus =
+    toStringValue(
+      (checkoutResponse as { data?: { status?: unknown } } | null)?.data?.status
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!isExplicitFailure(checkoutResponse) && checkoutStatus && checkoutStatus !== "close") {
+    checkoutResponse = await patch(`/carts/${userId}/close`);
+  }
+
+  if (isExplicitFailure(checkoutResponse)) {
+    return {
+      success: false,
+      message: getResponseMessage(checkoutResponse, "Order created but failed to close cart"),
+    };
+  }
+
+  const data = (orderResponse as { data?: { orderId?: string; id?: string; _id?: string } })?.data;
 
   return {
     success: true,
-    message: "Open cart checked out successfully",
+    message: getResponseMessage(orderResponse, "Open cart checked out successfully"),
     data: { orderId: data?.orderId || data?.id || data?._id },
   };
 };

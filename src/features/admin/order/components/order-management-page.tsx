@@ -18,6 +18,7 @@ export default function OrderManagementPage({
   initialOrders,
   initialMeta,
 }: OrderManagementPageProps) {
+  console.log("Initial orders:", initialOrders);
   const [orders, setOrders] = useState<AdminOrder[]>(initialOrders);
   const [meta, setMeta] = useState<AdminOrdersMeta>(initialMeta);
   const [page, setPage] = useState(initialMeta.page);

@@ -93,14 +93,14 @@ const getStatusBadgeClass = (isActive?: boolean) => {
 
 const getStatusLabel = (isActive?: boolean) => {
   if (isActive === true) {
-    return "Dang hoat dong";
+    return "Đang hoạt động";
   }
 
   if (isActive === false) {
-    return "Da tat";
+    return "Đã tắt";
   }
 
-  return "Chua ro";
+  return "Chưa rõ";
 };
 
 const buildPageList = (currentPage: number, totalPages: number): number[] => {
@@ -241,7 +241,7 @@ export default function AdminCouponsTable({
       },
       {
         id: "discount",
-        header: "Muc giam",
+        header: "Mức giảm",
         cell: ({ row }) => (
           <div className="min-w-35">
             <p className="font-semibold text-neutral-1">{formatDiscountValue(row.original)}</p>
@@ -251,27 +251,27 @@ export default function AdminCouponsTable({
       },
       {
         id: "condition",
-        header: "Dieu kien",
+        header: "Điều kiện",
         cell: ({ row }) => (
           <div className="space-y-1 text-xs text-neutral-4">
-            <p>Don toi thieu: {formatCurrency(row.original.minOrderValue)}</p>
-            <p>Giam toi da: {formatCurrency(row.original.maxDiscount)}</p>
+            <p>Đơn tối thiểu: {formatCurrency(row.original.minOrderValue)}</p>
+            <p>Giảm tối đa: {formatCurrency(row.original.maxDiscount)}</p>
           </div>
         ),
       },
       {
         id: "period",
-        header: "Thoi gian",
+        header: "Thời gian",
         cell: ({ row }) => (
           <div className="space-y-1 text-xs text-neutral-4">
-            <p>Bat dau: {formatDateTime(row.original.startDate)}</p>
-            <p>Ket thuc: {formatDateTime(row.original.endDate)}</p>
+            <p>Bắt đầu: {formatDateTime(row.original.startDate)}</p>
+            <p>Kết thúc: {formatDateTime(row.original.endDate)}</p>
           </div>
         ),
       },
       {
         id: "usage",
-        header: "Su dung",
+        header: "Sử dụng",
         cell: ({ row }) => {
           const used = row.original.usedCount;
           const limit = row.original.usageLimit;
@@ -285,7 +285,7 @@ export default function AdminCouponsTable({
       },
       {
         id: "status",
-        header: "Trang thai",
+        header: "Trạng thái",
         cell: ({ row }) => (
           <span
             className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
@@ -298,7 +298,7 @@ export default function AdminCouponsTable({
       },
       {
         id: "updatedAt",
-        header: "Cap nhat",
+        header: "Cập nhật",
         cell: ({ row }) => (
           <span className="text-sm font-medium text-neutral-2">
             {formatDateTime(row.original.updatedAt)}
@@ -307,7 +307,7 @@ export default function AdminCouponsTable({
       },
       {
         id: "actions",
-        header: "Hanh dong",
+        header: "Hành động",
         cell: ({ row }) => (
           <ActionCell
             coupon={row.original}

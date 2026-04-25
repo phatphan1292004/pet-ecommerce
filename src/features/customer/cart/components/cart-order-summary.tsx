@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { syncOpenCartPricing } from "@/features/customer/cart/servers";
+import { useToast } from "@/hooks";
 import { useCheckoutStore } from "@/store";
 
 interface CartOrderSummaryProps {
@@ -74,6 +76,8 @@ export default function CartOrderSummary({
   formatCurrency,
 }: CartOrderSummaryProps) {
   const router = useRouter();
+  const { showWarning } = useToast();
+  const showWarningRef = useRef(showWarning);
   const setCheckoutPricing = useCheckoutStore((state) => state.setPricing);
   const clearCheckoutShippingData = useCheckoutStore(
     (state) => state.clearShippingData,
@@ -101,6 +105,10 @@ export default function CartOrderSummary({
   const finalGrandTotal = Math.max(0, grandTotal - discountValue);
   const canGoToShipping = totalPrice > 0;
 
+  const handleCouponChange = (nextCouponCode: string) => {
+    setSelectedCouponCode(nextCouponCode);
+  };
+
   useEffect(() => {
     setCheckoutPricing({
       subtotal: totalPrice,
@@ -113,6 +121,27 @@ export default function CartOrderSummary({
     discountValue,
     setCheckoutPricing,
     shippingFee,
+    totalPrice,
+  ]);
+
+  useEffect(() => {
+    void (async () => {
+      const response = await syncOpenCartPricing({
+        coupon: appliedCouponCode,
+        couponCode: appliedCouponCode,
+        totalPrice,
+        totalDiscount: discountValue,
+        finalPrice: finalGrandTotal,
+      });
+
+      if (!response.success) {
+        showWarningRef.current("Chưa đồng bộ được mã giảm giá lên giỏ hàng");
+      }
+    })();
+  }, [
+    appliedCouponCode,
+    discountValue,
+    finalGrandTotal,
     totalPrice,
   ]);
 
@@ -158,7 +187,7 @@ export default function CartOrderSummary({
         <select
           id="coupon-select"
           value={selectedCouponCode}
-          onChange={(event) => setSelectedCouponCode(event.target.value)}
+          onChange={(event) => handleCouponChange(event.target.value)}
           className="w-full rounded-lg border border-neutral-7 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition-colors focus:border-primary-1"
         >
           <option value="">Không áp dụng</option>
