@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { FiAlertTriangle, FiEye, FiLoader, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 import {
   formatCurrency,
   formatDateTime,
@@ -18,7 +16,8 @@ import {
   getPaymentMethodLabel,
   getShortOrderId,
 } from "@/features/admin/order/utils";
-import { deleteAdminOrder, type AdminOrder, type AdminOrdersMeta } from "@/features/admin/order/servers";
+import type { AdminOrder, AdminOrdersMeta } from "@/features/admin/order/servers";
+import AdminOrderActionCell from "@/features/admin/order/components/admin-order-action-cell";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
@@ -62,72 +61,6 @@ const buildPageList = (currentPage: number, totalPages: number): number[] => {
   ];
 };
 
-interface ActionCellProps {
-  order: AdminOrder;
-  onOrderDeleted?: (orderId: string) => void;
-}
-
-function ActionCell({ order, onOrderDeleted }: ActionCellProps) {
-  const [isPending, startTransition] = useTransition();
-  const [deleteError, setDeleteError] = useState<string>("");
-
-  const handleDelete = () => {
-    if (!window.confirm(`Bạn có chắc muốn xóa đơn hàng #${getShortOrderId(order._id, "--")}?`)) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteAdminOrder(order._id);
-      if (result.success) {
-        onOrderDeleted?.(order._id);
-      } else {
-        setDeleteError(result.message || "Xóa đơn hàng thất bại");
-        setTimeout(() => setDeleteError(""), 3000);
-      }
-    });
-  };
-
-  return (
-    <div className="min-w-24 text-right sm:min-w-51.25">
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          href={`/admin/order/${order._id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-        >
-          <FiEye size={13} />
-        </Link>
-
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isPending}
-          title={deleteError || "Xóa đơn hàng"}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isPending ? <FiLoader className="animate-spin" size={13} /> : <FiTrash2 size={13} />}
-          {isPending ? "Đang xóa" : ""}
-        </button>
-
-        <button
-          type="button"
-          className="inline-flex items-center rounded-lg border border-neutral-20 bg-white px-2.5 py-2.5 text-neutral-4 transition hover:border-primary-4 hover:text-neutral-2"
-          title="Tùy chọn"
-          aria-label="Tùy chọn"
-        >
-          <FiMoreVertical size={13} />
-        </button>
-      </div>
-
-      {deleteError ? (
-        <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-rose-600">
-          <FiAlertTriangle size={12} />
-          {deleteError}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 interface AdminOrdersTableProps {
   orders: AdminOrder[];
   meta: AdminOrdersMeta;
@@ -135,6 +68,7 @@ interface AdminOrdersTableProps {
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   onOrderDeleted?: (orderId: string) => void;
+  onOrderUpdated?: (updatedOrder: AdminOrder) => void;
 }
 
 export default function AdminOrdersTable({
@@ -144,6 +78,7 @@ export default function AdminOrdersTable({
   onPageChange,
   onLimitChange,
   onOrderDeleted,
+  onOrderUpdated,
 }: AdminOrdersTableProps) {
   const columns = useMemo<ColumnDef<AdminOrder>[]>(
     () => [
@@ -222,22 +157,25 @@ export default function AdminOrdersTable({
         header: "Trạng thái",
         cell: ({ row }) => (
           <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(
-              row.original.status,
-              { includeProcessing: false }
-            )}`}
+            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(row.original.status)}`}
           >
-            {getOrderStatusLabel(row.original.status, { includeProcessing: false })}
+            {getOrderStatusLabel(row.original.status)}
           </span>
         ),
       },
       {
         id: "actions",
         header: "Hành động",
-        cell: ({ row }) => <ActionCell order={row.original} onOrderDeleted={onOrderDeleted} />,
+        cell: ({ row }) => (
+          <AdminOrderActionCell
+            order={row.original}
+            onOrderDeleted={onOrderDeleted}
+            onOrderUpdated={onOrderUpdated}
+          />
+        ),
       },
     ],
-    [onOrderDeleted]
+    [onOrderDeleted, onOrderUpdated]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library

@@ -3,11 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, useMemo, useState } from "react";
+import { useState } from "react";
 import type { IconType } from "react-icons";
 import {
   FiBell,
-  FiChevronRight,
   FiChevronsLeft,
   FiChevronsRight,
   FiGrid,
@@ -29,11 +28,6 @@ interface NavigationItem {
   icon: IconType;
 }
 
-interface BreadcrumbItem {
-  href: string;
-  label: string;
-}
-
 const navigationItems: NavigationItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: FiGrid },
   { href: "/admin/order", label: "Đơn hàng", icon: FiShoppingBag },
@@ -46,56 +40,6 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-const routeLabelMap: Record<string, string> = {
-  admin: "Admin",
-  dashboard: "Dashboard",
-  order: "Đơn hàng",
-  user: "Người dùng",
-  coupons: "Mã giảm giá",
-  reports: "Thống kê",
-};
-
-const toTitleCase = (value: string) =>
-  value
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-
-const getSegmentLabel = (segment: string, previousSegment?: string) => {
-  const directLabel = routeLabelMap[segment];
-  if (directLabel) {
-    return directLabel;
-  }
-
-  if (previousSegment === "order") {
-    const shortId = segment.length > 6 ? segment.slice(-6).toUpperCase() : segment.toUpperCase();
-    return `Chi tiết #${shortId}`;
-  }
-
-  if (previousSegment === "user") {
-    return "Chi tiết người dùng";
-  }
-
-  return toTitleCase(segment);
-};
-
-const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
-  const segments = pathname.split("/").filter(Boolean);
-
-  if (segments.length === 0) {
-    return [{ href: "/admin/dashboard", label: "Dashboard" }];
-  }
-
-  return segments.map((rawSegment, index) => {
-    const segment = decodeURIComponent(rawSegment);
-    const previousSegment = index > 0 ? decodeURIComponent(segments[index - 1]) : undefined;
-
-    return {
-      href: `/${segments.slice(0, index + 1).join("/")}`,
-      label: getSegmentLabel(segment, previousSegment),
-    };
-  });
-};
-
 export default function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -103,20 +47,6 @@ export default function AdminShell({ children }: AdminShellProps) {
 
   const desktopSidebarWidthClass = isSidebarCollapsed ? "lg:w-[5.5rem]" : "lg:w-80";
   const desktopContentPaddingClass = isSidebarCollapsed ? "lg:pl-[5.5rem]" : "lg:pl-80";
-
-  const breadcrumbItems = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
-
-  const pageTitle = useMemo(() => {
-    const currentBreadcrumb = breadcrumbItems[breadcrumbItems.length - 1];
-    if (currentBreadcrumb) {
-      return currentBreadcrumb.label;
-    }
-
-    const currentItem = navigationItems.find((item) =>
-      isActivePath(pathname, item.href),
-    );
-    return currentItem?.label ?? "Admin";
-  }, [breadcrumbItems, pathname]);
 
   return (
     <div className="min-h-screen bg-neutral-10 text-neutral-black">
@@ -210,34 +140,6 @@ export default function AdminShell({ children }: AdminShellProps) {
               >
                 <FiMenu size={20} />
               </button>
-
-              <div className="min-w-0">
-                <h1 className="truncate text-lg font-semibold text-neutral-black">{pageTitle}</h1>
-                <nav
-                  aria-label="Breadcrumb"
-                  className="mt-0.5 hidden items-center gap-1 text-xs text-neutral-4 sm:flex"
-                >
-                  {breadcrumbItems.map((item, index) => {
-                    const isLastItem = index === breadcrumbItems.length - 1;
-
-                    return (
-                      <Fragment key={item.href}>
-                        {index > 0 ? <FiChevronRight size={12} /> : null}
-                        {isLastItem ? (
-                          <span className="font-medium text-neutral-3">{item.label}</span>
-                        ) : (
-                          <Link
-                            href={item.href}
-                            className="transition hover:text-primary-1"
-                          >
-                            {item.label}
-                          </Link>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </nav>
-              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-3">

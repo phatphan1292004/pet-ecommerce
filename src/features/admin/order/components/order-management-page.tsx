@@ -18,7 +18,6 @@ export default function OrderManagementPage({
   initialOrders,
   initialMeta,
 }: OrderManagementPageProps) {
-  console.log("Initial orders:", initialOrders);
   const [orders, setOrders] = useState<AdminOrder[]>(initialOrders);
   const [meta, setMeta] = useState<AdminOrdersMeta>(initialMeta);
   const [page, setPage] = useState(initialMeta.page);
@@ -112,6 +111,12 @@ export default function OrderManagementPage({
     setOrders((prev) => prev.filter((order) => order._id !== deletedOrderId));
   };
 
+  const handleOrderUpdated = (updatedOrder: AdminOrder) => {
+    setOrders((prev) =>
+      prev.map((order) => (order._id === updatedOrder._id ? { ...order, ...updatedOrder } : order))
+    );
+  };
+
   return (
     <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -201,6 +206,7 @@ export default function OrderManagementPage({
           setPage(1);
         }}
         onOrderDeleted={handleOrderDeleted}
+        onOrderUpdated={handleOrderUpdated}
       />
     </section>
   );

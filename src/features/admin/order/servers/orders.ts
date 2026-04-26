@@ -1,6 +1,6 @@
 "use server";
 
-import { del, get } from "@/integrations/storeClient";
+import { del, get, patch } from "@/integrations/storeClient";
 
 export interface AdminOrderItem {
   _id?: string;
@@ -68,6 +68,16 @@ export interface AdminOrderDetailResult {
   data: AdminOrderDetail | null;
 }
 
+export interface AdminUpdateOrderStatusPayload {
+  status: string;
+}
+
+export interface AdminUpdateOrderStatusResult {
+  success: boolean;
+  message: string;
+  data: AdminOrder | null;
+}
+
 interface GetAdminOrdersInput {
   page?: number;
   limit?: number;
@@ -121,6 +131,14 @@ const normalizeOrderDetail = (payload: unknown): AdminOrderDetail | null => {
   }
 
   return payload as AdminOrderDetail;
+};
+
+const normalizeUpdatedOrder = (payload: unknown): AdminOrder | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  return payload as AdminOrder;
 };
 
 const normalizeMeta = (
@@ -237,5 +255,36 @@ export const deleteAdminOrder = async (
   return {
     success: Boolean(res?.success),
     message: res?.message || "Kh�ng th? x�a don h�ng",
+  };
+};
+
+export const updateAdminOrderStatus = async (
+  orderId: string,
+  payload: AdminUpdateOrderStatusPayload
+): Promise<AdminUpdateOrderStatusResult> => {
+  if (!orderId || orderId.trim().length === 0) {
+    return {
+      success: false,
+      message: "ID don h�ng kh�ng h?p l?",
+      data: null,
+    };
+  }
+
+  if (!payload?.status || payload.status.trim().length === 0) {
+    return {
+      success: false,
+      message: "Tr?ng th�i don h�ng kh�ng h?p l?",
+      data: null,
+    };
+  }
+
+  const res = await patch(`/admin/orders/${orderId.trim()}/status`, {
+    status: payload.status.trim(),
+  });
+
+  return {
+    success: Boolean(res?.success),
+    message: res?.message || "Kh�ng th? c?p nh?t tr?ng th�i don h�ng",
+    data: normalizeUpdatedOrder(res?.data),
   };
 };
