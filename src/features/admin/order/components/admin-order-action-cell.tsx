@@ -19,6 +19,7 @@ import {
   updateAdminOrderStatus,
   type AdminOrder,
 } from "@/features/admin/order/servers";
+import { useToast } from "@/hooks";
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "pending", label: "Chờ xác nhận" },
@@ -45,6 +46,7 @@ export default function AdminOrderActionCell({
   const [statusError, setStatusError] = useState<string>("");
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const actionContainerRef = useRef<HTMLDivElement | null>(null);
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
     if (!isStatusMenuOpen) {
@@ -79,9 +81,12 @@ export default function AdminOrderActionCell({
     startDeleteTransition(async () => {
       const result = await deleteAdminOrder(order._id);
       if (result.success) {
+        showSuccess(result.message || "Xóa đơn hàng thành công");
         onOrderDeleted?.(order._id);
       } else {
-        setDeleteError(result.message || "Xóa đơn hàng thất bại");
+        const message = result.message || "Xóa đơn hàng thất bại";
+        setDeleteError(message);
+        showError(message);
         setTimeout(() => setDeleteError(""), 3000);
       }
     });
@@ -106,9 +111,12 @@ export default function AdminOrderActionCell({
     if (result.success) {
       const updatedOrder = result.data ? result.data : { ...order, status: nextStatus };
       onOrderUpdated?.(updatedOrder);
+      showSuccess(result.message || "Cập nhật trạng thái đơn hàng thành công");
       setIsStatusMenuOpen(false);
     } else {
-      setStatusError(result.message || "Cập nhật trạng thái thất bại");
+      const message = result.message || "Cập nhật trạng thái thất bại";
+      setStatusError(message);
+      showError(message);
     }
 
     setIsUpdatingStatus(false);

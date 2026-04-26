@@ -194,6 +194,11 @@ export default function AdminUsersPage({
           setLimit(nextLimit);
           setPage(1);
         }}
+        onUserUpdated={(updatedUser) => {
+          setUsers((prevUsers) =>
+            prevUsers.map((user) => (user.id === updatedUser.id ? { ...user, ...updatedUser } : user))
+          );
+        }}
       />
     </section>
   );

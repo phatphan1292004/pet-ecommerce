@@ -1,6 +1,6 @@
 "use server";
 
-import { get } from "@/integrations/storeClient";
+import { get, patch } from "@/integrations/storeClient";
 
 export interface AdminUserRole {
   id?: string;
@@ -40,11 +40,20 @@ export interface AdminUser {
   photoURL?: string;
   birthDate?: string;
   gender?: string;
+  status?: string;
+  isLocked?: boolean;
+  isActive?: boolean;
   role?: AdminUserRole;
   addresses?: AdminUserAddress[];
   orders?: AdminUserOrder[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface AdminUserMutationResult {
+  success: boolean;
+  message: string;
+  data: AdminUser | null;
 }
 
 export interface AdminUsersMeta {
@@ -103,6 +112,37 @@ const getFirstString = (...values: unknown[]): string | undefined => {
   for (const value of values) {
     if (typeof value === "string" && value.trim().length > 0) {
       return value;
+    }
+  }
+
+  return undefined;
+};
+
+const getFirstBoolean = (...values: unknown[]): boolean | undefined => {
+  for (const value of values) {
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    if (typeof value === "number") {
+      if (value === 1) {
+        return true;
+      }
+
+      if (value === 0) {
+        return false;
+      }
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (["true", "1", "locked", "inactive", "disabled", "blocked"].includes(normalized)) {
+        return true;
+      }
+
+      if (["false", "0", "active", "enabled", "unlocked"].includes(normalized)) {
+        return false;
+      }
     }
   }
 
@@ -244,6 +284,9 @@ const normalizeUser = (value: unknown): AdminUser | null => {
     ),
     birthDate: getFirstString(value.birthDate, value.dateOfBirth),
     gender: getFirstString(value.gender),
+    status: getFirstString(value.status, value.accountStatus),
+    isLocked: getFirstBoolean(value.isLocked, value.locked, value.blocked),
+    isActive: getFirstBoolean(value.isActive, value.active, value.enabled),
     role,
     addresses,
     orders,
@@ -399,4 +442,60 @@ export const getAdminUserById = async (
     message: response?.message || "Cannot fetch user detail",
     data: user,
   };
+};
+
+const runUserMutation = async (
+  userId: string,
+  endpoint: string,
+  fallbackMessage: string,
+  payload?: Record<string, unknown>
+): Promise<AdminUserMutationResult> => {
+  if (!userId || userId.trim().length === 0) {
+    return {
+      success: false,
+      message: "Invalid user id",
+      data: null,
+    };
+  }
+
+  const response = await patch(endpoint, payload);
+  const user = normalizeUserDetail(response?.data);
+
+  return {
+    success: Boolean(response?.success),
+    message: response?.message || fallbackMessage,
+    data: user,
+  };
+};
+
+export const lockAdminUser = async (
+  userId: string,
+  nextLocked: boolean
+): Promise<AdminUserMutationResult> => {
+  return runUserMutation(
+    userId,
+    `/admin/users/${userId.trim()}/lock`,
+    "Cannot update lock state",
+    { isLocked: nextLocked }
+  );
+};
+
+export const promoteAdminUserToStaff = async (
+  userId: string
+): Promise<AdminUserMutationResult> => {
+  return runUserMutation(
+    userId,
+    `/admin/users/${userId.trim()}/promote-staff`,
+    "Cannot promote user to staff"
+  );
+};
+
+export const downgradeAdminUserToUser = async (
+  userId: string
+): Promise<AdminUserMutationResult> => {
+  return runUserMutation(
+    userId,
+    `/admin/users/${userId.trim()}/downgrade-staff`,
+    "Cannot downgrade staff to user"
+  );
 };

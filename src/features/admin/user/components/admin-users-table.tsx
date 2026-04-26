@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import {
   flexRender,
@@ -8,8 +7,9 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { FiEye, FiMail, FiMapPin, FiMoreVertical, FiPhone, FiShield } from "react-icons/fi";
-import type { AdminUser, AdminUsersMeta } from "@/features/admin/user/servers";
+import { FiMail, FiMapPin, FiPhone, FiShield } from "react-icons/fi";
+import { type AdminUser, type AdminUsersMeta } from "@/features/admin/user/servers";
+import UserActionCell from "./admin-user-action-cell";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
@@ -127,6 +127,7 @@ interface AdminUsersTableProps {
   isLoading: boolean;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
+  onUserUpdated?: (updatedUser: AdminUser) => void;
 }
 
 export default function AdminUsersTable({
@@ -135,6 +136,7 @@ export default function AdminUsersTable({
   isLoading,
   onPageChange,
   onLimitChange,
+  onUserUpdated,
 }: AdminUsersTableProps) {
   const columns = useMemo<ColumnDef<AdminUser>[]>(
     () => [
@@ -226,29 +228,10 @@ export default function AdminUsersTable({
       {
         id: "actions",
         header: "Hành động",
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2">
-            <Link
-              href={`/admin/user/${row.original.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-              title="Chi tiết"
-            >
-              <FiEye size={13} />
-            </Link>
-
-            <button
-              type="button"
-              className="inline-flex items-center rounded-lg border border-neutral-20 bg-white px-2.5 py-2.5 text-neutral-4 transition hover:border-primary-4 hover:text-neutral-2"
-              title="Tùy chọn"
-              aria-label="Tùy chọn"
-            >
-              <FiMoreVertical size={13} />
-            </button>
-          </div>
-        ),
+        cell: ({ row }) => <UserActionCell user={row.original} onUserUpdated={onUserUpdated} />,
       },
     ],
-    [],
+    [onUserUpdated],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
