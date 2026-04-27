@@ -4,3 +4,4 @@ export { default as AddressTab } from "./address-tab";
 export { default as AddAddressModal } from "./add-address-modal";
 export { default as OrdersTab } from "./orders-tab";
 export { default as ChangePasswordTab } from "./change-password-tab";
+export { default as FavoritesTab } from "./favorites-tab";

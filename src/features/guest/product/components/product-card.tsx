@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { useCartStore } from "@/store";
 import { useToast } from "@/hooks";
-import { GoHeart } from "react-icons/go";
+import { IoMdHeart, IoMdHeartEmpty } from "react-icons/io";
 import { syncOpenCartItem } from "@/features/customer/cart/servers";
+import { addFavoriteProduct } from "@/features/customer/userinfo/servers";
 
 export interface Product {
   _id: string;
@@ -26,6 +28,8 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
+  const [isAddingFavorite, setIsAddingFavorite] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const formattedPrice = product.price.toLocaleString("vi-VN") + "₫";
   const formattedOriginalPrice =
@@ -65,6 +69,28 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const handleAddToFavorite = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isAddingFavorite) {
+      return;
+    }
+
+    setIsAddingFavorite(true);
+
+    const result = await addFavoriteProduct(product._id);
+
+    if (result.success) {
+      setIsFavorited(true);
+      showSuccess(result.message || "Đã thêm vào danh sách yêu thích");
+    } else {
+      showWarning(result.message || "Không thể thêm vào danh sách yêu thích");
+    }
+
+    setIsAddingFavorite(false);
+  };
+
   return (
     <Link href={productLink}>
       <div className="relative flex cursor-pointer flex-col gap-2 rounded-xl border border-neutral-7 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
@@ -102,8 +128,18 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
         </div>
-        <button className="text-neutral-5 hover:text-primary-1 transition-colors">
-          <GoHeart size={16} />
+        <button
+          type="button"
+          onClick={handleAddToFavorite}
+          disabled={isAddingFavorite}
+          aria-label="Thêm vào yêu thích"
+          className={`transition-colors ${
+            isFavorited
+              ? "text-primary-1"
+              : "text-neutral-5 hover:text-primary-1"
+          } disabled:cursor-not-allowed disabled:opacity-70`}
+        >
+          {isFavorited ? <IoMdHeart size={18} /> : <IoMdHeartEmpty size={18} />}
         </button>
       </div>
 

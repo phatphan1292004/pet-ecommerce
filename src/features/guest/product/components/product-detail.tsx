@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { FaShoppingCart, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { ProductDetail } from '../servers';
-import { IoMdHeartEmpty } from 'react-icons/io';
+import { IoMdHeart, IoMdHeartEmpty } from 'react-icons/io';
 import { useCartStore } from '@/store';
 import { useToast } from '@/hooks';
 import { syncOpenCartItem } from '@/features/customer/cart/servers';
+import { addFavoriteProduct } from '@/features/customer/userinfo/servers';
 import {
   CommentForm,
   CommentList,
@@ -47,6 +48,10 @@ export default function ProductDetailPage({
   const [editSubmittingId, setEditSubmittingId] = useState<string | null>(null);
   const [replyEditingId, setReplyEditingId] = useState<string | null>(null);
   const [replyEditSubmittingId, setReplyEditSubmittingId] = useState<string | null>(null);
+  const [isAddingFavorite, setIsAddingFavorite] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(
+    Boolean(product.isFavorite ?? product.is_favorite)
+  );
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
 
@@ -392,6 +397,30 @@ export default function ProductDetailPage({
     }
   };
 
+  const handleAddToFavorite = async () => {
+    if (!isLoggedIn) {
+      showWarning('Vui lòng đăng nhập để thêm vào yêu thích');
+      return;
+    }
+
+    if (isAddingFavorite) {
+      return;
+    }
+
+    setIsAddingFavorite(true);
+
+    const result = await addFavoriteProduct(product._id);
+
+    if (result.success) {
+      setIsFavorited(true);
+      showSuccess(result.message || 'Đã thêm sản phẩm vào danh sách yêu thích');
+    } else {
+      showWarning(result.message || 'Không thể thêm vào danh sách yêu thích');
+    }
+
+    setIsAddingFavorite(false);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Breadcrumb */}
@@ -487,7 +516,7 @@ export default function ProductDetailPage({
                     <FaStar key={i} size={16} className={i < (product.review || 0) ? 'text-yellow-400' : 'text-neutral-7'} />
                   ))}
                 </div>
-                <span className="text-neutral-4 text-sm">(0 đánh giá)</span>
+                <span className="text-neutral-4 text-sm">{product.review} đánh giá</span>
               </div>
             </div>
 
@@ -569,8 +598,17 @@ export default function ProductDetailPage({
                   <FaShoppingCart size={18} />
                   Thêm vào giỏ
                 </button>
-                <button className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-neutral-7 text-neutral-4 transition-colors hover:border-primary-1 hover:text-primary-1">
-                  <IoMdHeartEmpty size={18} />
+                <button
+                  onClick={handleAddToFavorite}
+                  disabled={isAddingFavorite}
+                  aria-label="Thêm vào yêu thích"
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                    product.isFavorited
+                      ? 'border-primary-1 bg-primary-6 text-primary-1'
+                      : 'border-neutral-7 text-neutral-4 hover:border-primary-1 hover:text-primary-1'
+                  }`}
+                >
+                  {product.isFavorited ? <IoMdHeart size={18} /> : <IoMdHeartEmpty size={18} />}
                 </button>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
-import { FaBoxOpen, FaLock } from "react-icons/fa";
+import { FaBoxOpen, FaHeart, FaLock } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import UserInfoTab from "./user-info-tab";
 import AddressTab from "./address-tab";
@@ -12,6 +12,8 @@ import OrdersTab from "./orders-tab";
 import ChangePasswordTab from "./change-password-tab";
 import { UserInfo } from "@/types/user";
 import { UserAddress } from "@/types/address";
+import type { FavoriteProduct } from "../servers/favorite";
+import FavoritesTab from "./favorites-tab";
 
 interface TabItem {
   id: string;
@@ -20,14 +22,34 @@ interface TabItem {
   render: (userInfo: UserInfo, addresses: UserAddress[]) => React.ReactNode;
 }
 
+const USERINFO_TAB_ORDER = ["info", "address", "orders", "love", "password"] as const;
+
+const resolveInitialTabIndex = () => {
+  if (typeof window === "undefined") {
+    return 0;
+  }
+
+  const tabId = window.sessionStorage.getItem("userinfo:targetTab")?.trim().toLowerCase();
+  if (!tabId) {
+    return 0;
+  }
+
+  window.sessionStorage.removeItem("userinfo:targetTab");
+
+  const nextTabIndex = USERINFO_TAB_ORDER.findIndex((id) => id === tabId);
+  return nextTabIndex >= 0 ? nextTabIndex : 0;
+};
+
 export default function UserInfoPage({
   userInfo,
   addresses,
+  favorites,
 }: {
   userInfo: UserInfo;
   addresses: UserAddress[];
+  favorites: FavoriteProduct[];
 }) {
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [selectedTabIndex, setSelectedTabIndex] = useState(resolveInitialTabIndex);
 
   const tabs: TabItem[] = [
     {
@@ -51,8 +73,8 @@ export default function UserInfoPage({
     {
       id: "love",
       label: "Sản phẩm yêu thích",
-      icon: FaLock,
-      render: () => <ChangePasswordTab />,
+      icon: FaHeart,
+      render: () => <FavoritesTab favorites={favorites} />,
     },
     {
       id: "password",

@@ -10,7 +10,10 @@ export interface ProductDetail extends Product {
   images?: string[];
   stock?: number;
   shipping?: string;
+  isFavorited?: boolean;
   is_active?: boolean;
+  isFavorite?: boolean;
+  is_favorite?: boolean;
   specifications?: Record<string, string | number>;
   benefits?: Record<string, string>;
   created_at?: string;
@@ -54,8 +57,12 @@ export const getLatestProducts = async (): Promise<Product[] | null> => {
   return res?.data ?? null;
 };
 
-export const getProductBySlug = async (slug: string): Promise<ProductDetail | null> => {
-  const res = await get(`/products/${slug}`);
+export const getProductBySlug = async (
+  slug: string,
+  customerId?: string
+): Promise<ProductDetail | null> => {
+  const query = customerId ? { customerId } : undefined;
+  const res = await get(`/products/${slug}`, query);
   return res?.data ?? null;
 };
 

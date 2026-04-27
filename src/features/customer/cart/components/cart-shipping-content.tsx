@@ -10,7 +10,6 @@ import {
   Textarea,
 } from "@headlessui/react";
 import { useRouter } from "next/navigation";
-import { AddAddressModal } from "@/features/customer/userinfo/components";
 import {
   buildCheckoutPricingPayload,
   type CheckoutOrderPayload,
@@ -38,7 +37,6 @@ export default function CartShippingContent({
   const setCheckoutShippingData = useCheckoutStore(
     (state) => state.setShippingData,
   );
-  const [openAddressModal, setOpenAddressModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>(
     initialSavedAddresses,
@@ -103,7 +101,6 @@ export default function CartShippingContent({
     });
 
     applySavedAddress(newAddress);
-    setOpenAddressModal(false);
   };
 
   useEffect(() => {
@@ -429,7 +426,13 @@ export default function CartShippingContent({
               Lưu
             </button>
             <button
-              onClick={() => setOpenAddressModal(true)}
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.sessionStorage.setItem("userinfo:targetTab", "address");
+                }
+                router.push("/userinfo");
+              }}
               className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8"
             >
               Thêm địa chỉ mới
@@ -481,12 +484,6 @@ export default function CartShippingContent({
           </button>
         </aside>
       </div>
-
-      <AddAddressModal
-        open={openAddressModal}
-        onClose={() => setOpenAddressModal(false)}
-        onCreated={handleAddressCreated}
-      />
     </>
   );
 }

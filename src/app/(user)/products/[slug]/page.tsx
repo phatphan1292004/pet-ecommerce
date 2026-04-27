@@ -1,8 +1,12 @@
-import { getProductBySlug } from '@/features/guest/product/servers';
-import ProductDetailPage from '@/features/guest/product/components/product-detail';
-import { getReplies, getReviews, type UiReview } from '@/features/customer/review';
-import { cookies } from 'next/headers';
-import { notFound } from 'next/navigation';
+import { getProductBySlug } from "@/features/guest/product/servers";
+import ProductDetailPage from "@/features/guest/product/components/product-detail";
+import {
+  getReplies,
+  getReviews,
+  type UiReview,
+} from "@/features/customer/review";
+import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 
 interface ProductPageProps {
   params: Promise<{
@@ -12,14 +16,14 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const cookieStore = await cookies();
+  const currentUserId = cookieStore.get("userId")?.value;
+  const product = await getProductBySlug(slug, currentUserId);
 
   if (!product) {
     notFound();
   }
 
-  const cookieStore = await cookies();
-  const currentUserId = cookieStore.get('userId')?.value;
   const isLoggedIn = !!currentUserId;
 
   let initialComments: UiReview[] = [];
@@ -33,7 +37,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           return { ...review, replies: replyResult.data };
         }
         return review;
-      })
+      }),
     );
   }
 
