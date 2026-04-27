@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { createOrderFromOpenCart } from "@/features/customer/cart/servers";
+import { createOrderFromOpenCart, createVnpayPayment } from "@/features/customer/cart/servers";
 import { useToast } from "@/hooks";
 import { useCartStore, useCheckoutStore } from "@/store";
 import { buildCheckoutPricingPayload } from "@/features/customer/cart/checkout-storage";
@@ -56,28 +56,11 @@ export default function CartPaymentContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const showWarningRef = useRef(showWarning);
 
+  console.log("Shipping Data:", shippingData);
+
   useEffect(() => {
     showWarningRef.current = showWarning;
   }, [showWarning]);
-
-  useEffect(() => {
-    if (!shippingData) {
-      showWarningRef.current("Vui lòng nhập thông tin giao hàng trước");
-      router.replace("/cart/shipping");
-      return;
-    }
-
-    const hasRequiredFields =
-      Boolean(shippingData.arrivalName?.trim()) &&
-      Boolean(shippingData.arrivalPhone?.trim()) &&
-      Boolean(shippingData.arrivalAddress?.trim());
-
-    if (!hasRequiredFields) {
-      clearCheckout();
-      showWarningRef.current("Vui lòng nhập lại thông tin giao hàng");
-      router.replace("/cart/shipping");
-    }
-  }, [clearCheckout, router, shippingData]);
 
   const checkoutSummary = useMemo(() => {
     const subtotal =
@@ -206,6 +189,37 @@ export default function CartPaymentContent() {
 
       if (!result.success) {
         showWarning(result.message || "Không thể tạo đơn hàng");
+        return;
+      }
+
+      if (paymentMethod === "vnpay") {
+        const orderId = result.data?.orderId?.trim();
+
+        clearCart();
+        clearCheckout();
+
+        if (!orderId) {
+          showWarning("Đã tạo đơn hàng nhưng thiếu mã đơn để khởi tạo VNPAY.");
+          router.push("/userinfo");
+          return;
+        }
+
+        const returnUrl = `${window.location.origin}/cart/payment/vnpay-return`;
+
+        const paymentResult = await createVnpayPayment({
+          orderId,
+          amount: grandTotal,
+          returnUrl,
+        });
+
+        if (!paymentResult.success || !paymentResult.data?.paymentUrl) {
+          showWarning(paymentResult.message || "Không tạo được liên kết thanh toán VNPAY");
+          router.push("/userinfo");
+          return;
+        }
+
+        showSuccess("Đang chuyển đến cổng thanh toán VNPAY...");
+        window.location.assign(paymentResult.data.paymentUrl);
         return;
       }
 

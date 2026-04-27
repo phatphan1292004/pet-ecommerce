@@ -26,6 +26,7 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
   const cart = stepStyles(currentStep === 1 ? "active" : currentStep > 1 ? "completed" : "inactive");
   const shipping = stepStyles(currentStep === 2 ? "active" : currentStep > 2 ? "completed" : "inactive");
   const payment = stepStyles(currentStep === 3 ? "active" : "inactive");
+  const canNavigateToPayment = currentStep >= 3;
 
   return (
     <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-6">
@@ -58,16 +59,29 @@ export default function CartProgress({ currentStep = 1 }: CartProgressProps) {
       </div>
 
       <div className="relative flex flex-col items-center gap-2">
-        <Link
-          href="/cart/payment"
-          aria-current={currentStep === 3 ? "step" : undefined}
-          className="flex flex-col items-center gap-2"
-        >
-          <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
-            <IoCard size={18} />
-          </span>
-          <span className={`text-xs font-semibold sm:text-sm ${payment.text}`}>Thanh toán</span>
-        </Link>
+        {canNavigateToPayment ? (
+          <Link
+            href="/cart/payment"
+            aria-current={currentStep === 3 ? "step" : undefined}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
+              <IoCard size={18} />
+            </span>
+            <span className={`text-xs font-semibold sm:text-sm ${payment.text}`}>Thanh toán</span>
+          </Link>
+        ) : (
+          <div
+            aria-disabled="true"
+            className="flex cursor-not-allowed flex-col items-center gap-2"
+            title="Vui lòng hoàn tất bước giao hàng để tiếp tục"
+          >
+            <span className={`flex h-11 w-11 items-center justify-center rounded-full ${payment.circle}`}>
+              <IoCard size={18} />
+            </span>
+            <span className={`text-xs font-semibold sm:text-sm ${payment.text}`}>Thanh toán</span>
+          </div>
+        )}
       </div>
     </div>
   );

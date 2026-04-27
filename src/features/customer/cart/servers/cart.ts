@@ -45,6 +45,25 @@ interface CreateOrderFromOpenCartInput {
   couponCode?: string;
 }
 
+interface CreateVnpayPaymentInput {
+  orderId: string;
+  amount: number;
+  returnUrl?: string;
+}
+
+interface CreateVnpayPaymentData {
+  paymentUrl: string;
+}
+
+interface VerifyVnpayReturnData {
+  isPaid: boolean;
+  responseCode?: string;
+  orderId?: string;
+  transactionNo?: string;
+  amount?: number;
+  raw?: Record<string, unknown>;
+}
+
 export interface AvailableCoupon {
   code: string;
   discountType: "percent" | "fixed";
@@ -156,6 +175,50 @@ const toNumberValue = (value: unknown): number | undefined => {
   }
 
   return undefined;
+};
+
+const getVnpayCreatePaymentPath = (): string => {
+  const customPath = toStringValue(process.env.PET_ECOMMERCE_VNPAY_CREATE_PATH).trim();
+  return customPath || "/create_payment";
+};
+
+const getVnpayReturnPath = (): string => {
+  const customPath = toStringValue(process.env.PET_ECOMMERCE_VNPAY_RETURN_PATH).trim();
+  return customPath || "/payment_return";
+};
+
+const pickFirstString = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return toStringValue(value[0]);
+  }
+
+  return toStringValue(value);
+};
+
+const normalizeVnpayQueryParams = (
+  params: Record<string, string | string[] | undefined>
+): Record<string, string> => {
+  const output: Record<string, string> = {};
+
+  for (const [key, rawValue] of Object.entries(params)) {
+    const value = pickFirstString(rawValue).trim();
+    if (!value) {
+      continue;
+    }
+    output[key] = value;
+  }
+
+  return output;
+};
+
+const resolveResponseData = (response: unknown): Record<string, unknown> => {
+  const value = (response as { data?: unknown })?.data;
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
 };
 
 const normalizeCouponDiscountType = (value: unknown): "percent" | "fixed" | undefined => {
@@ -561,6 +624,61 @@ export const createOrderFromOpenCart = async (
     success: true,
     message: getResponseMessage(orderResponse, "Open cart checked out successfully"),
     data: { orderId: data?.orderId || data?.id || data?._id },
+  };
+};
+
+export const createVnpayPayment = async (
+  input: CreateVnpayPaymentInput
+): Promise<ActionResult<CreateVnpayPaymentData>> => {
+  const amount = Math.max(0, Math.round(toNumberValue(input.amount) ?? 0));
+  const orderId = toStringValue(input.orderId).trim();
+  const returnUrl = toStringValue(input.returnUrl).trim();
+
+  if (!orderId) {
+    return { success: false, message: "Missing orderId" };
+  }
+
+  if (amount <= 0) {
+    return { success: false, message: "Invalid payment amount" };
+  }
+
+  const response = await post(
+    getVnpayCreatePaymentPath(),
+    {
+      orderId,
+      amount,
+      ...(returnUrl ? { returnUrl } : {}),
+    },
+    null,
+    (error) =>
+      (error as { response?: { data?: unknown } })?.response?.data || null
+  );
+
+  if (isExplicitFailure(response)) {
+    return {
+      success: false,
+      message: getResponseMessage(response, "Không tạo được liên kết thanh toán VNPAY"),
+    };
+  }
+
+  const paymentUrl = pickFirstString(
+    (response as { paymentUrl?: unknown })?.paymentUrl ||
+      (response as { data?: { paymentUrl?: unknown } })?.data?.paymentUrl
+  ).trim();
+
+  if (!paymentUrl) {
+    return {
+      success: false,
+      message: "Phản hồi VNPAY không chứa đường dẫn thanh toán",
+    };
+  }
+
+  return {
+    success: true,
+    message: getResponseMessage(response, "Created VNPAY payment url"),
+    data: {
+      paymentUrl,
+    },
   };
 };
 

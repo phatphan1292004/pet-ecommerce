@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import {
   buildCheckoutPricingPayload,
   type CheckoutOrderPayload,
@@ -22,28 +23,41 @@ const defaultPricing = buildCheckoutPricingPayload({
   couponDiscount: 0,
 });
 
-export const useCheckoutStore = create<CheckoutState>()((set) => ({
-  pricing: defaultPricing,
-  shippingData: null,
-
-  setPricing: (input) =>
-    set(() => ({
-      pricing: buildCheckoutPricingPayload(input),
-    })),
-
-  setShippingData: (payload) =>
-    set(() => ({
-      shippingData: payload,
-    })),
-
-  clearShippingData: () =>
-    set(() => ({
-      shippingData: null,
-    })),
-
-  clearCheckout: () =>
-    set(() => ({
+export const useCheckoutStore = create<CheckoutState>()(
+  persist(
+    (set) => ({
       pricing: defaultPricing,
       shippingData: null,
-    })),
-}));
+
+      setPricing: (input) =>
+        set(() => ({
+          pricing: buildCheckoutPricingPayload(input),
+        })),
+
+      setShippingData: (payload) =>
+        set(() => ({
+          shippingData: payload,
+        })),
+
+      clearShippingData: () =>
+        set(() => ({
+          shippingData: null,
+        })),
+
+      clearCheckout: () =>
+        set(() => ({
+          pricing: defaultPricing,
+          shippingData: null,
+        })),
+    }),
+    {
+      name: "pet-ecommerce-checkout",
+      storage: createJSONStorage(() => localStorage),
+      version: 1,
+      partialize: (state) => ({
+        pricing: state.pricing,
+        shippingData: state.shippingData,
+      }),
+    },
+  ),
+);
