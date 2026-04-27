@@ -10,7 +10,6 @@ export interface ProductDetail extends Product {
   images?: string[];
   stock?: number;
   shipping?: string;
-  isFavorited?: boolean;
   is_active?: boolean;
   isFavorite?: boolean;
   is_favorite?: boolean;

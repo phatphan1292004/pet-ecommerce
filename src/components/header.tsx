@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaChevronDown, FaRegUserCircle } from "react-icons/fa";
 import {
   IoCartOutline,
@@ -15,6 +15,7 @@ import { logout } from "@/features/guest/logout";
 import { useCartStore } from "@/store";
 import { Category } from "@/types/category";
 import CategoryDropdown from "./category-dropdown";
+import SearchDropdown from "./search-dropdown";
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -34,16 +35,8 @@ export default function Header({
 }: HeaderProps) {
   const cartCount = useCartStore((state) => state.totalItems);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (searchOpen) {
-      searchInputRef.current?.focus();
-    }
-  }, [searchOpen]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -241,30 +234,7 @@ export default function Header({
               </button>
 
               {searchOpen ? (
-                <div className="absolute right-0 top-[calc(100%+12px)] z-50 flex w-[calc(100vw-2rem)] max-w-sm items-center gap-2 rounded-lg border border-neutral-20 bg-white px-4 py-2.5 shadow-lg focus-within:border-primary-3 sm:w-80">
-                  <IoSearchOutline
-                    size={18}
-                    className="shrink-0 text-neutral-5"
-                  />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm sản phẩm..."
-                    className="flex-1 bg-transparent text-sm text-neutral-1 outline-none placeholder:text-neutral-5"
-                  />
-                  {searchQuery ? (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="text-neutral-5 transition-colors hover:text-neutral-3"
-                      aria-label="Xóa từ khóa"
-                    >
-                      <IoCloseOutline size={18} />
-                    </button>
-                  ) : null}
-                </div>
+                <SearchDropdown onClose={() => setSearchOpen(false)} />
               ) : null}
             </div>
 

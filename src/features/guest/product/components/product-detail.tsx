@@ -603,12 +603,12 @@ export default function ProductDetailPage({
                   disabled={isAddingFavorite}
                   aria-label="Thêm vào yêu thích"
                   className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-                    product.isFavorited
+                    product.isFavorite
                       ? 'border-primary-1 bg-primary-6 text-primary-1'
                       : 'border-neutral-7 text-neutral-4 hover:border-primary-1 hover:text-primary-1'
                   }`}
                 >
-                  {product.isFavorited ? <IoMdHeart size={18} /> : <IoMdHeartEmpty size={18} />}
+                  {product.isFavorite ? <IoMdHeart size={18} /> : <IoMdHeartEmpty size={18} />}
                 </button>
               </div>
             </div>
