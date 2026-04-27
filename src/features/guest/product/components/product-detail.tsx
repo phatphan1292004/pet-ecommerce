@@ -536,7 +536,7 @@ export default function ProductDetailPage({
               {product.brand && (
                 <div className="flex items-start justify-between gap-3 py-1.5">
                   <span className="w-2/5 text-neutral-4">Thương hiệu</span>
-                  <span className="w-3/5 break-all text-right font-medium text-neutral-1">{product.brand}</span>
+                  <span className="w-3/5 break-all text-right font-medium text-neutral-1">{product.specifications?.brand}</span>
                 </div>
               )}
               {product.specifications?.origin && (

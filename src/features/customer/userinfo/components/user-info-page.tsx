@@ -93,11 +93,11 @@ export default function UserInfoPage({
         <Link href="/" className="hover:text-primary-1 transition-colors">
           Trang chủ
         </Link>
-        <span className="mx-1">{">"}</span>
+        <span className="mx-1">{"/"}</span>
         <Link href="/userinfo" className="hover:text-primary-1 transition-colors">
           Thông tin cá nhân
         </Link>
-        <span className="mx-1">{">"}</span>
+        <span className="mx-1">{"/"}</span>
         <span className="text-neutral-1">{currentTabLabel}</span>
       </nav>
 
