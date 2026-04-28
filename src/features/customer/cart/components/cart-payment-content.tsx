@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { createOrderFromOpenCart, createVnpayPayment } from "@/features/customer/cart/servers";
+import {
+  createOrderFromOpenCart,
+  createVnpayPayment,
+} from "@/features/customer/cart/servers";
 import { useToast } from "@/hooks";
 import { useCartStore, useCheckoutStore } from "@/store";
 import { buildCheckoutPricingPayload } from "@/features/customer/cart/checkout-storage";
@@ -54,13 +57,6 @@ export default function CartPaymentContent() {
   const clearCheckout = useCheckoutStore((state) => state.clearCheckout);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const showWarningRef = useRef(showWarning);
-
-  console.log("Shipping Data:", shippingData);
-
-  useEffect(() => {
-    showWarningRef.current = showWarning;
-  }, [showWarning]);
 
   const checkoutSummary = useMemo(() => {
     const subtotal =
@@ -107,7 +103,8 @@ export default function CartPaymentContent() {
       return vietQRConfig.transferPrefix;
     }
 
-    const phoneTail = shippingData.arrivalPhone.replace(/\D/g, "").slice(-4) || "0000";
+    const phoneTail =
+      shippingData.arrivalPhone.replace(/\D/g, "").slice(-4) || "0000";
     return `${vietQRConfig.transferPrefix} ${phoneTail}`;
   }, [shippingData, vietQRConfig.transferPrefix]);
 
@@ -128,7 +125,7 @@ export default function CartPaymentContent() {
       vietQRConfig.accountNo,
       vietQRConfig.bankId,
       vietQRConfig.template,
-    ]
+    ],
   );
 
   const canPlaceOrder =
@@ -136,20 +133,6 @@ export default function CartPaymentContent() {
     grandTotal > 0 &&
     !isSubmitting &&
     (paymentMethod !== "vietqr" || vietQRConfig.isConfigured);
-
-  const copyText = async (value: string, fieldName: string) => {
-    if (!value.trim()) {
-      showWarning(`Chưa có ${fieldName} để sao chép`);
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(value);
-      showSuccess(`Đã sao chép ${fieldName}`);
-    } catch {
-      showWarning("Không thể sao chép, vui lòng thử lại");
-    }
-  };
 
   const handlePlaceOrder = async () => {
     if (!shippingData) {
@@ -168,7 +151,9 @@ export default function CartPaymentContent() {
     }
 
     const appliedCouponCode =
-      shippingData.couponCode?.trim() || shippingData.coupon?.trim() || couponCode;
+      shippingData.couponCode?.trim() ||
+      shippingData.coupon?.trim() ||
+      couponCode;
 
     const payload = {
       ...shippingData,
@@ -200,21 +185,17 @@ export default function CartPaymentContent() {
 
         if (!orderId) {
           showWarning("Đã tạo đơn hàng nhưng thiếu mã đơn để khởi tạo VNPAY.");
-          router.push("/userinfo");
           return;
         }
-
-        const returnUrl = `${window.location.origin}/cart/payment/vnpay-return`;
-
         const paymentResult = await createVnpayPayment({
           orderId,
           amount: grandTotal,
-          returnUrl,
         });
 
         if (!paymentResult.success || !paymentResult.data?.paymentUrl) {
-          showWarning(paymentResult.message || "Không tạo được liên kết thanh toán VNPAY");
-          router.push("/userinfo");
+          showWarning(
+            paymentResult.message || "Không tạo được liên kết thanh toán VNPAY",
+          );
           return;
         }
 
@@ -226,9 +207,11 @@ export default function CartPaymentContent() {
       clearCart();
       clearCheckout();
       if (paymentMethod === "vietqr") {
-        showSuccess("Đã tạo đơn hàng. Vui lòng hoàn tất chuyển khoản qua VietQR.");
+        showSuccess(
+          "Đã tạo đơn hàng. Vui lòng hoàn tất chuyển khoản qua VietQR.",
+        );
       } else {
-        showSuccess("Đã gửi thông tin thanh toán lên hệ thống");
+        showSuccess("Đã tạo đơn hàng thành công. Vui lòng chờ nhân viên giao hàng liên hệ xác nhận.");
       }
       router.push("/userinfo");
     } finally {
@@ -236,40 +219,49 @@ export default function CartPaymentContent() {
     }
   };
 
-  if (!shippingData) {
-    return <p className="text-sm text-neutral-4">Đang chuyển hướng...</p>;
-  }
-
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-5">
         <div className="rounded-2xl border border-neutral-7 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-primary-1">Thông tin giao hàng</h2>
+            <h2 className="text-base font-semibold text-primary-1">
+              Thông tin giao hàng
+            </h2>
             <span className="rounded-full border border-primary-1/20 bg-primary-3/10 px-3 py-1 text-xs font-semibold text-primary-1">
               Đã xác nhận
             </span>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-4 text-sm text-neutral-1 md:grid-cols-2">
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-4">Người nhận</p>
-              <p className="text-base font-semibold text-neutral-1">{shippingData.arrivalName}</p>
-              <p className="text-sm text-neutral-4">{shippingData.arrivalPhone}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-4">
+                Người nhận
+              </p>
+              <p className="text-base font-semibold text-neutral-1">
+                {shippingData?.arrivalName}
+              </p>
+              <p className="text-sm text-neutral-4">
+                {shippingData?.arrivalPhone}
+              </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-4">Địa chỉ giao hàng</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-4">
+                Địa chỉ giao hàng
+              </p>
               <p className="text-sm text-neutral-1">{addressSummary}</p>
             </div>
           </div>
-          {shippingData.note ? (
+          {shippingData?.note ? (
             <div className="mt-4 rounded-xl border border-dashed border-neutral-7 bg-neutral-10 px-4 py-3 text-sm text-neutral-4">
-              <span className="font-semibold text-neutral-1">Ghi chú:</span> {shippingData.note}
+              <span className="font-semibold text-neutral-1">Ghi chú:</span>{" "}
+              {shippingData.note}
             </div>
           ) : null}
         </div>
 
         <div className="rounded-2xl border border-neutral-7 p-5">
-          <h2 className="text-base font-semibold text-primary-1">Phương thức thanh toán</h2>
+          <h2 className="text-base font-semibold text-primary-1">
+            Phương thức thanh toán
+          </h2>
           <div className="mt-4 space-y-3">
             {paymentMethods.map((method) => (
               <label
@@ -291,11 +283,20 @@ export default function CartPaymentContent() {
                 />
                 <span className="flex items-start gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
-                    <Image src={method.image} alt={method.imageAlt} width={35} height={35} />
+                    <Image
+                      src={method.image}
+                      alt={method.imageAlt}
+                      width={35}
+                      height={35}
+                    />
                   </span>
                   <span>
-                    <span className="block text-sm font-semibold text-neutral-1">{method.label}</span>
-                    <span className="block text-xs text-neutral-4">{method.description}</span>
+                    <span className="block text-sm font-semibold text-neutral-1">
+                      {method.label}
+                    </span>
+                    <span className="block text-sm text-neutral-4">
+                      {method.description}
+                    </span>
                   </span>
                 </span>
               </label>
@@ -304,7 +305,9 @@ export default function CartPaymentContent() {
 
           {paymentMethod === "vietqr" ? (
             <div className="mt-4 rounded-xl border border-primary-1/20 bg-primary-3/10 p-4">
-              <h3 className="text-sm font-semibold text-neutral-1">Thanh toán bằng VietQR</h3>
+              <h3 className="text-sm font-semibold text-neutral-1">
+                Thanh toán bằng VietQR
+              </h3>
 
               {vietQRConfig.isConfigured ? (
                 <div className="mt-3 grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -325,50 +328,55 @@ export default function CartPaymentContent() {
 
                   <div className="space-y-3 text-sm text-neutral-2">
                     <div className="grid gap-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral-4">Ngân hàng</p>
-                      <p className="font-semibold">{vietQRConfig.bankName || vietQRConfig.bankId}</p>
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">
+                        Ngân hàng
+                      </p>
+                      <p className="font-semibold">
+                        {vietQRConfig.bankName || vietQRConfig.bankId}
+                      </p>
                     </div>
 
                     <div className="grid gap-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral-4">Số tài khoản</p>
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">
+                        Số tài khoản
+                      </p>
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold">{vietQRConfig.accountNo}</p>
-                        <button
-                          type="button"
-                          onClick={() => copyText(vietQRConfig.accountNo, "số tài khoản")}
-                          className="rounded-md border border-neutral-7 bg-white px-2 py-1 text-xs font-semibold text-neutral-2 transition hover:border-primary-2 hover:text-primary-1"
-                        >
-                          Sao chép
-                        </button>
+                        <p className="font-semibold">
+                          {vietQRConfig.accountNo}
+                        </p>
                       </div>
                     </div>
 
                     <div className="grid gap-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral-4">Chủ tài khoản</p>
-                      <p className="font-semibold">{vietQRConfig.accountName || "--"}</p>
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">
+                        Chủ tài khoản
+                      </p>
+                      <p className="font-semibold">
+                        {vietQRConfig.accountName || "--"}
+                      </p>
                     </div>
 
                     <div className="grid gap-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral-4">Số tiền</p>
-                      <p className="font-semibold text-primary-1">{formatCurrency(grandTotal)}</p>
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">
+                        Số tiền
+                      </p>
+                      <p className="font-semibold text-primary-1">
+                        {formatCurrency(grandTotal)}
+                      </p>
                     </div>
 
                     <div className="grid gap-1">
-                      <p className="text-xs uppercase tracking-wide text-neutral-4">Nội dung chuyển khoản</p>
+                      <p className="text-xs uppercase tracking-wide text-neutral-4">
+                        Nội dung chuyển khoản
+                      </p>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold">{transferContent}</p>
-                        <button
-                          type="button"
-                          onClick={() => copyText(transferContent, "nội dung chuyển khoản")}
-                          className="rounded-md border border-neutral-7 bg-white px-2 py-1 text-xs font-semibold text-neutral-2 transition hover:border-primary-2 hover:text-primary-1"
-                        >
-                          Sao chép
-                        </button>
                       </div>
                     </div>
 
-                    <p className="rounded-lg border border-dashed border-primary-1/30 bg-white px-3 py-2 text-xs text-neutral-4">
-                      Vui lòng chuyển đúng số tiền và đúng nội dung để hệ thống xác nhận nhanh hơn.
+                    <p className="rounded-lg border border-dashed border-primary-1/30 bg-white px-3 py-2 text-lg text-neutral-4">
+                      Vui lòng chuyển đúng số tiền và đúng nội dung để hệ thống
+                      xác nhận nhanh hơn.
                     </p>
                   </div>
                 </div>
@@ -376,7 +384,8 @@ export default function CartPaymentContent() {
                 <div className="mt-3 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
                   Chưa cấu hình VietQR. Vui lòng thêm các biến môi trường:
                   <span className="mt-1 block font-semibold">
-                    NEXT_PUBLIC_VIETQR_BANK_ID, NEXT_PUBLIC_VIETQR_ACCOUNT_NO, NEXT_PUBLIC_VIETQR_ACCOUNT_NAME
+                    NEXT_PUBLIC_VIETQR_BANK_ID, NEXT_PUBLIC_VIETQR_ACCOUNT_NO,
+                    NEXT_PUBLIC_VIETQR_ACCOUNT_NAME
                   </span>
                 </div>
               )}
@@ -386,7 +395,9 @@ export default function CartPaymentContent() {
       </div>
 
       <aside className="h-fit rounded-2xl border border-neutral-7 p-5">
-        <h2 className="mb-4 text-lg font-bold text-neutral-1">Tóm tắt thanh toán</h2>
+        <h2 className="mb-4 text-lg font-bold text-neutral-1">
+          Tóm tắt thanh toán
+        </h2>
 
         <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
           <div className="flex items-center justify-between">
@@ -399,7 +410,9 @@ export default function CartPaymentContent() {
           </div>
           <div className="flex items-center justify-between">
             <span>Giảm giá</span>
-            <span className="font-semibold text-primary-1">-{formatCurrency(discountValue)}</span>
+            <span className="font-semibold text-primary-1">
+              -{formatCurrency(discountValue)}
+            </span>
           </div>
         </div>
 

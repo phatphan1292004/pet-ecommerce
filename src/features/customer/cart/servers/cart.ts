@@ -182,11 +182,6 @@ const getVnpayCreatePaymentPath = (): string => {
   return customPath || "/create_payment";
 };
 
-const getVnpayReturnPath = (): string => {
-  const customPath = toStringValue(process.env.PET_ECOMMERCE_VNPAY_RETURN_PATH).trim();
-  return customPath || "/payment_return";
-};
-
 const pickFirstString = (value: unknown): string => {
   if (Array.isArray(value)) {
     return toStringValue(value[0]);
@@ -632,7 +627,6 @@ export const createVnpayPayment = async (
 ): Promise<ActionResult<CreateVnpayPaymentData>> => {
   const amount = Math.max(0, Math.round(toNumberValue(input.amount) ?? 0));
   const orderId = toStringValue(input.orderId).trim();
-  const returnUrl = toStringValue(input.returnUrl).trim();
 
   if (!orderId) {
     return { success: false, message: "Missing orderId" };
@@ -647,7 +641,6 @@ export const createVnpayPayment = async (
     {
       orderId,
       amount,
-      ...(returnUrl ? { returnUrl } : {}),
     },
     null,
     (error) =>
