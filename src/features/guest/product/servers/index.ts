@@ -1,5 +1,7 @@
 export {
 	getLatestProducts,
+	getPopularProducts,
+	getBestSellingProducts,
 	getProductBySlug,
 	getProductsBySubcategory,
 	getFilteredProducts,

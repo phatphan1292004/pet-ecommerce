@@ -56,6 +56,16 @@ export const getLatestProducts = async (): Promise<Product[] | null> => {
   return res?.data ?? null;
 };
 
+export const getPopularProducts = async (): Promise<Product[] | null> => {
+  const res = await get(`/products/popular`);
+  return res?.data ?? null;
+};
+
+export const getBestSellingProducts = async (): Promise<Product[] | null> => {
+  const res = await get(`/products/best-selling`);
+  return res?.data ?? null;
+};
+
 export const getProductBySlug = async (
   slug: string,
   customerId?: string
