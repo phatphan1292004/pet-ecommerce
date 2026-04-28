@@ -81,6 +81,9 @@ export default function ProductDetailPage({
   const savings = product.originalPrice ? product.originalPrice - product.price : 0;
   const formattedSavings = savings > 0 ? savings.toLocaleString('vi-VN') : '';
 
+  const featuredText = String(product.specifications?.featured ?? '');
+  const featuredLines = featuredText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 1;
     if (value > 0 && value <= (product.stock || 999)) {
@@ -656,13 +659,35 @@ export default function ProductDetailPage({
                   <div>
                     <h3 className="text-lg font-bold text-neutral-1 mb-3">Thông tin sản phẩm</h3>
                     <div className="space-y-3">
-                      {Object.entries(product.specifications).map(([key, value]) => (
-                        <div key={key} className="flex flex-col gap-1 py-1 sm:flex-row sm:gap-8">
-                          <span className="w-32 shrink-0 text-neutral-4">{specificationLabels[key] || key}</span>
-                          <span className="text-neutral-1">{String(value)}</span>
-                        </div>
-                      ))}
+                      {Object.entries(product.specifications)
+                        .filter(([key]) => key !== 'featured')
+                        .map(([key, value]) => (
+                          <div key={key} className="flex flex-col gap-1 py-1 sm:flex-row sm:gap-8">
+                            <span className="w-32 shrink-0 text-neutral-4">{specificationLabels[key] || key}</span>
+                            <span className="text-neutral-1">{String(value)}</span>
+                          </div>
+                        ))}
                     </div>
+                  </div>
+                )}
+
+                {product.specifications?.featured && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-bold text-neutral-1 mb-2">Tính năng</h3>
+                    {featuredLines.length > 1 || featuredLines.some((l) => l.startsWith('-')) ? (
+                      <ul className="list-disc pl-6 space-y-2 text-neutral-2 mb-6">
+                        {featuredLines.map((line, idx) => {
+                          const text = line.replace(/^[-•\s]+/, '').trim();
+                          return (
+                            <li key={idx} className="leading-relaxed">
+                              {text}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="text-neutral-2 leading-relaxed mb-6">{featuredText}</p>
+                    )}
                   </div>
                 )}
 
