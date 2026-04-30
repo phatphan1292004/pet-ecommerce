@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
@@ -20,6 +21,7 @@ import {
   updateReview,
   type UiReview,
 } from '@/features/customer/review';
+import { renderLongDescription, renderWithLabel } from '@/utils/products';
 
 
 type Comment = UiReview;
@@ -83,6 +85,14 @@ export default function ProductDetailPage({
 
   const featuredText = String(product.specifications?.featured ?? '');
   const featuredLines = featuredText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const usageText = String(product.usage ?? '');
+  const usageLines = usageText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const usageIsNumbered = usageLines.some((l) => /^\d+[\.)]/.test(l));
+  const usageIsBulleted = usageLines.some((l) => /^[-•\u2022]/.test(l));
+  const ingredientsText = String(product.ingredients ?? '');
+  const ingredientsLines = ingredientsText.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  const ingredientsIsNumbered = ingredientsLines.some((l) => /^\d+[\.)]/.test(l));
+  const ingredientsIsBulleted = ingredientsLines.some((l) => /^[-•\u2022]/.test(l));
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 1;
@@ -498,8 +508,8 @@ export default function ProductDetailPage({
                     <Image
                       src={img}
                       alt={`${product.name} ${idx}`}
-                      width={80}
-                      height={80}
+                      width={65}
+                      height={65}
                       className="object-contain p-2 w-full h-full"
                     />
                   </div>
@@ -642,6 +652,17 @@ export default function ProductDetailPage({
                   }`
                 }
               >
+                Thành phần & Hướng dẫn sử dụng
+              </Tab>
+              <Tab
+                className={({ selected }) =>
+                  `py-4 px-2 font-medium text-sm transition-colors outline-none ${
+                    selected
+                      ? 'text-primary-1 border-b-2 border-primary-1 -mb-px'
+                      : 'text-neutral-4 hover:text-neutral-1'
+                  }`
+                }
+              >
                 Đánh giá sản phẩm
               </Tab>
             </TabList>
@@ -651,7 +672,8 @@ export default function ProductDetailPage({
                 {product.longDescription && (
                   <div>
                     <h3 className="text-lg font-bold text-neutral-1 mb-3">Mô tả sản phẩm</h3>
-                    <p className="text-neutral-3 leading-relaxed">{product.longDescription}</p>
+                    <h5 className="text-base font-semibold text-neutral-1 mb-2">{product.description}</h5>
+                    <div className="space-y-4">{renderLongDescription(product.longDescription)}</div>
                   </div>
                 )}
 
@@ -704,6 +726,83 @@ export default function ProductDetailPage({
                     </div>
                   </div>
                 )}
+              </TabPanel>
+              <TabPanel className="space-y-6">
+                {product.ingredients && (
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-1 mb-3">Thành phần</h3>
+                    {ingredientsIsNumbered ? (
+                      <ol className="list-decimal pl-6 space-y-2 text-neutral-2 mb-6">
+                        {ingredientsLines.map((line, idx) => {
+                          const text = line.replace(/^\d+[\.)]\s*/, '').trim();
+                          return (
+                            <li key={idx} className="leading-relaxed">
+                              {renderWithLabel(text)}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    ) : ingredientsIsBulleted ? (
+                      <ul className="list-disc pl-6 space-y-2 text-neutral-2 mb-6">
+                        {ingredientsLines.map((line, idx) => {
+                          const text = line.replace(/^[-•\s]+/, '').trim();
+                          return (
+                            <li key={idx} className="leading-relaxed">
+                              {renderWithLabel(text)}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="space-y-4 text-neutral-2 mb-6">
+                        {ingredientsText.split(/\n{2,}/).map((para, idx) => (
+                          <p key={idx} className="leading-relaxed whitespace-pre-line">
+                            {renderWithLabel(para.trim())}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-1 mb-3">Hướng dẫn sử dụng</h3>
+                  {product.usage ? (
+                    usageIsNumbered ? (
+                      <ol className="list-decimal pl-6 space-y-2 text-neutral-2 mb-6">
+                        {usageLines.map((line, idx) => {
+                            const text = line.replace(/^\d+[\.)]\s*/, '').trim();
+                            return (
+                              <li key={idx} className="leading-relaxed">
+                                {renderWithLabel(text)}
+                              </li>
+                            );
+                        })}
+                      </ol>
+                    ) : usageIsBulleted ? (
+                      <ul className="list-disc pl-6 space-y-2 text-neutral-2 mb-6">
+                        {usageLines.map((line, idx) => {
+                            const text = line.replace(/^[-•\s]+/, '').trim();
+                            return (
+                              <li key={idx} className="leading-relaxed">
+                                {renderWithLabel(text)}
+                              </li>
+                            );
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="space-y-4 text-neutral-2 mb-6">
+                        {usageText.split(/\n{2,}/).map((para, idx) => (
+                          <p key={idx} className="leading-relaxed">
+                            {renderWithLabel(para.trim())}
+                          </p>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-neutral-4">Chưa có hướng dẫn sử dụng cho sản phẩm này.</p>
+                  )}
+                </div>
               </TabPanel>
 
               <TabPanel>

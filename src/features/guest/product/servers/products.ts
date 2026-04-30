@@ -15,6 +15,8 @@ export interface ProductDetail extends Product {
   is_favorite?: boolean;
   specifications?: Record<string, string | number>;
   benefits?: Record<string, string>;
+  usage?: string;
+  ingredients?: string;
   created_at?: string;
 }
 
