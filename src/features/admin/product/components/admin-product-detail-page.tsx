@@ -143,17 +143,23 @@ export default function AdminProductDetailPage({
   const images = getProductImages(product);
   return (
     <div className="space-y-4 sm:space-y-5">
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/admin/products"
           className="inline-flex items-center gap-2 rounded-full border border-neutral-20 bg-white px-4 py-2 text-xs font-medium text-neutral-2 transition hover:border-primary-1 hover:text-primary-1 sm:text-sm"
         >
           Quay lại danh sách
         </Link>
+        <Link
+          href={`/admin/products/${product.id}/edit`}
+          className="inline-flex items-center gap-2 rounded-full border border-primary-4 bg-primary-6 px-4 py-2 text-xs font-semibold text-primary-1 transition hover:border-primary-1 sm:text-sm"
+        >
+          Chỉnh sửa sản phẩm
+        </Link>
       </div>
 
       <section className="space-y-4">
-        <div className="grid items-start gap-4 md:grid-cols-[320px,minmax(0,1fr)]">
+        <div className="flex flex-col gap-4 md:flex-row">
           <div className="overflow-hidden rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm">
             <AdminProductImageSlider images={images} name={product.name} />
             <div className="mt-4 space-y-1">

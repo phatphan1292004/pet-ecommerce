@@ -70,15 +70,23 @@ export interface AdminProductMutationResult {
 
 export interface AdminCreateProductPayload {
   name: string;
+  slug: string;
   price: number;
   brandId?: string;
   subCategoryId?: string;
   description?: string;
+  longDescription?: string;
   originalPrice?: number;
   discount?: number;
   stock?: number;
   images?: string[];
   isActive?: boolean;
+  specifications?: string | UnknownRecord;
+  benefits?: string | UnknownRecord;
+  usage?: string;
+  ingredients?: string;
+  shipping?: string;
+  review?: number;
 }
 
 export type AdminUpdateProductPayload = Partial<AdminCreateProductPayload>;

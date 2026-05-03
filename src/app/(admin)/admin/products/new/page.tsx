@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminProductCreateForm } from "@/features/admin/product/components";
 
 export default function AdminProductCreatePage() {
   return (
@@ -17,9 +18,7 @@ export default function AdminProductCreatePage() {
         </Link>
       </div>
 
-      <div className="rounded-xl border border-dashed border-neutral-20 bg-neutral-10 px-4 py-8 text-center text-sm text-neutral-4">
-        Form them san pham se duoc them tai day.
-      </div>
+      <AdminProductCreateForm />
     </section>
   );
 }
