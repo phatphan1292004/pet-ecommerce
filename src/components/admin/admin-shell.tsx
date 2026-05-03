@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { IconType } from "react-icons";
+import { AiFillProduct } from "react-icons/ai";
 import {
   FiBell,
   FiChevronsLeft,
@@ -30,6 +31,7 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: FiGrid },
+  { href: "/admin/products", label: "Sản phẩm", icon: AiFillProduct },
   { href: "/admin/order", label: "Đơn hàng", icon: FiShoppingBag },
   { href: "/admin/user", label: "Người dùng", icon: FiUsers },
   { href: "/admin/coupons", label: "Mã giảm giá", icon: FiTag },
