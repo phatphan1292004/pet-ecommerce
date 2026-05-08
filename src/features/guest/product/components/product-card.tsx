@@ -9,6 +9,7 @@ import { useToast } from "@/hooks";
 import { IoMdHeart, IoMdHeartEmpty } from "react-icons/io";
 import { syncOpenCartItem } from "@/features/customer/cart/servers";
 import { addFavoriteProduct } from "@/features/customer/userinfo/servers";
+import { trackProductActivity } from "../servers";
 
 export interface Product {
   _id: string;
@@ -39,6 +40,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   const savings = product.originalPrice ? product.originalPrice - product.price : 0;
   const formattedSavings = savings > 0 ? `Tiết kiệm ${savings.toLocaleString("vi-VN")}` : "";
   const productLink = product.slug ? `/products/${product.slug}` : "#";
+
+  const handleTrackClick = () => {
+    if (!product._id) {
+      return;
+    }
+
+    void trackProductActivity(undefined, product._id, "click");
+  };
 
   const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -92,7 +101,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={productLink}>
+    <Link href={productLink} onClick={handleTrackClick}>
       <div className="relative flex cursor-pointer flex-col gap-2 rounded-xl border border-neutral-7 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
       {/* Discount Badge */}
       {product.discount && product.discount > 0 && (

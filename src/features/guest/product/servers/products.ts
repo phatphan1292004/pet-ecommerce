@@ -1,6 +1,6 @@
 'use server'
 
-import { get } from "@/integrations/storeClient";
+import { get, post } from "@/integrations/storeClient";
 import { Product } from "@/features/guest/product/components/product-card";
 
 export interface ProductDetail extends Product {
@@ -36,6 +36,12 @@ export interface FilterProductsParams {
   page?: number;
   limit?: number;
   keyword?: string;
+}
+
+export interface TrackProductActivityInput {
+  customerId?: string;
+  productId: string;
+  action?: "view" | "click";
 }
 
 const normalizeProducts = (payload: unknown): Product[] => {
@@ -109,6 +115,45 @@ export const getFilteredProducts = async (params: FilterProductsParams): Promise
   }
 
   const res = await get(`/products/filter`, normalizedParams, { data: [] });
+  return normalizeProducts(res?.data ?? res);
+};
+
+export const trackProductActivity = async (
+  customerId: string | undefined,
+  productId: string,
+  action: "view" | "click" = "view"
+): Promise<{ success: boolean; message?: string } | null> => {
+  if (!productId) {
+    return null;
+  }
+
+  const payload: TrackProductActivityInput = {
+    productId,
+    action,
+  };
+
+  if (customerId) {
+    payload.customerId = customerId;
+  }
+
+  return post(`/products/track`, payload);
+};
+
+export const getRecommendedProductsForCustomer = async (
+  customerId: string,
+  limit = 10,
+  historyLimit = 20
+): Promise<Product[]> => {
+  if (!customerId) {
+    return [];
+  }
+
+  const res = await get(
+    `/products/recommendations`,
+    { customerId, limit, historyLimit },
+    { data: [] }
+  );
+
   return normalizeProducts(res?.data ?? res);
 };
 
