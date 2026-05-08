@@ -15,7 +15,6 @@ export default async function Home() {
   const popularProducts = await getPopularProducts();
   const bestSellingProducts = await getBestSellingProducts();
   const recommendedProducts = await getRecommendedProductsForCustomer(userId, 12, 20);
-
   return (
     <div>
       <HeroSlider />

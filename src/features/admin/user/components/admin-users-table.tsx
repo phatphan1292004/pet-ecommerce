@@ -196,7 +196,7 @@ export default function AdminUsersTable({
 
           return (
             <span
-              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(roleLabel)}`}
+              className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(roleLabel)}`}
             >
               <FiShield size={12} />
               {roleLabel}
