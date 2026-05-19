@@ -40,6 +40,7 @@ const navigationItems: NavigationItem[] = [
   { href: "/admin/user", label: "Người dùng", icon: FiUsers },
   { href: "/admin/coupons", label: "Mã giảm giá", icon: FiTag },
   { href: "/admin/reports", label: "Thống kê", icon: FiTrendingUp },
+  { href: "/admin/discount-program", label: "Chương trình giảm giá", icon: FiTrendingUp },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -59,7 +60,7 @@ export default function AdminShell({ children }: AdminShellProps) {
       setIsSidebarOpen(false);
       await logout();
       router.push("/");
-    } catch (err) {
+    } catch {
       // ignore - optional: show toast
     } finally {
       setIsLoggingOut(false);
