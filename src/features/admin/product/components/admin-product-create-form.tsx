@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiSave } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useToast } from "@/hooks";
 import {
   createAdminProduct,
   type AdminCreateProductPayload,
 } from "@/features/admin/product/servers";
+import { getBrands } from "@/features/guest/brand/servers";
+import { getCategories, getSubCategories } from "@/features/guest/category/servers/category";
+import { uploadProductImageToCloudinary } from "@/integrations/cloudinary";
+
+interface BrandOption {
+  id: string;
+  name: string;
+}
+
+interface SubCategoryOption {
+  id: string;
+  name: string;
+  categoryName: string;
+}
 
 interface ProductFormValues {
   name: string;
@@ -23,7 +38,6 @@ interface ProductFormValues {
   usage: string;
   ingredients: string;
   shipping: string;
-  images: string;
   brandId: string;
   subCategoryId: string;
   isActive: boolean;
@@ -43,7 +57,6 @@ const createDefaultValues = (): ProductFormValues => ({
   usage: "",
   ingredients: "",
   shipping: "",
-  images: "",
   brandId: "",
   subCategoryId: "",
   isActive: true,
@@ -72,11 +85,15 @@ const toRequiredInteger = (value: string): number | undefined => {
   return Math.floor(numeric);
 };
 
-const toImageList = (value: string): string[] =>
-  value
-    .split(/\r?\n|,/g)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
+const toSlug = (value: string): string => {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+    .trim();
+};
 
 const toRequiredKeyValueRecord = (value: string): Record<string, string> | undefined => {
   const lines = value
@@ -115,8 +132,96 @@ export default function AdminProductCreateForm() {
   const [formValues, setFormValues] = useState<ProductFormValues>(createDefaultValues());
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const router = useRouter();
   const { showError, showSuccess, showWarning } = useToast();
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadOptions = async () => {
+      setIsLoadingOptions(true);
+
+      try {
+        const [brandItems, categories] = await Promise.all([getBrands(), getCategories()]);
+        if (!isActive) {
+          return;
+        }
+
+        const normalizedBrands = brandItems
+          .map((brand) => ({
+            id: (brand._id || brand.id || "").trim(),
+            name: brand.name,
+          }))
+          .filter((brand) => brand.id.length > 0 && brand.name.length > 0);
+        setBrands(normalizedBrands);
+
+        if (Array.isArray(categories) && categories.length > 0) {
+          const subCategoryGroups = await Promise.all(
+            categories.map(async (category) => {
+              const items = await getSubCategories(category._id);
+              return (items ?? []).map((subCategory) => ({
+                id: subCategory._id,
+                name: subCategory.name,
+                categoryName: category.name,
+              }));
+            })
+          );
+
+          if (!isActive) {
+            return;
+          }
+
+          const flattened = subCategoryGroups.flat();
+          flattened.sort((left, right) => {
+            const categoryCompare = left.categoryName.localeCompare(right.categoryName, "vi");
+            if (categoryCompare !== 0) {
+              return categoryCompare;
+            }
+            return left.name.localeCompare(right.name, "vi");
+          });
+
+          setSubCategories(flattened);
+        } else {
+          setSubCategories([]);
+        }
+      } catch {
+        if (isActive) {
+          setBrands([]);
+          setSubCategories([]);
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingOptions(false);
+        }
+      }
+    };
+
+    loadOptions();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (imageFiles.length === 0) {
+      setImagePreviews([]);
+      return;
+    }
+
+    const previews = imageFiles.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previews);
+
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [imageFiles]);
 
   const handleFieldChange = (field: keyof ProductFormValues, value: string | boolean) => {
     setFormValues((prev) => ({
@@ -125,9 +230,36 @@ export default function AdminProductCreateForm() {
     }));
   };
 
+  const handleNameChange = (value: string) => {
+    setFormValues((prev) => {
+      const nextValues = {
+        ...prev,
+        name: value,
+      };
+
+      if (!slugTouched) {
+        nextValues.slug = toSlug(value);
+      }
+
+      return nextValues;
+    });
+  };
+
+  const handleSlugChange = (value: string) => {
+    setSlugTouched(true);
+    handleFieldChange("slug", value);
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   const resetForm = () => {
     setFormValues(createDefaultValues());
     setFormError("");
+    setSlugTouched(false);
+    setImageFiles([]);
+    setImagePreviews([]);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -193,7 +325,7 @@ export default function AdminProductCreateForm() {
 
     const brandId = formValues.brandId.trim();
     if (brandId.length === 0) {
-      const message = "Vui lòng nhập Brand ID";
+      const message = "Vui lòng chọn thương hiệu";
       setFormError(message);
       showWarning(message);
       return;
@@ -201,7 +333,7 @@ export default function AdminProductCreateForm() {
 
     const subCategoryId = formValues.subCategoryId.trim();
     if (subCategoryId.length === 0) {
-      const message = "Vui lòng nhập Danh mục con ID";
+      const message = "Vui lòng chọn danh mục con";
       setFormError(message);
       showWarning(message);
       return;
@@ -263,11 +395,27 @@ export default function AdminProductCreateForm() {
       return;
     }
 
-    const images = toImageList(formValues.images);
-    if (images.length === 0) {
-      const message = "Vui lòng nhập ít nhất 1 ảnh sản phẩm";
+    if (imageFiles.length === 0) {
+      const message = "Vui lòng chọn ít nhất 1 ảnh sản phẩm";
       setFormError(message);
       showWarning(message);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError("");
+
+    let imageUrls: string[] = [];
+
+    try {
+      imageUrls = await Promise.all(
+        imageFiles.map(async (file) => uploadProductImageToCloudinary(file))
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không thể tải ảnh lên";
+      setFormError(message);
+      showError(message);
+      setIsSubmitting(false);
       return;
     }
 
@@ -285,7 +433,7 @@ export default function AdminProductCreateForm() {
       ingredients,
       stock,
       shipping,
-      images,
+      images: imageUrls,
       isActive: formValues.isActive,
     };
 
@@ -296,9 +444,6 @@ export default function AdminProductCreateForm() {
     if (typeof discount === "number") {
       payload.discount = discount;
     }
-
-    setIsSubmitting(true);
-    setFormError("");
 
     const result = await createAdminProduct(payload);
 
@@ -330,7 +475,7 @@ export default function AdminProductCreateForm() {
           <input
             type="text"
             value={formValues.name}
-            onChange={(event) => handleFieldChange("name", event.target.value)}
+            onChange={(event) => handleNameChange(event.target.value)}
             placeholder="Tên sản phẩm"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
             required
@@ -342,7 +487,7 @@ export default function AdminProductCreateForm() {
           <input
             type="text"
             value={formValues.slug}
-            onChange={(event) => handleFieldChange("slug", event.target.value)}
+            onChange={(event) => handleSlugChange(event.target.value)}
             placeholder="men-bo-sung-vi-sinh..."
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
             required
@@ -405,27 +550,39 @@ export default function AdminProductCreateForm() {
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
-          <span className="text-xs font-medium text-neutral-4">Brand ID *</span>
-          <input
-            type="text"
+          <span className="text-xs font-medium text-neutral-4">Thương hiệu *</span>
+          <select
             value={formValues.brandId}
             onChange={(event) => handleFieldChange("brandId", event.target.value)}
-            placeholder="ID thương hiệu"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
             required
-          />
+            disabled={isLoadingOptions}
+          >
+            <option value="">Chọn thương hiệu</option>
+            {brands.map((brand) => (
+              <option key={brand.id} value={brand.id}>
+                {brand.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
-          <span className="text-xs font-medium text-neutral-4">Danh mục con ID *</span>
-          <input
-            type="text"
+          <span className="text-xs font-medium text-neutral-4">Danh mục con *</span>
+          <select
             value={formValues.subCategoryId}
             onChange={(event) => handleFieldChange("subCategoryId", event.target.value)}
-            placeholder="ID danh mục con"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
             required
-          />
+            disabled={isLoadingOptions}
+          >
+            <option value="">Chọn danh mục con</option>
+            {subCategories.map((subCategory) => (
+              <option key={subCategory.id} value={subCategory.id}>
+                {subCategory.categoryName} - {subCategory.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
@@ -513,15 +670,42 @@ export default function AdminProductCreateForm() {
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
-          <span className="text-xs font-medium text-neutral-4">Ảnh sản phẩm (mỗi dòng một URL) *</span>
-          <textarea
-            value={formValues.images}
-            onChange={(event) => handleFieldChange("images", event.target.value)}
-            placeholder="https://..."
-            rows={5}
-            className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
+          <span className="text-xs font-medium text-neutral-4">Ảnh sản phẩm *</span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(event) => setImageFiles(Array.from(event.target.files ?? []))}
+            className="block w-full text-sm text-neutral-2 file:mr-3 file:rounded-lg file:border file:border-neutral-20 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-neutral-4"
             required
           />
+          {imagePreviews.length > 0 ? (
+            <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {imagePreviews.map((preview, index) => (
+                <div
+                  key={`${preview}-${index}`}
+                  className="relative overflow-hidden rounded-xl border border-neutral-20 bg-white"
+                >
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    width={420}
+                    height={260}
+                    className="h-44 w-full object-cover sm:h-52"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-black/60 text-sm font-semibold text-white shadow transition hover:bg-black/80"
+                    aria-label="Xoa anh"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </label>
 
         <label className="inline-flex items-center gap-2 text-sm text-neutral-2 md:col-span-2">
