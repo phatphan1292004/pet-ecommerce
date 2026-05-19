@@ -2,6 +2,7 @@ export {
 	getLatestProducts,
 	getPopularProducts,
 	getBestSellingProducts,
+	getDiscountProgramProducts,
 	getProductBySlug,
 	getProductsBySubcategory,
 	getFilteredProducts,
@@ -9,6 +10,7 @@ export {
 	trackProductActivity,
 } from "./products";
 export type {
+	DiscountProgramSectionData,
 	ProductDetail,
 	FilterProductsParams,
 	TrackProductActivityInput,
