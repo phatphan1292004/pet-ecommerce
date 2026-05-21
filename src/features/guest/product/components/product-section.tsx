@@ -15,7 +15,7 @@ interface ProductSectionProps {
 }
 
 export default function ProductSection({
-  title = "CO PHAI BAN DANG TIM ...",
+  title = "CÓ PHẢI BẠN ĐANG TÌM ...",
   countdownTo,
   products = [],
   viewAllHref = "/products",
@@ -62,16 +62,19 @@ export default function ProductSection({
             {countdownParts ? (
               <div className="flex items-center gap-1">
                 <span className="rounded-md border border-primary-5 bg-white px-2 py-1 text-xs font-semibold text-primary-1 sm:text-sm">
-                  {String(countdownParts.days).padStart(2, "0")}d
+                  {String(countdownParts.days).padStart(2, "0")}
                 </span>
+                <span className="px-0.5 text-xs font-semibold text-primary-1 sm:text-sm">:</span>
                 <span className="rounded-md border border-primary-5 bg-white px-2 py-1 text-xs font-semibold text-primary-1 sm:text-sm">
-                  {String(countdownParts.hours).padStart(2, "0")}h
+                  {String(countdownParts.hours).padStart(2, "0")}
                 </span>
+                <span className="px-0.5 text-xs font-semibold text-primary-1 sm:text-sm">:</span>
                 <span className="rounded-md border border-primary-5 bg-white px-2 py-1 text-xs font-semibold text-primary-1 sm:text-sm">
-                  {String(countdownParts.minutes).padStart(2, "0")}m
+                  {String(countdownParts.minutes).padStart(2, "0")}
                 </span>
+                <span className="px-0.5 text-xs font-semibold text-primary-1 sm:text-sm">:</span>
                 <span className="rounded-md border border-primary-5 bg-white px-2 py-1 text-xs font-semibold text-primary-1 sm:text-sm">
-                  {String(countdownParts.seconds).padStart(2, "0")}s
+                  {String(countdownParts.seconds).padStart(2, "0")}
                 </span>
                 {countdownParts.isEnded ? (
                   <span className="ml-1 text-xs font-semibold text-primary-1">Da ket thuc</span>
