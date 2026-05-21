@@ -17,7 +17,11 @@ import {
   FiTrendingUp,
   FiUsers,
   FiX,
+  FiHome,
+  FiLogOut,
 } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { logout } from "@/integrations/firebase";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -36,6 +40,7 @@ const navigationItems: NavigationItem[] = [
   { href: "/admin/user", label: "Người dùng", icon: FiUsers },
   { href: "/admin/coupons", label: "Mã giảm giá", icon: FiTag },
   { href: "/admin/reports", label: "Thống kê", icon: FiTrendingUp },
+  { href: "/admin/discount-program", label: "Chương trình giảm giá", icon: FiTrendingUp },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -46,6 +51,21 @@ export default function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setIsSidebarOpen(false);
+      await logout();
+      router.push("/");
+    } catch {
+      // ignore - optional: show toast
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const desktopSidebarWidthClass = isSidebarCollapsed ? "lg:w-[5.5rem]" : "lg:w-80";
   const desktopContentPaddingClass = isSidebarCollapsed ? "lg:pl-[5.5rem]" : "lg:pl-80";
@@ -53,7 +73,7 @@ export default function AdminShell({ children }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-neutral-10 text-neutral-black">
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-neutral-20 bg-white transition-[width,transform] duration-300 lg:translate-x-0 ${desktopSidebarWidthClass} ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-80 flex-col border-r border-neutral-20 bg-white transition-[width,transform] duration-300 lg:translate-x-0 ${desktopSidebarWidthClass} ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -105,7 +125,7 @@ export default function AdminShell({ children }: AdminShellProps) {
           </div>
         </div>
 
-        <nav className="space-y-1 p-4">
+        <nav className="flex-1 space-y-1 p-4">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
@@ -128,6 +148,34 @@ export default function AdminShell({ children }: AdminShellProps) {
             );
           })}
         </nav>
+
+        <div className="space-y-2 border-t border-neutral-20 p-4">
+          <Link
+            href="/"
+            onClick={() => setIsSidebarOpen(false)}
+            title={isSidebarCollapsed ? "Trang chủ website" : undefined}
+            className={`flex items-center rounded-xl py-3 text-[15px] font-medium text-neutral-2 transition hover:bg-neutral-10 ${
+              isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"
+            }`}
+          >
+            <FiHome size={18} />
+            <span className={isSidebarCollapsed ? "lg:hidden" : ""}>Trang chủ</span>
+          </Link>
+
+          <button
+            type="button"
+            className={`flex items-center rounded-xl py-3 text-[15px] font-medium text-neutral-2 transition hover:bg-neutral-10 disabled:cursor-not-allowed disabled:opacity-60 ${
+              isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"
+            }`}
+            aria-label="Đăng xuất"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title={isSidebarCollapsed ? "Đăng xuất" : undefined}
+          >
+            <FiLogOut size={18} />
+            <span className={isSidebarCollapsed ? "lg:hidden" : ""}>Đăng xuất</span>
+          </button>
+        </div>
       </aside>
 
       <div className={`transition-[padding] duration-300 ${desktopContentPaddingClass}`}>
@@ -162,7 +210,7 @@ export default function AdminShell({ children }: AdminShellProps) {
           </div>
         </header>
 
-        <main className="p-4 sm:p-6">{children}</main>
+        <main className="p-4 sm:p-6 overflow-x-auto">{children}</main>
       </div>
 
       {isSidebarOpen ? (

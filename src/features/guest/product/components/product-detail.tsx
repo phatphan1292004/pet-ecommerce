@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { FaShoppingCart, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { ProductDetail } from '../servers';
+import { ProductDetail, getRecommendedProductsForCustomer, trackProductActivity } from '../servers';
 import { IoMdHeart, IoMdHeartEmpty } from 'react-icons/io';
 import { useCartStore } from '@/store';
 import { useToast } from '@/hooks';
@@ -22,6 +22,8 @@ import {
   type UiReview,
 } from '@/features/customer/review';
 import { renderLongDescription, renderWithLabel } from '@/utils/products';
+import ProductSection from './product-section';
+import type { Product } from './product-card';
 
 
 type Comment = UiReview;
@@ -54,6 +56,8 @@ export default function ProductDetailPage({
   const [isFavorited, setIsFavorited] = useState(
     Boolean(product.isFavorite ?? product.is_favorite)
   );
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const hasTrackedViewRef = useRef(false);
   const addItem = useCartStore((state) => state.addItem);
   const { showSuccess, showWarning } = useToast();
 
@@ -77,6 +81,37 @@ export default function ProductDetailPage({
     fatSupport: 'Hỗ trợ lông và da',
     packaging: 'Đóng gói',
   };
+
+  useEffect(() => {
+    if (hasTrackedViewRef.current || !product._id) {
+      return;
+    }
+
+    hasTrackedViewRef.current = true;
+    void trackProductActivity(currentUserId, product._id, 'view');
+  }, [currentUserId, product._id]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      // setRecommendedProducts([]);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadRecommendations = async () => {
+      const results = await getRecommendedProductsForCustomer(currentUserId, 12, 20);
+      if (isActive) {
+        setRecommendedProducts(results || []);
+      }
+    };
+
+    void loadRecommendations();
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentUserId]);
 
   const formattedPrice = product.price.toLocaleString('vi-VN') + '₫';
   const formattedOriginalPrice = product.originalPrice?.toLocaleString('vi-VN') + '₫';
@@ -844,6 +879,16 @@ export default function ProductDetailPage({
             </TabPanels>
           </TabGroup>
         </div>
+
+        {recommendedProducts.length > 0 && (
+          <div className="mt-10">
+            <ProductSection
+              title="Gợi ý dành riêng cho bạn"
+              products={recommendedProducts}
+              viewAllHref="/products"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

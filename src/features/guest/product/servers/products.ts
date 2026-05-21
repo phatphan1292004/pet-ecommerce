@@ -1,6 +1,6 @@
 'use server'
 
-import { get } from "@/integrations/storeClient";
+import { get, post } from "@/integrations/storeClient";
 import { Product } from "@/features/guest/product/components/product-card";
 
 export interface ProductDetail extends Product {
@@ -26,6 +26,38 @@ interface ProductListResponse {
   items?: Product[];
 }
 
+interface DiscountProgramProductItem {
+  _id?: string;
+  id?: string;
+  name?: string;
+  price?: number;
+  originalPrice?: number;
+  discount?: number;
+  images?: string[];
+  image?: string;
+  slug?: string;
+}
+
+interface DiscountProgramWithProductsResponse {
+  data?: {
+    program?: {
+      name?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    products?: {
+      items?: DiscountProgramProductItem[];
+    };
+  };
+}
+
+export interface DiscountProgramSectionData {
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  products: Product[];
+}
+
 export interface FilterProductsParams {
   subCategoryIds?: string[];
   brandIds?: string[];
@@ -36,6 +68,12 @@ export interface FilterProductsParams {
   page?: number;
   limit?: number;
   keyword?: string;
+}
+
+export interface TrackProductActivityInput {
+  customerId?: string;
+  productId: string;
+  action?: "view" | "click";
 }
 
 const normalizeProducts = (payload: unknown): Product[] => {
@@ -66,6 +104,51 @@ export const getPopularProducts = async (): Promise<Product[] | null> => {
 export const getBestSellingProducts = async (): Promise<Product[] | null> => {
   const res = await get(`/products/best-selling`);
   return res?.data ?? null;
+};
+
+export const getDiscountProgramProducts = async (): Promise<DiscountProgramSectionData | null> => {
+  const res = await get(`/discount-programs/with-products`, undefined, { data: {} });
+  const payload = (res ?? {}) as DiscountProgramWithProductsResponse;
+  const program = payload.data?.program;
+  const items = payload.data?.products?.items;
+
+  if (!Array.isArray(items)) {
+    return null;
+  }
+
+  const products = items
+    .map((item) => {
+      const id = item._id ?? item.id;
+      const image = Array.isArray(item.images) && item.images.length > 0
+        ? item.images[0]
+        : item.image;
+
+      if (!id || !item.name || typeof item.price !== "number" || !image) {
+        return null;
+      }
+
+      return {
+        _id: id,
+        name: item.name,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        discount: item.discount,
+        image,
+        slug: item.slug,
+      } as Product;
+    })
+    .filter((product): product is Product => Boolean(product));
+
+  if (products.length === 0) {
+    return null;
+  }
+
+  return {
+    name: program?.name?.trim() || "CHUONG TRINH GIAM GIA",
+    startDate: program?.startDate,
+    endDate: program?.endDate,
+    products,
+  };
 };
 
 export const getProductBySlug = async (
@@ -109,6 +192,45 @@ export const getFilteredProducts = async (params: FilterProductsParams): Promise
   }
 
   const res = await get(`/products/filter`, normalizedParams, { data: [] });
+  return normalizeProducts(res?.data ?? res);
+};
+
+export const trackProductActivity = async (
+  customerId: string | undefined,
+  productId: string,
+  action: "view" | "click" = "view"
+): Promise<{ success: boolean; message?: string } | null> => {
+  if (!productId) {
+    return null;
+  }
+
+  const payload: TrackProductActivityInput = {
+    productId,
+    action,
+  };
+
+  if (customerId) {
+    payload.customerId = customerId;
+  }
+
+  return post(`/products/track`, payload);
+};
+
+export const getRecommendedProductsForCustomer = async (
+  customerId: string,
+  limit = 10,
+  historyLimit = 20
+): Promise<Product[]> => {
+  if (!customerId) {
+    return [];
+  }
+
+  const res = await get(
+    `/products/recommendations`,
+    { customerId, limit, historyLimit },
+    { data: [] }
+  );
+
   return normalizeProducts(res?.data ?? res);
 };
 

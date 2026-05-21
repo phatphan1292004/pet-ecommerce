@@ -288,7 +288,7 @@ export default function AdminCouponsTable({
         header: "Trạng thái",
         cell: ({ row }) => (
           <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
+            className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
               row.original.isActive
             )}`}
           >

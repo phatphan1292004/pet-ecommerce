@@ -157,7 +157,7 @@ export default function AdminOrdersTable({
         header: "Trạng thái",
         cell: ({ row }) => (
           <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(row.original.status)}`}
+            className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(row.original.status)}`}
           >
             {getOrderStatusLabel(row.original.status)}
           </span>

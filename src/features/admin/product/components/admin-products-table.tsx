@@ -274,7 +274,7 @@ export default function AdminProductsTable({
         header: "Trạng thái",
         cell: ({ row }) => (
           <span
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-base font-semibold ${getStatusBadgeClass(
+            className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold sm:px-3 sm:text-sm ${getStatusBadgeClass(
               row.original
             )}`}
           >
@@ -330,7 +330,7 @@ export default function AdminProductsTable({
     category: "w-40",
     price: "w-24",
     stock: "w-16",
-    status: "w-24",
+    status: "w-32 sm:w-36",
     createdAt: "w-28",
     actions: "w-20",
   };
@@ -352,7 +352,7 @@ export default function AdminProductsTable({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-2xl border border-neutral-20 bg-white">
-        <table className="w-full min-w-0 table-fixed text-left text-sm">
+        <table className="w-full min-w-0 table-auto text-left text-sm">
           <thead className="bg-neutral-10 text-xs font-semibold uppercase text-neutral-4">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>

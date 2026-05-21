@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import FloatingChatButtons from "@/components/floating-chat-buttons";
 import { getCategories } from "@/features/guest/category";
 import { getBrands } from "@/features/guest/brand";
 
@@ -19,6 +20,7 @@ export default async function UserLayout({
     <div className="flex min-h-screen flex-col bg-white">
       <Header isLoggedIn={isLoggedIn} categories={categories} brands={brands} />
       <main className="flex-1 overflow-x-hidden">{children}</main>
+      <FloatingChatButtons />
       <Footer />
     </div>
   );
