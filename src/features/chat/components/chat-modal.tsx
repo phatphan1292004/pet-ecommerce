@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { FiMinimize2, FiUser, FiX } from "react-icons/fi";
+import { FiImage, FiMinimize2, FiUser, FiX } from "react-icons/fi";
 import { BsFillSendFill } from "react-icons/bs";
+import { uploadChatImageToCloudinary } from "@/integrations/cloudinary";
+import Image from "next/image";
 
 type ChatMessage = {
   _id: string;
@@ -11,6 +13,9 @@ type ChatMessage = {
   senderId: string;
   senderName: string | null;
   message: string;
+  messageType: "text" | "image";
+  imageUrl: string | null;
+  isRead: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -47,6 +52,9 @@ export default function ChatModal({
   const [senderName, setSenderName] = useState<string>("Khach");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -58,7 +66,7 @@ export default function ChatModal({
         transports: ["websocket"],
         autoConnect: false,
       }),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -115,7 +123,7 @@ export default function ChatModal({
     (async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/chat/conversations/${conversationId}/messages?limit=50`
+          `${API_BASE}/chat/conversations/${conversationId}/messages?limit=50`,
         );
         const json = await res.json();
         if (json?.success) {
@@ -170,18 +178,95 @@ export default function ChatModal({
     }
   }, [messages, isOpen]);
 
-  const handleSendMessage = () => {
-    const message = text.trim();
-    if (!message || !conversationId || !senderId) return;
-
-    socket.emit("send_message", {
-      conversationId,
-      senderId,
-      senderName,
-      message,
+  const formatDateLabel = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
+  };
+
+  const formatTimeLabel = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleSendMessage = async () => {
+    const message = text.trim();
+    if (!conversationId || !senderId) return;
+    if (!message && !selectedImageFile) return;
+
+    if (selectedImageFile) {
+      setIsUploadingImage(true);
+      setErrorMessage(null);
+
+      try {
+        const imageUrl = await uploadChatImageToCloudinary(selectedImageFile);
+        socket.emit("send_message", {
+          conversationId,
+          senderId,
+          senderName,
+          message,
+          messageType: "image",
+          imageUrl,
+          isRead: false,
+        });
+        setSelectedImageFile(null);
+        if (selectedImagePreview) {
+          URL.revokeObjectURL(selectedImagePreview);
+          setSelectedImagePreview(null);
+        }
+      } catch (error) {
+        const messageText =
+          error instanceof Error ? error.message : "Khong the gui hinh anh";
+        setErrorMessage(messageText);
+      } finally {
+        setIsUploadingImage(false);
+      }
+    } else {
+      socket.emit("send_message", {
+        conversationId,
+        senderId,
+        senderName,
+        message,
+        messageType: "text",
+        imageUrl: null,
+        isRead: false,
+      });
+    }
 
     setText("");
+  };
+
+  const handleImageSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (selectedImagePreview) {
+      URL.revokeObjectURL(selectedImagePreview);
+    }
+
+    setSelectedImageFile(file);
+    setSelectedImagePreview(URL.createObjectURL(file));
+    setErrorMessage(null);
+  };
+
+  const handleRemoveSelectedImage = () => {
+    if (selectedImagePreview) {
+      URL.revokeObjectURL(selectedImagePreview);
+    }
+    setSelectedImagePreview(null);
+    setSelectedImageFile(null);
   };
 
   if (!isOpen) return null;
@@ -230,35 +315,92 @@ export default function ChatModal({
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {senderId ? "Sẵn sàng hỗ trợ bạn" : "Đang khởi tạo phiên chat..."}
         </div>
-        <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
+        <div
+          ref={listRef}
+          className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
+        >
           {loading ? (
             <p className="text-sm text-neutral-4">Đang tải hội thoại...</p>
           ) : null}
 
           {!loading && messages.length === 0 ? (
             <p className="text-sm text-neutral-4">
-              Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn cho chúng tôi!
+              Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện bằng cách gửi tin
+              nhắn cho chúng tôi!
             </p>
           ) : null}
 
-          {messages.map((item) => {
+          {messages.map((item, index) => {
             const isMine = item.senderId === senderId;
+            const currentDateKey = formatDateLabel(
+              item.createdAt || item.updatedAt,
+            );
+            const prevItem = index > 0 ? messages[index - 1] : null;
+            const prevDateKey = prevItem
+              ? formatDateLabel(prevItem.createdAt || prevItem.updatedAt)
+              : "";
+            const showDateSeparator =
+              currentDateKey && currentDateKey !== prevDateKey;
+            const timeLabel = formatTimeLabel(item.createdAt || item.updatedAt);
+
             return (
-              <div
-                key={item._id}
-                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-              >
+              <div key={item._id} className="space-y-2">
+                {showDateSeparator ? (
+                  <div className="flex items-center justify-center">
+                    <span className="rounded-full bg-neutral-20 px-3 py-1 text-xs text-neutral-4">
+                      {currentDateKey}
+                    </span>
+                  </div>
+                ) : null}
                 <div
-                  className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow ${
-                    isMine
-                      ? "bg-primary-1 text-white"
-                      : "bg-white text-neutral-1"
-                  }`}
+                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                 >
-                  <p className="text-xs opacity-70">
-                    {item.senderName || item.senderId}
-                  </p>
-                  <p>{item.message}</p>
+                  <div
+                    className={`max-w-[75%] text-sm ${
+                      item.messageType === "image"
+                        ? ""
+                        : "rounded-2xl px-3 py-2 shadow"
+                    } ${
+                      item.messageType === "image"
+                        ? "text-neutral-1"
+                        : isMine
+                          ? "text-white"
+                          : "text-neutral-1"
+                    } ${
+                      item.messageType === "image"
+                        ? ""
+                        : isMine
+                          ? "bg-primary-1"
+                          : "bg-white"
+                    }`}
+                  >
+                    <p className="text-xs opacity-70">
+                      {item.senderName || item.senderId}
+                    </p>
+                    {item.messageType === "image" && item.imageUrl ? (
+                      <div className="mt-2 space-y-2">
+                        <Image
+                          src={item.imageUrl}
+                          alt="chat"
+                          width={300}
+                          height={200}
+                          className="max-h-48 w-auto rounded-lg object-cover"
+                        />
+                        {item.message ? <p>{item.message}</p> : null}
+                      </div>
+                    ) : (
+                      <p>{item.message}</p>
+                    )}
+                    <div
+                      className={`mt-2 flex items-center gap-2 text-[11px] ${
+                        isMine
+                          ? "justify-end text-white/70"
+                          : "justify-start text-neutral-500"
+                      }`}
+                    >
+                      <span>{timeLabel}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -268,7 +410,41 @@ export default function ChatModal({
           {errorMessage ? (
             <p className="mb-2 text-xs text-red-500">{errorMessage}</p>
           ) : null}
+          {selectedImagePreview ? (
+            <div className="mb-3 flex items-start gap-3 rounded-xl border border-neutral-20 bg-white p-2">
+              <div className="relative">
+                <img
+                  src={selectedImagePreview}
+                  alt="preview"
+                  className="h-20 w-20 rounded-lg object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveSelectedImage}
+                  className="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-neutral-5 shadow transition hover:text-red-500"
+                  aria-label="Xoa anh"
+                >
+                  <FiX size={12} />
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center gap-2">
+            <label
+              className={`inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-neutral-20 bg-white text-neutral-4 transition hover:border-primary-3 hover:text-primary-2 ${
+                isUploadingImage ? "cursor-not-allowed opacity-50" : ""
+              }`}
+              aria-label="Gui hinh anh"
+            >
+              <FiImage size={16} />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelected}
+                disabled={isUploadingImage}
+                className="hidden"
+              />
+            </label>
             <input
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -284,12 +460,17 @@ export default function ChatModal({
             <button
               type="button"
               onClick={handleSendMessage}
-              disabled={!text.trim()}
+              disabled={
+                (!text.trim() && !selectedImageFile) || isUploadingImage
+              }
               className="rounded-full bg-primary-1 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-30"
             >
               <BsFillSendFill size={15} />
             </button>
           </div>
+          {isUploadingImage ? (
+            <p className="mt-2 text-xs text-neutral-4">Dang tai hinh anh...</p>
+          ) : null}
         </div>
       </div>
     </div>
