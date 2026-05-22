@@ -118,7 +118,7 @@ export default function ProductSection({
           href={viewAllHref}
           className="rounded-lg border border-primary-1 px-6 py-2.5 text-sm font-medium text-primary-1 transition-colors hover:bg-primary-6 sm:px-8 sm:py-3"
         >
-          Tat ca san pham
+          Tất cả sản phẩm
         </Link>
       </div>
     </section>
