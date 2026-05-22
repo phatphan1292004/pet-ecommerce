@@ -4,6 +4,7 @@ import Footer from "@/components/footer";
 import FloatingChatButtons from "@/components/floating-chat-buttons";
 import { getCategories } from "@/features/guest/category";
 import { getBrands } from "@/features/guest/brand";
+import { getUserInfo } from "@/features/customer/userinfo/servers/info";
 
 export default async function UserLayout({
   children,
@@ -15,12 +16,16 @@ export default async function UserLayout({
   const isLoggedIn = !!userId;
   const categories = await getCategories();
   const brands = await getBrands();
+  const userInfo = await getUserInfo();
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <Header isLoggedIn={isLoggedIn} categories={categories} brands={brands} />
       <main className="flex-1 overflow-x-hidden">{children}</main>
-      <FloatingChatButtons />
+      <FloatingChatButtons
+        currentUserId={userId}
+        currentUserName={userInfo?.displayName}
+      />
       <Footer />
     </div>
   );
