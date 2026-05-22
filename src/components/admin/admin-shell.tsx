@@ -19,9 +19,11 @@ import {
   FiX,
   FiHome,
   FiLogOut,
+  FiMessageCircle,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { logout } from "@/integrations/firebase";
+import { CiDiscount1 } from "react-icons/ci";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -40,7 +42,8 @@ const navigationItems: NavigationItem[] = [
   { href: "/admin/user", label: "Người dùng", icon: FiUsers },
   { href: "/admin/coupons", label: "Mã giảm giá", icon: FiTag },
   { href: "/admin/reports", label: "Thống kê", icon: FiTrendingUp },
-  { href: "/admin/discount-program", label: "Chương trình giảm giá", icon: FiTrendingUp },
+  { href: "/admin/discount-program", label: "Chương trình giảm giá", icon: CiDiscount1 },
+  { href: "/admin/chat", label: "Chat", icon: FiMessageCircle },
 ];
 
 function isActivePath(pathname: string, href: string) {
