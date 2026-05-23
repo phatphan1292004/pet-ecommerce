@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import { AiFillProduct } from "react-icons/ai";
 import {
   FiBell,
   FiChevronsLeft,
   FiChevronsRight,
+  FiChevronDown,
   FiGrid,
   FiMenu,
   FiShoppingBag,
@@ -33,6 +34,7 @@ interface NavigationItem {
   href: string;
   label: string;
   icon: IconType;
+  children?: Array<{ href: string; label: string }>;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -41,7 +43,17 @@ const navigationItems: NavigationItem[] = [
   { href: "/admin/order", label: "Đơn hàng", icon: FiShoppingBag },
   { href: "/admin/user", label: "Người dùng", icon: FiUsers },
   { href: "/admin/coupons", label: "Mã giảm giá", icon: FiTag },
-  { href: "/admin/reports", label: "Thống kê", icon: FiTrendingUp },
+  {
+    href: "/admin/reports",
+    label: "Thống kê",
+    icon: FiTrendingUp,
+    children: [
+      { href: "/admin/reports/revenue", label: "Doanh thu" },
+      { href: "/admin/reports/orders", label: "Đơn hàng" },
+      { href: "/admin/reports/products", label: "Sản phẩm" },
+      { href: "/admin/reports/customers", label: "Khách hàng" },
+    ],
+  },
   { href: "/admin/discount-program", label: "Chương trình giảm giá", icon: CiDiscount1 },
   { href: "/admin/chat", label: "Chat", icon: FiMessageCircle },
 ];
@@ -55,6 +67,9 @@ export default function AdminShell({ children }: AdminShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    "/admin/reports": true,
+  });
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -72,6 +87,18 @@ export default function AdminShell({ children }: AdminShellProps) {
 
   const desktopSidebarWidthClass = isSidebarCollapsed ? "lg:w-[5.5rem]" : "lg:w-80";
   const desktopContentPaddingClass = isSidebarCollapsed ? "lg:pl-[5.5rem]" : "lg:pl-80";
+
+  useEffect(() => {
+    const shouldExpandReports = isActivePath(pathname, "/admin/reports");
+    if (!shouldExpandReports) {
+      return;
+    }
+
+    setExpandedItems((prev) => ({
+      ...prev,
+      "/admin/reports": true,
+    }));
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-neutral-10 text-neutral-black">
@@ -132,22 +159,75 @@ export default function AdminShell({ children }: AdminShellProps) {
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
+            const hasChildren = Boolean(item.children?.length);
+            const isExpanded = expandedItems[item.href] ?? false;
+            const showChildren = hasChildren && isExpanded && !isSidebarCollapsed;
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsSidebarOpen(false)}
-                title={isSidebarCollapsed ? item.label : undefined}
-                className={`flex items-center rounded-xl py-4 text-[16px] font-medium transition ${
-                  active
-                    ? "bg-primary-1 text-white"
-                    : "text-neutral-2 hover:bg-neutral-10"
-                } ${isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"}`}
-              >
-                <Icon size={18} />
-                <span className={isSidebarCollapsed ? "lg:hidden" : ""}>{item.label}</span>
-              </Link>
+              <div key={item.href} className="space-y-1">
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedItems((prev) => ({
+                        ...prev,
+                        [item.href]: !(prev[item.href] ?? false),
+                      }))
+                    }
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`flex w-full items-center rounded-xl py-4 text-[16px] font-medium transition ${
+                      active
+                        ? "bg-primary-1 text-white"
+                        : "text-neutral-2 hover:bg-neutral-10"
+                    } ${isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"}`}
+                  >
+                    <Icon size={18} />
+                    <span className={isSidebarCollapsed ? "lg:hidden" : ""}>{item.label}</span>
+                    {!isSidebarCollapsed ? (
+                      <FiChevronDown
+                        size={16}
+                        className={`ml-auto transition ${isExpanded ? "rotate-180" : ""}`}
+                      />
+                    ) : null}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsSidebarOpen(false)}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`flex items-center rounded-xl py-4 text-[16px] font-medium transition ${
+                      active
+                        ? "bg-primary-1 text-white"
+                        : "text-neutral-2 hover:bg-neutral-10"
+                    } ${isSidebarCollapsed ? "justify-center px-2 lg:px-2" : "gap-3 px-4"}`}
+                  >
+                    <Icon size={18} />
+                    <span className={isSidebarCollapsed ? "lg:hidden" : ""}>{item.label}</span>
+                  </Link>
+                )}
+
+                {showChildren ? (
+                  <div className="ml-10 space-y-1">
+                    {item.children?.map((child) => {
+                      const childActive = isActivePath(pathname, child.href);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+                            childActive
+                              ? "bg-primary-6 text-primary-1"
+                              : "text-neutral-4 hover:bg-neutral-10"
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>

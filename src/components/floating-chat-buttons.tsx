@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FiMessageCircle, FiMinimize2, FiUser, FiX } from "react-icons/fi";
-import { ChatModal } from "@/features/chat";
+import { FiMessageCircle, FiUser } from "react-icons/fi";
+import { ChatModal, ChatbotPanel } from "@/features/chat";
+import { RiRobot2Fill } from "react-icons/ri";
 
 export default function FloatingChatButtons({
   currentUserId,
@@ -27,37 +28,10 @@ export default function FloatingChatButtons({
   return (
     <div className="fixed bottom-5 right-5 z-40">
       <div className="flex flex-col items-end gap-2">
-        {isChatbotOpen ? (
-          <div className="mb-2 w-120 overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-neutral-1">
-                <FiMessageCircle size={16} />
-                Chatbot
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsChatbotOpen(false)}
-                  className="rounded-md p-1 text-neutral-4 transition hover:bg-neutral-10"
-                  aria-label="Thu nhỏ chatbot"
-                >
-                  <FiMinimize2 size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsChatbotOpen(false)}
-                  className="rounded-md p-1 text-neutral-4 transition hover:bg-neutral-10"
-                  aria-label="Đóng chatbot"
-                >
-                  <FiX size={14} />
-                </button>
-              </div>
-            </div>
-            <div className="flex h-100 items-center justify-center bg-neutral-10 text-sm text-neutral-4">
-              UI chat chatbot
-            </div>
-          </div>
-        ) : null}
+        <ChatbotPanel
+          isOpen={isChatbotOpen}
+          onClose={() => setIsChatbotOpen(false)}
+        />
 
         <ChatModal
           isOpen={isStaffOpen}
@@ -73,7 +47,7 @@ export default function FloatingChatButtons({
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary-4 bg-primary-1 text-white shadow-lg transition hover:-translate-y-px hover:bg-primary-2"
             aria-label="Mở chatbot"
           >
-            <FiMessageCircle size={18} />
+            <RiRobot2Fill size={18} />
           </button>
 
           <button

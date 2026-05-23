@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiEdit2, FiSave, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks";
@@ -9,6 +9,19 @@ import {
   type AdminProduct,
   type AdminUpdateProductPayload,
 } from "@/features/admin/product/servers";
+import { getBrands } from "@/features/guest/brand/servers";
+import { getCategories, getSubCategories } from "@/features/guest/category/servers/category";
+
+interface BrandOption {
+  id: string;
+  name: string;
+}
+
+interface SubCategoryOption {
+  id: string;
+  name: string;
+  categoryName: string;
+}
 
 interface AdminProductEditFormProps {
   product: AdminProduct;
@@ -151,14 +164,128 @@ export default function AdminProductEditForm({
   product,
   variant = "inline",
 }: AdminProductEditFormProps) {
+  console.log("product for edit form", product);
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState<ProductFormValues>(() =>
     createDefaultValues(product)
   );
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const router = useRouter();
   const { showError, showSuccess, showWarning } = useToast();
+
+  const brandName = product.brand?.name ?? "";
+  const subCategoryName = product.subCategory?.name ?? "";
+
+  const hasBrandOption = brands.some((brand) => brand.id === formValues.brandId);
+  const hasSubCategoryOption = subCategories.some(
+    (subCategory) => subCategory.id === formValues.subCategoryId
+  );
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadOptions = async () => {
+      setIsLoadingOptions(true);
+
+      try {
+        const [brandItems, categories] = await Promise.all([getBrands(), getCategories()]);
+        if (!isActive) {
+          return;
+        }
+
+        const normalizedBrands = brandItems
+          .map((brand) => ({
+            id: (brand._id || brand.id || "").trim(),
+            name: brand.name,
+          }))
+          .filter((brand) => brand.id.length > 0 && brand.name.length > 0);
+        setBrands(normalizedBrands);
+
+        if (Array.isArray(categories) && categories.length > 0) {
+          const subCategoryGroups = await Promise.all(
+            categories.map(async (category) => {
+              const items = await getSubCategories(category._id);
+              return (items ?? []).map((subCategory) => ({
+                id: subCategory._id,
+                name: subCategory.name,
+                categoryName: category.name,
+              }));
+            })
+          );
+
+          if (!isActive) {
+            return;
+          }
+
+          const flattened = subCategoryGroups.flat();
+          flattened.sort((left, right) => {
+            const categoryCompare = left.categoryName.localeCompare(right.categoryName, "vi");
+            if (categoryCompare !== 0) {
+              return categoryCompare;
+            }
+            return left.name.localeCompare(right.name, "vi");
+          });
+
+          setSubCategories(flattened);
+        } else {
+          setSubCategories([]);
+        }
+      } catch {
+        if (isActive) {
+          setBrands([]);
+          setSubCategories([]);
+        }
+      } finally {
+        if (isActive) {
+          setIsLoadingOptions(false);
+        }
+      }
+    };
+
+    loadOptions();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!brandName || formValues.brandId || brands.length === 0) {
+      return;
+    }
+
+    const matched = brands.find(
+      (brand) => brand.name.toLowerCase() === brandName.toLowerCase()
+    );
+
+    if (matched) {
+      setFormValues((prev) => ({
+        ...prev,
+        brandId: matched.id,
+      }));
+    }
+  }, [brandName, brands, formValues.brandId]);
+
+  useEffect(() => {
+    if (!subCategoryName || formValues.subCategoryId || subCategories.length === 0) {
+      return;
+    }
+
+    const matched = subCategories.find(
+      (subCategory) => subCategory.name.toLowerCase() === subCategoryName.toLowerCase()
+    );
+
+    if (matched) {
+      setFormValues((prev) => ({
+        ...prev,
+        subCategoryId: matched.id,
+      }));
+    }
+  }, [subCategoryName, subCategories, formValues.subCategoryId]);
 
   const handleFieldChange = (field: keyof ProductFormValues, value: string | boolean) => {
     setFormValues((prev) => ({
@@ -423,25 +550,47 @@ export default function AdminProductEditForm({
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Brand ID</span>
-              <input
-                type="text"
+              <span className="text-xs font-medium text-neutral-4">Thương hiệu</span>
+              <select
                 value={formValues.brandId}
                 onChange={(event) => handleFieldChange("brandId", event.target.value)}
-                placeholder="ID thương hiệu"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-              />
+                disabled={isLoadingOptions}
+              >
+                <option value="">Chọn thương hiệu</option>
+                {!hasBrandOption && formValues.brandId ? (
+                  <option value={formValues.brandId}>
+                    {product.brand?.name || "Thuong hieu hien tai"}
+                  </option>
+                ) : null}
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
-              <span className="text-xs font-medium text-neutral-4">Danh mục con ID</span>
-              <input
-                type="text"
+              <span className="text-xs font-medium text-neutral-4">Danh mục con</span>
+              <select
                 value={formValues.subCategoryId}
                 onChange={(event) => handleFieldChange("subCategoryId", event.target.value)}
-                placeholder="ID danh mục con"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-              />
+                disabled={isLoadingOptions}
+              >
+                <option value="">Chọn danh mục con</option>
+                {!hasSubCategoryOption && formValues.subCategoryId ? (
+                  <option value={formValues.subCategoryId}>
+                    {product.subCategory?.name || "Danh muc hien tai"}
+                  </option>
+                ) : null}
+                {subCategories.map((subCategory) => (
+                  <option key={subCategory.id} value={subCategory.id}>
+                    {subCategory.categoryName} - {subCategory.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
