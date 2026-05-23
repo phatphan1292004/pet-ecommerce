@@ -16,6 +16,10 @@ const routeLabelMap: Record<string, string> = {
   user: "Người dùng",
   coupons: "Mã giảm giá",
   reports: "Thống kê",
+  revenue: "Doanh thu",
+  orders: "Đơn hàng",
+  products: "Sản phẩm",
+  customers: "Khách hàng",
 };
 
 const toTitleCase = (value: string) =>
