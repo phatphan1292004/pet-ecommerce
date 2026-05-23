@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiMessageCircle, FiMinimize2, FiX } from "react-icons/fi";
 import { BsFillSendFill } from "react-icons/bs";
 import Image from "next/image";
+import { RiRobot2Fill } from "react-icons/ri";
 
 type ChatbotProduct = {
   id: string;
@@ -158,7 +159,7 @@ export default function ChatbotPanel({
     >
       <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-neutral-1">
-          <FiMessageCircle size={16} />
+          <RiRobot2Fill size={16} />
           Chatbot
         </div>
         <div className="flex items-center gap-2">
@@ -291,7 +292,7 @@ export default function ChatbotPanel({
                 }
               }}
               placeholder="Nhập câu hỏi..."
-              className="flex-1 rounded-full border border-neutral-20 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition focus:border-primary-3"
+              className="flex-1 rounded-lg border border-neutral-20 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition focus:border-primary-3"
             />
             <button
               type="button"

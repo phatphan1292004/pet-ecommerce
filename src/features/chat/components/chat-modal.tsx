@@ -455,7 +455,7 @@ export default function ChatModal({
                 }
               }}
               placeholder="Nhập tin nhắn..."
-              className="flex-1 rounded-full border border-neutral-20 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition focus:border-primary-3"
+              className="flex-1 rounded-lg border border-neutral-20 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition focus:border-primary-3"
             />
             <button
               type="button"

@@ -3,7 +3,7 @@
 import { get } from "@/integrations/storeClient";
 
 export interface AdminDashboardSummary {
-  revenueToday: number;
+  revenueThisMonth: number;
   newOrdersToday: number;
   newUsersToday: number;
   completionRate: number;
@@ -24,7 +24,7 @@ export interface AdminRecentActivity {
 
 export interface AdminDashboardData {
   summary: AdminDashboardSummary;
-  overview7Days: AdminDashboardOverviewItem[];
+  overviewMonths: AdminDashboardOverviewItem[];
   recentActivities: AdminRecentActivity[];
 }
 
@@ -46,7 +46,7 @@ const toStringValue = (value: unknown, fallback = ""): string =>
   typeof value === "string" ? value : fallback;
 
 const defaultSummary = (): AdminDashboardSummary => ({
-  revenueToday: 0,
+  revenueThisMonth: 0,
   newOrdersToday: 0,
   newUsersToday: 0,
   completionRate: 0,
@@ -58,7 +58,7 @@ const normalizeSummary = (value: unknown): AdminDashboardSummary => {
   }
 
   return {
-    revenueToday: toNumber(value.revenueToday, 0),
+    revenueThisMonth: toNumber(value.revenueThisMonth, 0),
     newOrdersToday: toNumber(value.newOrdersToday, 0),
     newUsersToday: toNumber(value.newUsersToday, 0),
     completionRate: toNumber(value.completionRate, 0),
@@ -104,13 +104,13 @@ const normalizeDashboardData = (value: unknown): AdminDashboardData => {
   if (!isRecord(value)) {
     return {
       summary: defaultSummary(),
-      overview7Days: [],
+      overviewMonths: [],
       recentActivities: [],
     };
   }
 
-  const overviewSource = Array.isArray(value.overview7Days) ? value.overview7Days : [];
-  const overview7Days = overviewSource
+  const overviewSource = Array.isArray(value.overviewMonths) ? value.overviewMonths : [];
+  const overviewMonths = overviewSource
     .map((item) => normalizeOverviewItem(item))
     .filter((item): item is AdminDashboardOverviewItem => Boolean(item));
 
@@ -121,7 +121,7 @@ const normalizeDashboardData = (value: unknown): AdminDashboardData => {
 
   return {
     summary: normalizeSummary(value.summary),
-    overview7Days,
+    overviewMonths,
     recentActivities,
   };
 };

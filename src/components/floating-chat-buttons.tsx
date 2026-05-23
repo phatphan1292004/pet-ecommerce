@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FiMessageCircle, FiUser } from "react-icons/fi";
 import { ChatModal, ChatbotPanel } from "@/features/chat";
+import { RiRobot2Fill } from "react-icons/ri";
 
 export default function FloatingChatButtons({
   currentUserId,
@@ -46,7 +47,7 @@ export default function FloatingChatButtons({
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary-4 bg-primary-1 text-white shadow-lg transition hover:-translate-y-px hover:bg-primary-2"
             aria-label="Mở chatbot"
           >
-            <FiMessageCircle size={18} />
+            <RiRobot2Fill size={18} />
           </button>
 
           <button

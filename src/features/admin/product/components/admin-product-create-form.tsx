@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiSave } from "react-icons/fi";
+import { FiSave, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useToast } from "@/hooks";
@@ -700,7 +700,7 @@ export default function AdminProductCreateForm() {
                     className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-black/60 text-sm font-semibold text-white shadow transition hover:bg-black/80"
                     aria-label="Xoa anh"
                   >
-                    ×
+                    <FiX />
                   </button>
                 </div>
               ))}

@@ -156,7 +156,7 @@ export default function DashboardPageContent({
   dashboard,
   errorMessage,
 }: DashboardPageContentProps) {
-  const overviewSeries = dashboard.overview7Days;
+  const overviewSeries = dashboard.overviewMonths;
   const chartData = overviewSeries.map((item) => ({
     label: formatDateShort(item.date),
     date: item.date,
@@ -173,8 +173,8 @@ export default function DashboardPageContent({
     iconClassName: string;
   }> = [
     {
-      label: "Doanh thu hom nay",
-      value: formatCurrency(dashboard.summary.revenueToday),
+      label: "Doanh thu thang nay",
+      value: formatCurrency(dashboard.summary.revenueThisMonth),
       icon: FiDollarSign,
       iconClassName: "bg-primary-6 text-primary-1 border-primary-4",
     },
@@ -255,7 +255,7 @@ export default function DashboardPageContent({
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-neutral-20 bg-neutral-10 p-3 sm:p-4">
-              <div className="h-64 w-full sm:h-72 lg:h-78">
+              <div className="h-64 w-full sm:h-72 lg:h-118">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
                     <defs>
