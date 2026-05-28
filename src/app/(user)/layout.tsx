@@ -13,14 +13,21 @@ export default async function UserLayout({
 }>) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
+  const role = cookieStore.get("role")?.value?.trim().toUpperCase() ?? "";
   const isLoggedIn = !!userId;
+  const isAdmin = role === "ADMIN" || role === "STAFF";
   const categories = await getCategories();
   const brands = await getBrands();
   const userInfo = await getUserInfo();
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Header isLoggedIn={isLoggedIn} categories={categories} brands={brands} />
+      <Header
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        categories={categories}
+        brands={brands}
+      />
       <main className="flex-1 overflow-x-hidden">{children}</main>
       <FloatingChatButtons
         currentUserId={userId}

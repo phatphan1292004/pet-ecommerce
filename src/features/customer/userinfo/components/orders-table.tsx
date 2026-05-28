@@ -103,9 +103,6 @@ const getPaymentLabel = (method?: string) => {
   return method;
 };
 
-const getOrderItems = (order: Order): OrderItem[] =>
-  order.cart?.products || order.products || order.items || order.cartItems || [];
-
 const getShortOrderId = (orderId?: string) => {
   if (!orderId) {
     return "--";
@@ -138,7 +135,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         id: "createdAt",
         header: "Ngày đặt",
         cell: ({ row }) => (
-          <span className="text-neutral-4">{formatDate(row.original.createdAt)}</span>
+          <span className="text-neutral-4">
+            {formatDate(row.original.createdAt)}
+          </span>
         ),
       },
       {
@@ -146,8 +145,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         header: "Người nhận",
         cell: ({ row }) => (
           <div>
-            <p className="font-semibold text-neutral-1">{row.original.arrivalName || "--"}</p>
-            <p className="text-xs text-neutral-4">{row.original.arrivalPhone || "--"}</p>
+            <p className="font-semibold text-neutral-1">
+              {row.original.arrivalName || "--"}
+            </p>
+            <p className="text-xs text-neutral-4">
+              {row.original.arrivalPhone || "--"}
+            </p>
           </div>
         ),
       },
@@ -155,34 +158,33 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         id: "address",
         header: "Địa chỉ",
         cell: ({ row }) => (
-          <span className="text-neutral-4">{row.original.arrivalAddress || "--"}</span>
+          <span className="text-neutral-4">
+            {row.original.arrivalAddress || "--"}
+          </span>
         ),
       },
       {
         id: "payment",
         header: "Phương thức",
         cell: ({ row }) => (
-          <span className="text-neutral-4">{getPaymentLabel(row.original.paymentMethod)}</span>
+          <span className="text-neutral-4">
+            {getPaymentLabel(row.original.paymentMethod)}
+          </span>
         ),
-      },
-      {
-        id: "items",
-        header: "Sản phẩm",
-        cell: ({ row }) => {
-          const totalItems = getOrderItems(row.original).reduce(
-            (sum, item) => sum + (Number(item.quantity) || 0),
-            0
-          );
-          return <span className="text-neutral-4">{totalItems || "--"}</span>;
-        },
       },
       {
         id: "total",
         header: "Tổng",
         cell: ({ row }) => {
           const totalPrice =
-            row.original.cart?.finalPrice ?? row.original.finalPrice ?? row.original.totalPrice;
-          return <span className="font-semibold text-neutral-1">{formatCurrency(totalPrice)}</span>;
+            row.original.cart?.finalPrice ??
+            row.original.finalPrice ??
+            row.original.totalPrice;
+          return (
+            <span className="font-semibold text-neutral-1">
+              {formatCurrency(totalPrice)}
+            </span>
+          );
         },
       },
       {
@@ -191,7 +193,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         cell: ({ row }) => (
           <span
             className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusStyles(
-              row.original.status
+              row.original.status,
             )}`}
           >
             {getStatusLabel(row.original.status)}
@@ -214,7 +216,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         },
       },
     ],
-    []
+    [],
   );
 
   const columnAlign: Record<string, "left" | "center" | "right"> = {
@@ -257,7 +259,10 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
                 >
                   {header.isPlaceholder
                     ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                 </th>
               ))}
             </tr>

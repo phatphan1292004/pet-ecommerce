@@ -94,3 +94,26 @@ export const updateOrderDeliveryInfo = async (
     data: data || null,
   };
 };
+
+export const cancelOrder = async (
+  orderId: string
+): Promise<ActionResult<Order | null>> => {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) {
+    return { success: false, message: "User not authenticated", data: null };
+  }
+
+  const res = await patch(`/order/${orderId}/status`, {
+    firebaseUid: userId,
+    status: "cancelled",
+  });
+
+  const data = res?.data as Order | undefined;
+  return {
+    success: Boolean(res?.data),
+    message: res?.message || "Không thể hủy đơn hàng",
+    data: data || null,
+  };
+};

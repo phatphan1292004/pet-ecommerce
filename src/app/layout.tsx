@@ -9,8 +9,8 @@ const primaryFont = Josefin_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ODeli - Pet E-commerce",
-  description: "ODeli Vietnam - Món ăn và thức uống cho thú cưng",
+  title: "PetSpots - Pet E-commerce",
+  description: "PetSpots Vietnam - Món ăn và thức uống cho thú cưng",
 };
 
 export default async function RootLayout({

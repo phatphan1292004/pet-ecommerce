@@ -59,6 +59,7 @@ export default function ChatModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const socket: Socket = useMemo(
     () =>
@@ -140,6 +141,7 @@ export default function ChatModal({
       }
     })();
   }, [isOpen, conversationId]);
+
 
   useEffect(() => {
     if (!isOpen || !conversationId) return;
@@ -271,6 +273,31 @@ export default function ChatModal({
 
   if (!isOpen) return null;
 
+  // Image preview overlay
+  const PreviewOverlay = () => {
+    if (!previewImageUrl) return null;
+    return (
+      <div
+        className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4"
+        onClick={() => setPreviewImageUrl(null)}
+      >
+        <button
+          type="button"
+          onClick={() => setPreviewImageUrl(null)}
+          className="absolute top-4 right-4 z-70 rounded-full bg-white p-1"
+        >
+          <FiX size={20} />
+        </button>
+        <img
+          src={previewImageUrl}
+          alt="preview"
+          className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    );
+  };
+
   return (
     <div
       className={`mb-2 w-120 overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl ${
@@ -315,12 +342,16 @@ export default function ChatModal({
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {senderId ? "Sẵn sàng hỗ trợ bạn" : "Đang khởi tạo phiên chat..."}
         </div>
+        
         <div
           ref={listRef}
           className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
         >
           {loading ? (
-            <p className="text-sm text-neutral-4">Đang tải hội thoại...</p>
+            <div className="flex items-center gap-2 text-sm text-neutral-4">
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-neutral-30 border-t-primary-1" />
+              Đang tải hội thoại...
+            </div>
           ) : null}
 
           {!loading && messages.length === 0 ? (
@@ -379,13 +410,17 @@ export default function ChatModal({
                     </p>
                     {item.messageType === "image" && item.imageUrl ? (
                       <div className="mt-2 space-y-2">
-                        <Image
-                          src={item.imageUrl}
-                          alt="chat"
-                          width={300}
-                          height={200}
-                          className="max-h-48 w-auto rounded-lg object-cover"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImageUrl(item.imageUrl)}
+                          className="block"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt="chat"
+                            className="max-h-48 w-auto rounded-lg object-cover"
+                          />
+                        </button>
                         {item.message ? <p>{item.message}</p> : null}
                       </div>
                     ) : (
@@ -473,6 +508,7 @@ export default function ChatModal({
           ) : null}
         </div>
       </div>
+      <PreviewOverlay />
     </div>
   );
 }

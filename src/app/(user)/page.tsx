@@ -1,4 +1,5 @@
 import HeroSlider from "@/components/hero-slider";
+import RetailBenefits from "@/components/retail-benefits";
 import ProductSection from "@/features/guest/product/components/product-section";
 import {
   getLatestProducts,
@@ -45,10 +46,10 @@ export default async function Home() {
       <div className="container mx-auto px-4">
         {discountProgramData && (
           <ProductSection
-            title={discountProgramData.name}
-            subtitle={formatTimeline(discountProgramData.startDate, discountProgramData.endDate)}
-            countdownTo={discountProgramData.endDate}
-            products={discountProgramData.products}
+          title={discountProgramData.name}
+          subtitle={formatTimeline(discountProgramData.startDate, discountProgramData.endDate)}
+          countdownTo={discountProgramData.endDate}
+          products={discountProgramData.products}
           />
         )}
         {recommendedProducts && recommendedProducts.length > 0 && (
@@ -56,6 +57,7 @@ export default async function Home() {
         )}
         <ProductSection title="SẢN PHẨM MỚI" products={newProducts || []} />
         <ProductSection title="SẢN PHẨM ƯA CHUỘNG" products={popularProducts || []} />
+        <RetailBenefits />
         <ProductSection title="SẢN PHẨM BÁN CHẠY" products={bestSellingProducts || []} />
       </div>
     </div>

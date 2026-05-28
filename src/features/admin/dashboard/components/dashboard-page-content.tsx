@@ -173,25 +173,25 @@ export default function DashboardPageContent({
     iconClassName: string;
   }> = [
     {
-      label: "Doanh thu thang nay",
+      label: "Doanh thu tháng này",
       value: formatCurrency(dashboard.summary.revenueThisMonth),
       icon: FiDollarSign,
       iconClassName: "bg-primary-6 text-primary-1 border-primary-4",
     },
     {
-      label: "Don moi hom nay",
+      label: "Đơn mới hôm nay",
       value: formatNumber(dashboard.summary.newOrdersToday),
       icon: FiPackage,
       iconClassName: "bg-amber-50 text-amber-700 border-amber-200",
     },
     {
-      label: "Nguoi dung moi",
+      label: "Người dùng mới",
       value: formatNumber(dashboard.summary.newUsersToday),
       icon: FiUserPlus,
       iconClassName: "bg-sky-50 text-sky-700 border-sky-200",
     },
     {
-      label: "Ty le hoan thanh",
+      label: "Tỷ lệ hoàn thành",
       value: formatPercent(dashboard.summary.completionRate),
       icon: FiTrendingUp,
       iconClassName: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -289,7 +289,7 @@ export default function DashboardPageContent({
                     <Area
                       type="monotone"
                       dataKey="orders"
-                      name="Don hang"
+                      name="Đơn hàng"
                       stroke="#06b6d4"
                       strokeWidth={3}
                       fill="url(#ordersAreaGradient)"
@@ -299,7 +299,7 @@ export default function DashboardPageContent({
                     <Area
                       type="monotone"
                       dataKey="users"
-                      name="Nguoi dung"
+                      name="Người dùng"
                       stroke="#6366f1"
                       strokeWidth={3}
                       fill="url(#usersAreaGradient)"
