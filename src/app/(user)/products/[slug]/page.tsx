@@ -41,7 +41,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     );
   }
 
-  console.log("product", product);
   return (
     <ProductDetailPage
       product={product}

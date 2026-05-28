@@ -19,6 +19,7 @@ import SearchDropdown from "./search-dropdown";
 
 interface HeaderProps {
   isLoggedIn: boolean;
+  isAdmin?: boolean;
   categories: Category[] | null;
   brands?: BrandItem[] | null;
 }
@@ -30,6 +31,7 @@ const staticLinks = [
 
 export default function Header({
   isLoggedIn,
+  isAdmin = false,
   categories,
   brands,
 }: HeaderProps) {
@@ -102,6 +104,15 @@ export default function Header({
               <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-md border border-neutral-20 bg-white shadow-lg">
                 {isLoggedIn ? (
                   <>
+                    {isAdmin ? (
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={() => setAccountMenuOpen(false)}
+                        className="block px-4 py-2 text-sm text-neutral-1 transition hover:bg-neutral-10"
+                      >
+                        Trang quản trị
+                      </Link>
+                    ) : null}
                     <Link
                       href="/userinfo"
                       onClick={() => setAccountMenuOpen(false)}
@@ -301,6 +312,15 @@ export default function Header({
                 >
                   Thông tin cá nhân
                 </Link>
+                {isAdmin ? (
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg border border-neutral-20 px-3 py-2 text-sm text-neutral-2"
+                  >
+                    Trang quản trị
+                  </Link>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleLogout}

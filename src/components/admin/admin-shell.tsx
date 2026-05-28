@@ -67,9 +67,7 @@ export default function AdminShell({ children }: AdminShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    "/admin/reports": true,
-  });
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -88,17 +86,6 @@ export default function AdminShell({ children }: AdminShellProps) {
   const desktopSidebarWidthClass = isSidebarCollapsed ? "lg:w-[5.5rem]" : "lg:w-80";
   const desktopContentPaddingClass = isSidebarCollapsed ? "lg:pl-[5.5rem]" : "lg:pl-80";
 
-  useEffect(() => {
-    const shouldExpandReports = isActivePath(pathname, "/admin/reports");
-    if (!shouldExpandReports) {
-      return;
-    }
-
-    setExpandedItems((prev) => ({
-      ...prev,
-      "/admin/reports": true,
-    }));
-  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-neutral-10 text-neutral-black">

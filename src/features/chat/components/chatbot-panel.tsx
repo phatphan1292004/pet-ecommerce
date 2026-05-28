@@ -56,6 +56,8 @@ export default function ChatbotPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const footerHint = useMemo(
     () =>
@@ -75,8 +77,8 @@ export default function ChatbotPanel({
     }
   }, [messages, isLoading, isOpen]);
 
-  const handleSend = async () => {
-    const question = text.trim();
+  const handleSend = async (questionArg?: string) => {
+    const question = (questionArg ?? text).trim();
     if (!question || isLoading) return;
 
     const userMessage: ChatbotMessage = {
@@ -149,6 +151,54 @@ export default function ChatbotPanel({
     }
   };
 
+  // fetch suggestion questions from knowledge base for chatbot
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingSuggestions(true);
+      try {
+        const res = await fetch(`${API_BASE}/knowledge/suggestions?limit=6`);
+        const json = await res.json();
+        if (!cancelled) {
+          if (json && Array.isArray(json.data)) {
+            setSuggestions(json.data.map((x: any) => String(x)));
+          } else if (json && Array.isArray(json)) {
+            setSuggestions(json.map((x: any) => String(x)));
+          } else {
+            setSuggestions([
+              "Giao hàng mất bao lâu?",
+              "Phí vận chuyển là bao nhiêu?",
+              "Chính sách đổi trả như thế nào?",
+              "Sản phẩm này còn hàng không?",
+              "Có mã giảm giá không?",
+            ]);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setSuggestions([
+            "Giao hàng mất bao lâu?",
+            "Phí vận chuyển là bao nhiêu?",
+            "Chính sách đổi trả như thế nào?",
+            "Sản phẩm này còn hàng không?",
+            "Có mã giảm giá không?",
+          ]);
+        }
+      } finally {
+        if (!cancelled) setLoadingSuggestions(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const handleSuggestionClick = (sugg: string) => {
+    // send immediately using handleSend
+    handleSend(sugg);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -188,6 +238,27 @@ export default function ChatbotPanel({
       >
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {footerHint}
+        </div>
+        <div className="px-4 py-3">
+          {loadingSuggestions ? (
+            <div className="flex items-center gap-2 text-sm text-neutral-4">
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-neutral-30 border-t-primary-1" />
+              Gợi ý câu hỏi...
+            </div>
+          ) : suggestions.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((sugg, i) => (
+                <button
+                  key={`chat-sugg-${i}`}
+                  type="button"
+                  onClick={() => handleSuggestionClick(sugg)}
+                  className="rounded-full border border-neutral-20 bg-white px-3 py-1 text-sm text-neutral-4 shadow-sm hover:bg-primary-1 hover:text-white"
+                >
+                  {sugg}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div
           ref={listRef}

@@ -79,10 +79,10 @@ const getProductImage = (item: AdminStatisticsProductItem) =>
   item.image && item.image.trim().length > 0 ? item.image : "/logo.png";
 
 const chartOptions = [
-  { key: "last7Days", label: "7 ngay" },
-  { key: "last30Days", label: "30 ngay" },
-  { key: "last6Months", label: "6 thang" },
-  { key: "last12Months", label: "12 thang" },
+  { key: "last7Days", label: "7 ngày" },
+  { key: "last30Days", label: "30 ngày" },
+  { key: "last6Months", label: "6 tháng" },
+  { key: "last12Months", label: "12 tháng" },
 ] as const;
 
 type ChartKey = (typeof chartOptions)[number]["key"];
@@ -102,7 +102,7 @@ function ProductListCard({
     <div className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-neutral-1">{title}</p>
-        <span className="text-xs text-neutral-4">{items.length} item</span>
+        <span className="text-xs text-neutral-4">{items.length} mục</span>
       </div>
 
       {items.length === 0 ? (
@@ -124,7 +124,7 @@ function ProductListCard({
               />
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-2 text-xs font-medium text-neutral-1">
-                  {item.name || "San pham"}
+                  {item.name || "Sản phẩm"}
                 </p>
                 <p className="mt-1 text-[11px] text-neutral-4">{renderMeta(item)}</p>
               </div>
@@ -138,24 +138,24 @@ function ProductListCard({
 
 const viewConfig: Record<ReportsView, { title: string; description: string }> = {
   revenue: {
-    title: "Bao cao doanh thu",
-    description: "Tong quan doanh thu va don hang theo thoi gian",
+    title: "Báo cáo doanh thu",
+    description: "Tổng quan doanh thu và đơn hàng theo thời gian",
   },
   orders: {
-    title: "Thong ke don hang",
-    description: "Tinh hinh xu ly va ty le huy don hang",
+    title: "Thống kê đơn hàng",
+    description: "Tình hình xử lý và tỷ lệ hủy đơn hàng",
   },
   products: {
-    title: "Thong ke san pham",
-    description: "Top ban chay, doanh thu va ton kho",
+    title: "Thống kê sản phẩm",
+    description: "Top bán chạy, doanh thu và tồn kho",
   },
   customers: {
-    title: "Thong ke khach hang",
-    description: "Khach moi, khach quay lai va top chi tieu",
+    title: "Thống kê khách hàng",
+    description: "Khách mới, khách quay lại và top chi tiêu",
   },
   overview: {
-    title: "Tong quan bao cao",
-    description: "Tong hop doanh thu, san pham, don hang va khach hang",
+    title: "Tổng quan báo cáo",
+    description: "Tổng hợp doanh thu, sản phẩm, đơn hàng và khách hàng",
   },
 };
 
@@ -214,19 +214,19 @@ export default function ReportsPageContent({
           <>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-                <p className="text-xs text-neutral-4">Doanh thu hom nay</p>
+                <p className="text-xs text-neutral-4">Doanh thu hôm nay</p>
                 <p className="mt-2 text-lg font-semibold text-neutral-1">
                   {formatCurrency(data.revenue.today)}
                 </p>
               </div>
               <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-                <p className="text-xs text-neutral-4">Doanh thu thang nay</p>
+                <p className="text-xs text-neutral-4">Doanh thu tháng này</p>
                 <p className="mt-2 text-lg font-semibold text-neutral-1">
                   {formatCurrency(data.revenue.month)}
                 </p>
               </div>
               <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-                <p className="text-xs text-neutral-4">Doanh thu nam nay</p>
+                <p className="text-xs text-neutral-4">Doanh thu năm nay</p>
                 <p className="mt-2 text-lg font-semibold text-neutral-1">
                   {formatCurrency(data.revenue.year)}
                 </p>
@@ -236,8 +236,8 @@ export default function ReportsPageContent({
             <div className="mt-6 rounded-2xl border border-neutral-20 bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-neutral-1">Doanh thu & don hang</p>
-                  <p className="text-xs text-neutral-4">Thong ke theo moc thoi gian</p>
+                  <p className="text-sm font-semibold text-neutral-1">Doanh thu & đơn hàng</p>
+                  <p className="text-xs text-neutral-4">Thống kê theo mốc thời gian</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {chartOptions.map((option) => (
@@ -265,7 +265,7 @@ export default function ReportsPageContent({
                     <Tooltip
                       formatter={(value: number, name: string) => [
                         name === "revenue" ? formatCurrency(value) : formatNumber(value),
-                        name === "revenue" ? "Doanh thu" : "Don hang",
+                        name === "revenue" ? "Doanh thu" : "Đơn hàng",
                       ]}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#f97316" fill="#fdba74" />
@@ -281,36 +281,36 @@ export default function ReportsPageContent({
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4 xl:col-span-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-neutral-4">Tong don hang</p>
+                <p className="text-xs text-neutral-4">Tổng đơn hàng</p>
                 <FiShoppingCart size={16} className="text-neutral-4" />
               </div>
               <p className="mt-2 text-lg font-semibold text-neutral-1">
                 {formatNumber(data.orders.total)}
               </p>
               <p className="mt-2 text-xs text-neutral-4">
-                Ty le huy: {formatPercent(data.orders.cancellationRate)}
+                Tỷ lệ hủy: {formatPercent(data.orders.cancellationRate)}
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-              <p className="text-xs text-neutral-4">Dang xu ly</p>
+              <p className="text-xs text-neutral-4">Đang xử lý</p>
               <p className="mt-1 text-lg font-semibold text-neutral-1">
                 {formatNumber(data.orders.pending)}
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-              <p className="text-xs text-neutral-4">Dang giao</p>
+              <p className="text-xs text-neutral-4">Đang giao</p>
               <p className="mt-1 text-lg font-semibold text-neutral-1">
                 {formatNumber(data.orders.delivering)}
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-              <p className="text-xs text-neutral-4">Da giao</p>
+              <p className="text-xs text-neutral-4">Đã giao</p>
               <p className="mt-1 text-lg font-semibold text-neutral-1">
                 {formatNumber(data.orders.delivered)}
               </p>
             </div>
             <div className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-              <p className="text-xs text-neutral-4">Da huy</p>
+              <p className="text-xs text-neutral-4">Đã hủy</p>
               <p className="mt-1 text-lg font-semibold text-neutral-1">
                 {formatNumber(data.orders.cancelled)}
               </p>
@@ -324,8 +324,8 @@ export default function ReportsPageContent({
           <div className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-neutral-1">Khach hang moi 30 ngay</p>
-                <p className="text-xs text-neutral-4">Bieu do khach hang moi theo ngay</p>
+                <p className="text-sm font-semibold text-neutral-1">Khách hàng mới 30 ngày</p>
+                <p className="text-xs text-neutral-4">Biểu đồ khách hàng mới theo ngày</p>
               </div>
               <FiBarChart2 size={16} className="text-neutral-4" />
             </div>
@@ -335,7 +335,7 @@ export default function ReportsPageContent({
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value: number) => [formatNumber(value), "Khach moi"]} />
+                  <Tooltip formatter={(value: number) => [formatNumber(value), "Khách mới"]} />
                   <Area type="monotone" dataKey="customers" stroke="#22c55e" fill="#bbf7d0" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -344,36 +344,36 @@ export default function ReportsPageContent({
 
           <div className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-neutral-1">Tong quan khach hang</p>
+              <p className="text-sm font-semibold text-neutral-1">Tổng quan khách hàng</p>
               <FiUsers size={16} className="text-neutral-4" />
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3">
-                <p className="text-xs text-neutral-4">Tong khach</p>
+                <p className="text-xs text-neutral-4">Tổng khách</p>
                 <p className="mt-1 text-base font-semibold text-neutral-1">
                   {formatNumber(data.customers.total)}
                 </p>
               </div>
               <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3">
-                <p className="text-xs text-neutral-4">Khach moi hom nay</p>
+                <p className="text-xs text-neutral-4">Khách mới hôm nay</p>
                 <p className="mt-1 text-base font-semibold text-neutral-1">
                   {formatNumber(data.customers.newToday)}
                 </p>
               </div>
               <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3">
-                <p className="text-xs text-neutral-4">Khach moi thang</p>
+                <p className="text-xs text-neutral-4">Khách mới tháng</p>
                 <p className="mt-1 text-base font-semibold text-neutral-1">
                   {formatNumber(data.customers.newThisMonth)}
                 </p>
               </div>
               <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3">
-                <p className="text-xs text-neutral-4">Khach moi nam</p>
+                <p className="text-xs text-neutral-4">Khách mới năm</p>
                 <p className="mt-1 text-base font-semibold text-neutral-1">
                   {formatNumber(data.customers.newThisYear)}
                 </p>
               </div>
               <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3 sm:col-span-2">
-                <p className="text-xs text-neutral-4">Khach quay lai</p>
+                <p className="text-xs text-neutral-4">Khách quay lại</p>
                 <p className="mt-1 text-base font-semibold text-neutral-1">
                   {formatNumber(data.customers.returning)}
                 </p>
@@ -386,39 +386,39 @@ export default function ReportsPageContent({
       {showProducts ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <ProductListCard
-            title="Top ban chay"
+            title="Top bán chạy"
             items={data.products.topSelling}
-            emptyLabel="Chua co san pham ban chay"
+            emptyLabel="Chưa có sản phẩm bán chạy"
             renderMeta={(item) =>
-              `So luong: ${formatNumber(item.quantity)} · Doanh thu: ${formatCurrency(item.revenue)}`
+              `Số lượng: ${formatNumber(item.quantity)} · Doanh thu: ${formatCurrency(item.revenue)}`
             }
           />
           <ProductListCard
             title="Top doanh thu"
             items={data.products.topRevenue}
-            emptyLabel="Chua co san pham doanh thu cao"
+            emptyLabel="Chưa có sản phẩm doanh thu cao"
             renderMeta={(item) =>
-              `Doanh thu: ${formatCurrency(item.revenue)} · So luong: ${formatNumber(item.quantity)}`
+              `Doanh thu: ${formatCurrency(item.revenue)} · Số lượng: ${formatNumber(item.quantity)}`
             }
           />
           <ProductListCard
-            title="Ton kho thap"
+            title="Tồn kho thấp"
             items={data.products.lowStock}
-            emptyLabel="Khong co san pham ton kho thap"
-            renderMeta={(item) => `Ton kho: ${formatNumber(item.stock)}`}
+            emptyLabel="Không có sản phẩm tồn kho thấp"
+            renderMeta={(item) => `Tồn kho: ${formatNumber(item.stock)}`}
           />
           <ProductListCard
-            title="Ton kho cao"
+            title="Tồn kho cao"
             items={data.products.highStock}
-            emptyLabel="Khong co san pham ton kho cao"
-            renderMeta={(item) => `Ton kho: ${formatNumber(item.stock)}`}
+            emptyLabel="Không có sản phẩm tồn kho cao"
+            renderMeta={(item) => `Tồn kho: ${formatNumber(item.stock)}`}
           />
           <ProductListCard
-            title="Ban cham (30 ngay)"
+            title="Bán chậm (30 ngày)"
             items={data.products.lowSelling}
-            emptyLabel="Khong co san pham ban cham"
+            emptyLabel="Không có sản phẩm bán chậm"
             renderMeta={(item) =>
-              `So luong: ${formatNumber(item.quantity)} · Doanh thu: ${formatCurrency(item.revenue)}`
+              `Số lượng: ${formatNumber(item.quantity)} · Doanh thu: ${formatCurrency(item.revenue)}`
             }
           />
         </div>
@@ -427,13 +427,13 @@ export default function ReportsPageContent({
       {showCustomers ? (
         <div className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-neutral-1">Top chi tieu</p>
+            <p className="text-sm font-semibold text-neutral-1">Top chi tiêu</p>
             <FiTrendingUp size={16} className="text-neutral-4" />
           </div>
           <div className="mt-3 space-y-2">
             {data.customers.topSpenders.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-20 bg-neutral-10 px-3 py-4 text-center text-xs text-neutral-4">
-                Chua co du lieu chi tieu
+                Chưa có dữ liệu chi tiêu
               </div>
             ) : (
               data.customers.topSpenders.map((customer) => (
@@ -443,7 +443,7 @@ export default function ReportsPageContent({
                 >
                   <p className="text-xs font-medium text-neutral-1">{customer.name}</p>
                   <p className="mt-1 text-[11px] text-neutral-4">
-                    Tong chi tieu: {formatCurrency(customer.totalSpent)} · Don hang: {formatNumber(customer.orders)}
+                    Tổng chi tiêu: {formatCurrency(customer.totalSpent)} · Đơn hàng: {formatNumber(customer.orders)}
                   </p>
                 </div>
               ))

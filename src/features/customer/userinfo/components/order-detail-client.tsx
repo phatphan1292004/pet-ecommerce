@@ -5,8 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaArrowLeft, FaEdit, FaSave, FaTimes, FaCreditCard, FaMoneyBillWave, FaTruck } from "react-icons/fa";
 import type { Order, OrderItem } from "@/types/order";
-import { updateOrderDeliveryInfo } from "../servers/orders";
+import { updateOrderDeliveryInfo, cancelOrder } from "../servers/orders";
 import { useToast } from "@/hooks";
+import { useCartStore } from "@/store";
 
 interface OrderDetailClientProps {
   order: Order;
@@ -47,9 +48,12 @@ const getItems = (order: Order): OrderItem[] =>
 
 export default function OrderDetailClient({ order: initialOrder, orderId }: OrderDetailClientProps) {
   const [order, setOrder] = useState<Order>(initialOrder);
+  console.log("🚀 ~ file: order-detail-client.tsx:24 ~ OrderDetailClient ~ order:", order);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const { showError, showSuccess } = useToast();
+  const addItem = useCartStore((state) => state.addItem);
 
   const [form, setForm] = useState({
     arrivalName: initialOrder.arrivalName || "",
@@ -101,6 +105,81 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCancel = async () => {
+    const confirmCancel = window.confirm("Bạn có chắc muốn hủy đơn hàng này?");
+    if (!confirmCancel) return;
+    setIsCancelling(true);
+    try {
+      const res = await cancelOrder(orderId);
+      if (!res.success) {
+        showError(res.message || "Không thể hủy đơn hàng");
+        return;
+      }
+      const nextOrder = res.data || { ...order, status: "cancelled" };
+      setOrder(nextOrder);
+      showSuccess(res.message || "Hủy đơn hàng thành công");
+    } catch {
+      showError("Không thể hủy đơn hàng");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleBuyAgain = (item: OrderItem) => {
+    const productId = item.productId || item._id;
+    if (!productId) {
+      showError("Không thể mua lại sản phẩm này.");
+      return;
+    }
+
+    const quantity = Math.max(1, Number(item.quantity) || 1);
+
+    addItem({
+      _id: productId,
+      name: item.name || "Sản phẩm",
+      price: Number(item.price) || 0,
+      image: item.image || "",
+      slug: undefined,
+      quantity,
+    });
+
+    showSuccess(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+  };
+
+  const handleBuyAll = () => {
+    if (items.length === 0) {
+      showError("Không có sản phẩm để mua lại.");
+      return;
+    }
+
+    let addedCount = 0;
+
+    items.forEach((item) => {
+      const productId = item.productId || item._id;
+      if (!productId) return;
+
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+
+      addItem({
+        _id: productId,
+        name: item.name || "Sản phẩm",
+        price: Number(item.price) || 0,
+        image: item.image || "",
+        slug: undefined,
+        quantity,
+      });
+
+      addedCount += 1;
+    });
+
+    if (addedCount === 0) {
+      showError("Không thể mua lại các sản phẩm trong đơn hàng này.");
+      return;
+    }
+
+    showSuccess(`Đã thêm ${addedCount} sản phẩm vào giỏ hàng`);
   };
 
   return (
@@ -173,17 +252,28 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
 
           <div className="flex flex-col items-stretch gap-2">
             {!isEditing ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditing(true);
-                  resetForm();
-                }}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2"
-              >
-                <FaEdit size={14} />
-                Chỉnh sửa
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="inline-flex items-center justify-center gap-2 rounded-md border border-red-600 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                >
+                  <FaTimes size={14} />
+                  {isCancelling ? "Đang hủy..." : "Hủy đơn"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(true);
+                    resetForm();
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2"
+                >
+                  <FaEdit size={14} />
+                  Chỉnh sửa
+                </button>
+              </div>
             ) : (
               <>
                 <button
@@ -225,7 +315,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
               <p className="text-xs uppercase tracking-wide">Tổng</p>
             </div>
             <p className="mt-2 font-semibold text-neutral-1">
-              {formatCurrency(order.totalPrice || order.finalPrice)}
+              {formatCurrency(order.cart?.finalPrice)}
             </p>
           </div>
           <div className="rounded-xl border border-neutral-20 p-4">
@@ -239,7 +329,16 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
       </div>
 
       <div className="rounded-2xl border border-neutral-20 bg-white p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-neutral-1 mb-4">Sản phẩm</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-neutral-1">Sản phẩm</h2>
+          <button
+            type="button"
+            onClick={handleBuyAll}
+            className="inline-flex items-center justify-center rounded-full border border-primary-4 px-4 py-1.5 text-xs font-semibold text-primary-1 transition hover:border-primary-3 hover:bg-primary-6"
+          >
+            Mua lại toàn bộ
+          </button>
+        </div>
         <div className="space-y-4">
           {items.length === 0 ? (
             <p className="text-sm text-neutral-4">Không có sản phẩm.</p>
@@ -260,8 +359,17 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
                     <p className="text-xs text-neutral-4">SL: {it.quantity || 0}</p>
                   </div>
                 </div>
-                <div className="text-left text-sm font-semibold text-neutral-1 sm:text-right">
-                  {formatCurrency((Number(it.price) || 0) * (Number(it.quantity) || 0))}
+                <div className="flex flex-col items-start gap-2 text-left sm:items-end">
+                  <div className="text-sm font-semibold text-neutral-1">
+                    {formatCurrency((Number(it.price) || 0) * (Number(it.quantity) || 0))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleBuyAgain(it)}
+                    className="inline-flex items-center justify-center rounded-full border border-primary-4 px-3 py-1 text-xs font-semibold text-primary-1 transition hover:border-primary-3 hover:bg-primary-6"
+                  >
+                    Mua lại
+                  </button>
                 </div>
               </div>
             ))
