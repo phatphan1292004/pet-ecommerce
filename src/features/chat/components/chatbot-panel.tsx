@@ -367,7 +367,9 @@ export default function ChatbotPanel({
             />
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => {
+                void handleSend();
+              }}
               disabled={!text.trim() || isLoading}
               className="rounded-full bg-primary-1 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-30"
             >
