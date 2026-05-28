@@ -263,10 +263,17 @@ export default function ReportsPageContent({
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip
-                      formatter={(value: number, name: string) => [
-                        name === "revenue" ? formatCurrency(value) : formatNumber(value),
-                        name === "revenue" ? "Doanh thu" : "Đơn hàng",
-                      ]}
+                      formatter={(value, name) => {
+                        const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+                        const seriesName = String(name);
+
+                        return [
+                          seriesName === "revenue"
+                            ? formatCurrency(numericValue)
+                            : formatNumber(numericValue),
+                          seriesName === "revenue" ? "Doanh thu" : "Đơn hàng",
+                        ];
+                      }}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#f97316" fill="#fdba74" />
                     <Area type="monotone" dataKey="orders" stroke="#0ea5e9" fill="#bae6fd" />
@@ -335,7 +342,12 @@ export default function ReportsPageContent({
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value: number) => [formatNumber(value), "Khách mới"]} />
+                  <Tooltip
+                    formatter={(value) => {
+                      const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+                      return [formatNumber(numericValue), "Khách mới"];
+                    }}
+                  />
                   <Area type="monotone" dataKey="customers" stroke="#22c55e" fill="#bbf7d0" />
                 </AreaChart>
               </ResponsiveContainer>
