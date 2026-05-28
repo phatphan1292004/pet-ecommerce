@@ -35,7 +35,7 @@ type ChatbotPanelProps = {
   contentClassName?: string;
 };
 
-const API_BASE = process.env.PET_ECOMMERCE_API || "http://localhost:9000";
+const API_BASE = process.env.NEXT_PUBLIC_PET_ECOMMERCE_API;
 
 const formatPrice = (value?: number) => {
   if (typeof value !== "number") return "";
