@@ -18,7 +18,7 @@ interface SearchDropdownProps {
 }
 
 const API_BASE =
-  process.env.PET_ECOMMERCE_API || "http://localhost:9000";
+  process.env.NEXT_PUBLIC_PET_ECOMMERCE_API || "http://localhost:9000";
 
 export default function SearchDropdown({ onClose }: SearchDropdownProps) {
   const router = useRouter();

@@ -21,7 +21,7 @@ type ChatMessage = {
   senderName: string | null;
 };
 
-const API_BASE = process.env.PET_ECOMMERCE_API || "http://localhost:9000";
+const API_BASE = process.env.NEXT_PUBLIC_PET_ECOMMERCE_API;
 
 type AdminChatPanelProps = {
   currentUserId?: string | null;

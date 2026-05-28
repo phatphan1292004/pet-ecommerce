@@ -17,7 +17,7 @@ if (apiKey) headers["x-client-key"] = apiKey;
 if (apiSecret) headers["x-client-secret"] = apiSecret;
 
 export const storeClient = axios.create({
-  baseURL: getServerVariables("PET_ECOMMERCE_API") || "http://localhost:3000/api",
+  baseURL: getServerVariables("NEXT_PUBLIC_PET_ECOMMERCE_API") || "http://localhost:3000/api",
   headers,
 });
 
