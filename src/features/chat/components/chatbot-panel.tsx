@@ -203,7 +203,7 @@ export default function ChatbotPanel({
 
   return (
     <div
-      className={`mb-2 w-120 overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl ${
+      className={`mb-2 w-full overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
         containerClassName ? containerClassName : ""
       }`}
     >
@@ -232,7 +232,7 @@ export default function ChatbotPanel({
         </div>
       </div>
       <div
-        className={`flex h-100 flex-col bg-neutral-10 ${
+        className={`flex h-[min(22rem,calc(100dvh-8rem))] flex-col bg-neutral-10 sm:h-100 ${
           contentClassName ? contentClassName : ""
         }`}
       >

@@ -79,7 +79,6 @@ export default function ChatModal({
       }
       return;
     }
-
     if (currentUserId) {
       setSenderId(currentUserId);
       setSenderName(currentUserName?.trim() || "Khach");
@@ -300,7 +299,7 @@ export default function ChatModal({
 
   return (
     <div
-      className={`mb-2 w-120 overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl ${
+      className={`mb-2 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
         containerClassName ? containerClassName : ""
       }`}
     >
@@ -335,7 +334,7 @@ export default function ChatModal({
         </div>
       </div>
       <div
-        className={`flex h-100 flex-col bg-neutral-10 ${
+        className={`flex h-[min(22rem,calc(100dvh-8rem))] flex-col bg-neutral-10 sm:h-100 ${
           contentClassName ? contentClassName : ""
         }`}
       >

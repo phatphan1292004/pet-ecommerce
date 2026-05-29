@@ -57,8 +57,8 @@ export default async function Home() {
         )}
         <ProductSection title="SẢN PHẨM MỚI" products={newProducts || []} />
         <ProductSection title="SẢN PHẨM ƯA CHUỘNG" products={popularProducts || []} />
-        <RetailBenefits />
         <ProductSection title="SẢN PHẨM BÁN CHẠY" products={bestSellingProducts || []} />
+        <RetailBenefits />
       </div>
     </div>
   );

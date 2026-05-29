@@ -26,11 +26,13 @@ export default function FloatingChatButtons({
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
-      <div className="flex flex-col items-end gap-2">
+    <div className="fixed inset-x-2 bottom-2 z-60 sm:bottom-5 sm:left-auto sm:right-5 sm:w-auto">
+      <div className="flex flex-col items-stretch gap-2 sm:items-end">
         <ChatbotPanel
           isOpen={isChatbotOpen}
           onClose={() => setIsChatbotOpen(false)}
+          containerClassName="sm:!w-120"
+          contentClassName="!h-[44dvh] sm:!h-100"
         />
 
         <ChatModal
