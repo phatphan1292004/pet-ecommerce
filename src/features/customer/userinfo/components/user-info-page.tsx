@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
@@ -85,6 +85,7 @@ export default function UserInfoPage({
   ];
 
   const currentTabLabel = tabs[selectedTabIndex]?.label || "Tài khoản";
+  const tabListRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-6">
@@ -103,9 +104,11 @@ export default function UserInfoPage({
 
       <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
         <div className="flex flex-col gap-5 lg:flex-row lg:gap-12">
-          {/* Sidebar - Tab List */}
-          <aside className="w-full lg:w-60 lg:shrink-0">
-            <TabList className="flex flex-wrap gap-2 pb-1 lg:flex-col lg:gap-4 lg:pb-0">
+          {/* Sidebar - Tab List (horizontal slider on mobile) */}
+          <aside className="w-full lg:w-60 lg:shrink-0 relative">
+            {/* Mobile: horizontal scroll only (no prev/next controls) */}
+            <div ref={tabListRef} className="overflow-x-auto lg:overflow-visible">
+              <TabList className="flex gap-2 pb-1 lg:flex-col lg:gap-4 lg:pb-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -133,7 +136,8 @@ export default function UserInfoPage({
                   </Tab>
                 );
               })}
-            </TabList>
+              </TabList>
+            </div>
           </aside>
 
           {/* Main content - Tab Panels */}

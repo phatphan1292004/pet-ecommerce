@@ -24,13 +24,15 @@ export default function HeroSlider() {
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex">
           {slides.map((slide) => (
-            <div key={slide.src} className="relative flex-[0_0_100%] min-w-0">
+            <div
+              key={slide.src}
+              className="relative flex-[0_0_100%] min-w-0 h-72 sm:h-80 lg:h-112"
+            >
               <Image
                 src={slide.src}
                 alt={slide.alt}
-                width={1920}
-                height={600}
-                className="h-47.5 w-full object-cover sm:h-70 lg:h-auto"
+                fill
+                className="object-cover object-center"
                 priority
               />
             </div>
