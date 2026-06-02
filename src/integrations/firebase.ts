@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
+  sendPasswordResetEmail,
   signOut,
   type UserCredential,
 } from "firebase/auth";
@@ -38,3 +39,6 @@ export const loginWithFacebook = (): Promise<UserCredential> =>
   signInWithPopup(auth, facebookProvider);
 
 export const logout = (): Promise<void> => signOut(auth);
+
+export const sendPasswordReset = (email: string): Promise<void> =>
+  sendPasswordResetEmail(auth, email);

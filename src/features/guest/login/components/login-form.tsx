@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ReCAPTCHA from "react-google-recaptcha";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { loginWithGoogle, loginWithFacebook } from "@/integrations/firebase";
 import { signIn } from "../servers/login";
@@ -12,6 +13,14 @@ export default function LoginForm() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+
+  const resetRecaptcha = () => {
+    setRecaptchaToken("");
+    setRecaptchaKey((currentKey) => currentKey + 1);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -23,14 +32,31 @@ export default function LoginForm() {
     setLoading(true);
     setError("");
     try {
-      const result = await signIn(form.email, form.password);
+      if (!siteKey) {
+        setError("Chưa cấu hình reCAPTCHA site key.");
+        return;
+      }
+
+      if (!recaptchaToken) {
+        setError("Vui lòng xác minh reCAPTCHA.");
+        return;
+      }
+
+      const result = await signIn(form.email, form.password, recaptchaToken);
       if (result) {
-        router.push(result.redirectTo);
+        if (!result.success) {
+          setError(result.message);
+          resetRecaptcha();
+        } else {
+          router.push(result.redirectTo);
+        }
       } else {
         setError("Email hoặc mật khẩu không đúng.");
+        resetRecaptcha();
       }
     } catch {
       setError("Đăng nhập thất bại. Vui lòng thử lại.");
+      resetRecaptcha();
     } finally {
       setLoading(false);
     }
@@ -90,9 +116,34 @@ export default function LoginForm() {
           />
         </div>
 
+        <div className="rounded border border-gray-200 bg-gray-50 p-3">
+          {siteKey ? (
+            <ReCAPTCHA
+              key={recaptchaKey}
+              sitekey={siteKey}
+              onChange={(token) => {
+                setRecaptchaToken(token ?? "");
+                setError("");
+              }}
+              onExpired={() => {
+                setRecaptchaToken("");
+                setError("reCAPTCHA đã hết hạn. Vui lòng xác minh lại.");
+              }}
+              onErrored={() => {
+                setRecaptchaToken("");
+                setError("reCAPTCHA gặp lỗi. Vui lòng thử lại.");
+              }}
+            />
+          ) : (
+            <p className="text-sm text-amber-700">
+              Chưa cấu hình <span className="font-medium">NEXT_PUBLIC_RECAPTCHA_SITE_KEY</span>.
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !siteKey || !recaptchaToken}
           className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold py-4 rounded mt-2 transition-colors"
         >
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
