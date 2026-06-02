@@ -1,17 +1,28 @@
 "use server";
-import { loginWithEmail } from "@/integrations/firebase";
+import {
+  loginWithEmail,
+  sendPasswordReset as firebaseSendPasswordReset,
+} from "@/integrations/firebase";
 import { get } from "@/integrations/storeClient";
 import { cookies } from "next/headers";
 
 type RoleName = "ADMIN" | "STAFF" | "USER";
 
-interface SignInResult {
-  success: boolean;
+interface SignInSuccessResult {
+  success: true;
   userId: string;
   email: string | null;
   role: RoleName;
   redirectTo: string;
 }
+
+interface SignInFailureResult {
+  success: false;
+  reason: "recaptcha" | "invalid-credentials" | "unknown";
+  message: string;
+}
+
+type SignInResult = SignInSuccessResult | SignInFailureResult;
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -43,7 +54,11 @@ const normalizeRoleName = (roleValue: unknown): RoleName | null => {
   }
 
   const normalized = roleValue.trim().toUpperCase();
-  if (normalized === "ADMIN" || normalized === "STAFF" || normalized === "USER") {
+  if (
+    normalized === "ADMIN" ||
+    normalized === "STAFF" ||
+    normalized === "USER"
+  ) {
     return normalized;
   }
 
@@ -55,21 +70,23 @@ const readRoleNameFromPayload = (payload: unknown): RoleName | null => {
   return normalizeRoleName(record?.name);
 };
 
-const resolveRoleNameById = async (roleId: string): Promise<RoleName | null> => {
+const resolveRoleNameById = async (
+  roleId: string,
+): Promise<RoleName | null> => {
   const normalizedRoleId = roleId.trim();
   if (!normalizedRoleId) {
     return null;
   }
 
   const singularRoleName = readRoleNameFromPayload(
-    unwrapDataEnvelope(await get(`/role/${normalizedRoleId}`))
+    unwrapDataEnvelope(await get(`/role/${normalizedRoleId}`)),
   );
   if (singularRoleName) {
     return singularRoleName;
   }
 
   const pluralRoleName = readRoleNameFromPayload(
-    unwrapDataEnvelope(await get(`/roles/${normalizedRoleId}`))
+    unwrapDataEnvelope(await get(`/roles/${normalizedRoleId}`)),
   );
   if (pluralRoleName) {
     return pluralRoleName;
@@ -105,7 +122,9 @@ const resolveRoleName = async (customer: unknown): Promise<RoleName> => {
     return roleNameFromObject;
   }
 
-  const roleNameFromNestedRoleInfo = readRoleNameFromPayload(roleRecord?.roleInfo);
+  const roleNameFromNestedRoleInfo = readRoleNameFromPayload(
+    roleRecord?.roleInfo,
+  );
   if (roleNameFromNestedRoleInfo) {
     return roleNameFromNestedRoleInfo;
   }
@@ -138,11 +157,61 @@ const getRedirectTargetByRole = (role: RoleName) => {
   return "/";
 };
 
-export const signIn = async (email: string, password: string) => {
+const verifyRecaptchaToken = async (token: string): Promise<boolean> => {
+  const secret = process.env.RECAPTCHA_SECRET_KEY;
+  if (!secret) {
+    return false;
+  }
+
+  const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      secret,
+      response: token,
+    }),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = (await response.json()) as { success?: boolean };
+  return data.success === true;
+};
+
+export const signIn = async (
+  email: string,
+  password: string,
+  recaptchaToken: string,
+): Promise<SignInResult> => {
   try {
+    if (!recaptchaToken) {
+      return {
+        success: false,
+        reason: "recaptcha",
+        message: "Vui lòng xác minh reCAPTCHA.",
+      };
+    }
+
+    const isRecaptchaValid = await verifyRecaptchaToken(recaptchaToken);
+    if (!isRecaptchaValid) {
+      return {
+        success: false,
+        reason: "recaptcha",
+        message: "Xác minh reCAPTCHA không hợp lệ.",
+      };
+    }
+
     const userCredential = await loginWithEmail(email, password);
     if (!userCredential) {
-      return null;
+      return {
+        success: false,
+        reason: "invalid-credentials",
+        message: "Email hoặc mật khẩu không đúng.",
+      };
     }
     const cookieStore = await cookies();
     const idToken = await userCredential.user.getIdToken();
@@ -174,7 +243,38 @@ export const signIn = async (email: string, password: string) => {
       role,
       redirectTo,
     } satisfies SignInResult;
-  } catch {
-    return null;
+  } catch (error) {
+    const errorCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+
+    if (
+      errorCode === "auth/invalid-credential" ||
+      errorCode === "auth/user-not-found" ||
+      errorCode === "auth/wrong-password"
+    ) {
+      return {
+        success: false,
+        reason: "invalid-credentials",
+        message: "Email hoặc mật khẩu không đúng.",
+      };
+    }
+
+    return {
+      success: false,
+      reason: "unknown",
+      message: "Đăng nhập thất bại. Vui lòng thử lại.",
+    };
+  }
+};
+
+export const sendPasswordReset = async (email: string) => {
+  try {
+    await firebaseSendPasswordReset(email);
+    return { success: true };
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return { success: false };
   }
 };
