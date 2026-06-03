@@ -299,7 +299,7 @@ export default function ChatModal({
 
   return (
     <div
-      className={`mb-2 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
+      className={`mb-2 w-full max-w-none overflow-hidden rounded-none sm:rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
         containerClassName ? containerClassName : ""
       }`}
     >

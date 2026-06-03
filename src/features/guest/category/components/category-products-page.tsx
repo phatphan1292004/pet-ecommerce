@@ -34,10 +34,7 @@ const DEFAULT_MIN_PRICE = 0;
 const DEFAULT_MAX_PRICE = 5_000_000;
 
 const normalizeBrandToken = (value: string): string =>
-  value
-    .replace(/\+/g, " ")
-    .trim()
-    .toLowerCase();
+  value.replace(/\+/g, " ").trim().toLowerCase();
 
 export default function CategoryProductsPage({
   sidebarCategories,
@@ -59,10 +56,18 @@ export default function CategoryProductsPage({
   const minPrice = DEFAULT_MIN_PRICE;
   const maxPrice = DEFAULT_MAX_PRICE;
 
-  const [selectedBrands, setSelectedBrands] = useState<string[]>(initialSelectedBrandIds);
-  const [selectedOrigins, setSelectedOrigins] = useState<string[]>(initialSelectedOrigins);
-  const [draftMinPrice, setDraftMinPrice] = useState(initialMinPrice ?? minPrice);
-  const [draftMaxPrice, setDraftMaxPrice] = useState(initialMaxPrice ?? maxPrice);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(
+    initialSelectedBrandIds,
+  );
+  const [selectedOrigins, setSelectedOrigins] = useState<string[]>(
+    initialSelectedOrigins,
+  );
+  const [draftMinPrice, setDraftMinPrice] = useState(
+    initialMinPrice ?? minPrice,
+  );
+  const [draftMaxPrice, setDraftMaxPrice] = useState(
+    initialMaxPrice ?? maxPrice,
+  );
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const brandTokenToId = useMemo(() => {
@@ -94,19 +99,21 @@ export default function CategoryProductsPage({
     const nextParams = new URLSearchParams(currentSearchParams.toString());
     const normalizedMinPrice = Math.min(draftMinPrice, draftMaxPrice);
     const normalizedMaxPrice = Math.max(draftMinPrice, draftMaxPrice);
-    const normalizedSelectedBrandIds = [...new Set(
-      selectedBrands
-        .map((token) => {
-          const trimmedToken = token.trim();
+    const normalizedSelectedBrandIds = [
+      ...new Set(
+        selectedBrands
+          .map((token) => {
+            const trimmedToken = token.trim();
 
-          if (OBJECT_ID_REGEX.test(trimmedToken)) {
-            return trimmedToken;
-          }
+            if (OBJECT_ID_REGEX.test(trimmedToken)) {
+              return trimmedToken;
+            }
 
-          return brandTokenToId.get(normalizeBrandToken(trimmedToken));
-        })
-        .filter((value): value is string => Boolean(value)),
-    )];
+            return brandTokenToId.get(normalizeBrandToken(trimmedToken));
+          })
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ];
 
     if (normalizedSelectedBrandIds.length > 0) {
       nextParams.set("brandIds", normalizedSelectedBrandIds.join(","));
@@ -161,7 +168,9 @@ export default function CategoryProductsPage({
         {subcategoryName && (
           <>
             <FaChevronRight size={10} />
-            <span className="text-neutral-1 font-semibold">{subcategoryName}</span>
+            <span className="text-neutral-1 font-semibold">
+              {subcategoryName}
+            </span>
           </>
         )}
       </div>
@@ -198,7 +207,7 @@ export default function CategoryProductsPage({
             <div className="font-semibold text-neutral-1">
               {products.length} sản phẩm
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="flex items-center justify-between w-full text-sm">
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(true)}
@@ -206,14 +215,17 @@ export default function CategoryProductsPage({
               >
                 Bộ lọc
               </button>
-              <span className="text-neutral-5 uppercase tracking-widest">
-                Sap xep
-              </span>
-              <select className="rounded-xl border border-neutral-7 bg-white px-3 py-2 text-neutral-1 outline-none">
-                <option>Phu hop nhat</option>
-                <option>Gia tang dan</option>
-                <option>Gia giam dan</option>
-              </select>
+
+              <div>
+                <span className="text-neutral-5 text-sm uppercase tracking-widest">
+                  Sắp xếp
+                </span>
+                <select className="rounded-xl border border-neutral-7 bg-white px-3 py-2 text-neutral-1 outline-none">
+                  <option>Phù hợp nhất</option>
+                  <option>Giá tăng dần</option>
+                  <option>Giá giảm dần</option>
+                </select>
+              </div>
             </div>
           </div>
 
