@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Listbox } from "@headlessui/react";
+import { FaAngleDown } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { syncOpenCartPricing } from "@/features/customer/cart/servers";
 import { useToast } from "@/hooks";
@@ -181,22 +183,30 @@ export default function CartOrderSummary({
       </div>
 
       <div className="mt-4">
-        <label htmlFor="coupon-select" className="mb-2 block text-sm font-semibold text-neutral-1">
-          Mã giảm giá
-        </label>
-        <select
-          id="coupon-select"
-          value={selectedCouponCode}
-          onChange={(event) => handleCouponChange(event.target.value)}
-          className="w-full rounded-lg border border-neutral-7 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition-colors focus:border-primary-1"
-        >
-          <option value="">Không áp dụng</option>
-          {couponOptions.map((coupon) => (
-            <option key={coupon.code} value={coupon.code}>
-              {coupon.label}
-            </option>
-          ))}
-        </select>
+        <label className="mb-2 block text-sm font-semibold text-neutral-1">Mã giảm giá</label>
+        <Listbox value={selectedCouponCode} onChange={handleCouponChange}>
+          <div className="relative">
+            <Listbox.Button className="flex w-full items-center justify-between rounded-lg border border-neutral-7 bg-white px-3 py-2 text-sm text-neutral-1 outline-none transition-colors data-focus:border-primary-1">
+              <span className={selectedCouponCode ? "text-neutral-1" : "text-neutral-4"}>
+                {selectedCouponCode
+                  ? couponOptions.find((c) => c.code === selectedCouponCode)?.label
+                  : "Không áp dụng"}
+              </span>
+              <FaAngleDown className="text-neutral-2" />
+            </Listbox.Button>
+
+            <Listbox.Options className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+              <Listbox.Option value="" className="cursor-pointer">
+                <div className="px-4 py-3 text-neutral-1 data-focus:bg-neutral-8">Không áp dụng</div>
+              </Listbox.Option>
+              {couponOptions.map((coupon) => (
+                <Listbox.Option key={coupon.code} value={coupon.code} className="cursor-pointer">
+                  <div className="px-4 py-3 text-neutral-1 data-focus:bg-neutral-8">{coupon.label}</div>
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         {couponOptions.length === 0 ? (
           <p className="mt-2 text-xs text-neutral-4">Hiện chưa có mã giảm giá khả dụng.</p>
         ) : null}
