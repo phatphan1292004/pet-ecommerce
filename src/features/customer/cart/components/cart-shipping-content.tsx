@@ -43,6 +43,8 @@ export default function CartShippingContent({
   );
   const [provinces, setProvinces] = useState<LocationOption[]>([]);
   const [wards, setWards] = useState<LocationOption[]>([]);
+  const [provinceQuery, setProvinceQuery] = useState("");
+  const [wardQuery, setWardQuery] = useState("");
   const [selectedProvinceId, setSelectedProvinceId] = useState("");
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingWards, setIsLoadingWards] = useState(false);
@@ -189,11 +191,14 @@ export default function CartShippingContent({
     );
     set("province", selectedProvince?.name ?? "");
     set("ward", "");
+    setProvinceQuery("");
+    setWardQuery("");
   };
 
   const handleWardChange = (wardId: string) => {
     const selectedWard = wards.find((ward) => ward.id === wardId);
     set("ward", selectedWard?.name ?? "");
+    setWardQuery("");
   };
 
   const selectedWardId =
@@ -337,6 +342,15 @@ export default function CartShippingContent({
                   <FaAngleDown className="text-neutral-2"/>
                 </ListboxButton>
                 <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                  <div className="px-3 py-2">
+                    <input
+                      value={provinceQuery}
+                      onChange={(e) => setProvinceQuery(e.target.value)}
+                      placeholder="Tìm tỉnh/thành phố..."
+                      className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
+                    />
+                  </div>
+
                   {provinces.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-neutral-5">
                       {isLoadingProvinces
@@ -344,7 +358,11 @@ export default function CartShippingContent({
                         : "Không có dữ liệu"}
                     </div>
                   ) : (
-                    provinces.map((province) => (
+                      provinces
+                        .filter((p) =>
+                          p.name.toLowerCase().includes(provinceQuery.toLowerCase()),
+                        )
+                        .map((province) => (
                       <ListboxOption
                         key={province.id}
                         value={province.id}
@@ -380,6 +398,15 @@ export default function CartShippingContent({
                   <FaAngleDown className="text-neutral-2" />
                 </ListboxButton>
                 <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                  <div className="px-3 py-2">
+                    <input
+                      value={wardQuery}
+                      onChange={(e) => setWardQuery(e.target.value)}
+                      placeholder="Tìm phường/xã..."
+                      className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
+                    />
+                  </div>
+
                   {!selectedProvinceId ? (
                     <div className="px-4 py-3 text-sm text-neutral-5">
                       Vui lòng chọn tỉnh/thành phố trước
@@ -391,7 +418,11 @@ export default function CartShippingContent({
                         : "Không có dữ liệu"}
                     </div>
                   ) : (
-                    wards.map((ward) => (
+                      wards
+                        .filter((w) =>
+                          w.name.toLowerCase().includes(wardQuery.toLowerCase()),
+                        )
+                        .map((ward) => (
                       <ListboxOption
                         key={ward.id}
                         value={ward.id}
