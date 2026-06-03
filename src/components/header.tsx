@@ -74,33 +74,12 @@ export default function Header({
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    if (!activeCategories.length) {
-      setMobileOpenCategorySlug(null);
-      return;
-    }
-
-    // If slug is null => initial state, auto-open a sensible default
-    if (mobileOpenCategorySlug === null) {
-      const categoryWithChildren = activeCategories.find(
-        (category) => (category.subcategories ?? []).some((subcategory) => subcategory.is_active),
-      );
-      setMobileOpenCategorySlug(categoryWithChildren?.slug ?? activeCategories[0].slug);
-      return;
-    }
-
-    // If slug is non-null (including empty string when user closed), do nothing
-    // unless the current slug no longer exists in activeCategories — then set a fallback
     if (
       mobileOpenCategorySlug &&
-      activeCategories.some((category) => category.slug === mobileOpenCategorySlug)
+      !activeCategories.some((category) => category.slug === mobileOpenCategorySlug)
     ) {
-      return;
+      setMobileOpenCategorySlug(null);
     }
-
-    const categoryWithChildren = activeCategories.find(
-      (category) => (category.subcategories ?? []).some((subcategory) => subcategory.is_active),
-    );
-    setMobileOpenCategorySlug(categoryWithChildren?.slug ?? activeCategories[0].slug);
   }, [activeCategories, mobileOpenCategorySlug]);
 
   useEffect(() => {
@@ -248,10 +227,17 @@ export default function Header({
               type="button"
               className="inline-flex items-center justify-center rounded-md border border-neutral-20 p-2 text-neutral-2 transition hover:border-primary-1 hover:text-primary-1 lg:hidden"
               onClick={() => {
-                setMobileMenuOpen((prev) => !prev);
-                setSearchOpen(false);
-                setAccountMenuOpen(false);
-              }}
+                  setMobileMenuOpen((prev) => {
+                    const nextOpen = !prev;
+                    if (nextOpen) {
+                      setMobileOpenCategorySlug(null);
+                      setMobileOpenBrandPanel(false);
+                    }
+                    return nextOpen;
+                  });
+                  setSearchOpen(false);
+                  setAccountMenuOpen(false);
+                }}
               aria-label="Mở menu"
             >
               {mobileMenuOpen ? (
@@ -355,7 +341,7 @@ export default function Header({
       </div>
 
       <div
-        className={`fixed inset-0 z-50 transition lg:hidden ${
+        className={`fixed inset-0 z-70 transition lg:hidden ${
           mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
@@ -410,7 +396,7 @@ export default function Header({
 
               <section className="rounded-2xl border border-neutral-10 bg-white p-3">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-4">
-                  Sản phẩm
+                  Danh mục 
                 </p>
 
                 <div className="space-y-2">
@@ -439,7 +425,7 @@ export default function Header({
                             type="button"
                             onClick={() =>
                               setMobileOpenCategorySlug((prev) =>
-                                prev === category.slug ? "" : category.slug,
+                                prev === category.slug ? null : category.slug,
                               )
                             }
                             className="rounded-md p-1.5 text-neutral-4 transition hover:bg-neutral-10 hover:text-primary-1"

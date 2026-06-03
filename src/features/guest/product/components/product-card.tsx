@@ -153,7 +153,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Name */}
-      <p className="mt-2 min-h-10 line-clamp-2 text-xs leading-snug text-neutral-1 sm:text-sm">
+      <p className="mt-2 line-clamp-2 text-xs leading-normal text-neutral-1 sm:text-sm">
         {product.name}
       </p>
 
