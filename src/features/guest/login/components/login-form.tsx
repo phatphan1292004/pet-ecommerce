@@ -7,6 +7,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { loginWithGoogle, loginWithFacebook } from "@/integrations/firebase";
 import { signIn } from "../servers/login";
+import { useToast } from "@/hooks";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function LoginForm() {
   const [recaptchaToken, setRecaptchaToken] = useState("");
   const [recaptchaKey, setRecaptchaKey] = useState(0);
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+
+  const { showSuccess, showError } = useToast();
 
   const resetRecaptcha = () => {
     setRecaptchaToken("");
@@ -46,16 +49,22 @@ export default function LoginForm() {
       if (result) {
         if (!result.success) {
           setError(result.message);
+          showError(result.message || "Đăng nhập thất bại.");
           resetRecaptcha();
         } else {
+          showSuccess("Đăng nhập thành công");
           router.push(result.redirectTo);
         }
       } else {
-        setError("Email hoặc mật khẩu không đúng.");
+        const msg = "Email hoặc mật khẩu không đúng.";
+        setError(msg);
+        showError(msg);
         resetRecaptcha();
       }
     } catch {
-      setError("Đăng nhập thất bại. Vui lòng thử lại.");
+      const msg = "Đăng nhập thất bại. Vui lòng thử lại.";
+      setError(msg);
+      showError(msg);
       resetRecaptcha();
     } finally {
       setLoading(false);
@@ -66,9 +75,12 @@ export default function LoginForm() {
     setError("");
     try {
       await loginWithGoogle();
+      showSuccess("Đăng nhập bằng Google thành công");
       router.push("/");
     } catch {
-      setError("Đăng nhập Google thất bại.");
+      const msg = "Đăng nhập Google thất bại.";
+      setError(msg);
+      showError(msg);
     }
   };
 
@@ -76,9 +88,12 @@ export default function LoginForm() {
     setError("");
     try {
       await loginWithFacebook();
+      showSuccess("Đăng nhập bằng Facebook thành công");
       router.push("/");
     } catch {
-      setError("Đăng nhập Facebook thất bại.");
+      const msg = "Đăng nhập Facebook thất bại.";
+      setError(msg);
+      showError(msg);
     }
   };
 
