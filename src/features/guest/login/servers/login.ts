@@ -5,6 +5,7 @@ import {
 } from "@/integrations/firebase";
 import { get } from "@/integrations/storeClient";
 import { cookies } from "next/headers";
+import { mergeGuestCartIntoUserCart } from "@/features/customer/cart/servers";
 
 type RoleName = "ADMIN" | "STAFF" | "USER";
 
@@ -214,8 +215,18 @@ export const signIn = async (
       };
     }
     const cookieStore = await cookies();
+    const guestId = cookieStore.get("userId")?.value;
     const idToken = await userCredential.user.getIdToken();
     const firebaseUid = userCredential.user.uid;
+
+    if (guestId && guestId.startsWith("guest-")) {
+      try {
+        await mergeGuestCartIntoUserCart(guestId, firebaseUid);
+      } catch (err) {
+        console.error("Failed to merge guest cart on login:", err);
+      }
+    }
+
     const customerResponse = await get(`/customers/${firebaseUid}`);
     const customer = unwrapDataEnvelope(customerResponse);
     const role = await resolveRoleName(customer);

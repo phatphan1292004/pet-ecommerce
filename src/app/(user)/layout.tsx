@@ -14,7 +14,7 @@ export default async function UserLayout({
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
   const role = cookieStore.get("role")?.value?.trim().toUpperCase() ?? "";
-  const isLoggedIn = !!userId;
+  const isLoggedIn = !!userId && !userId.startsWith("guest-");
   const isAdmin = role === "ADMIN" || role === "STAFF";
   const categories = await getCategories();
   const brands = await getBrands();

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks";
 import { useCartStore, type CartItem } from "@/store";
 
 interface CartPageContentProps {
-  initialItems: CartItem[];
+  initialItems: CartItem[] | null;
   initialCoupons: Array<{
     code: string;
     discountType: "percent" | "fixed";
@@ -34,7 +34,9 @@ export default function CartPageContent({ initialItems, initialCoupons }: CartPa
   const removeItem = useCartStore((state) => state.removeItem);
 
   useEffect(() => {
-    setItems(initialItems);
+    if (initialItems !== null) {
+      setItems(initialItems);
+    }
   }, [initialItems, setItems]);
 
   const handleUpdateItemQuantity = async (productId: string, quantity: number) => {

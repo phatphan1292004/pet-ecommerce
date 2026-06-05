@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Josefin_Sans } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast-provider";
+import { ProgressBar, CartSync } from "@/components";
 
 const primaryFont = Josefin_Sans({
   variable: "--font-josefin-sans",
@@ -21,9 +22,12 @@ export default async function RootLayout({
   return (
     <html lang="vi">
       <body className={`${primaryFont.variable} ${primaryFont.className} antialiased`}>
+        <ProgressBar />
+        <CartSync />
         <ToastProvider />
         {children}
       </body>
     </html>
   );
 }
+

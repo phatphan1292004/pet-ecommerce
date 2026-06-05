@@ -13,7 +13,7 @@ export default async function AdminLayout({
   const userId = cookieStore.get("userId")?.value;
   const role = cookieStore.get("role")?.value?.trim().toUpperCase() ?? "";
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     redirect("/login");
   }
 
