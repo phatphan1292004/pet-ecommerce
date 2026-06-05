@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { CartProgress, CartShippingContent } from "@/features/customer/cart/components";
 import { getUserAddresses } from "@/features/customer/userinfo/servers/address";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function CartShippingPage() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+  if (!userId || userId.startsWith("guest-")) {
+    redirect("/login?redirect=/cart/shipping");
+  }
+
   const initialSavedAddresses = await getUserAddresses();
 
   return (

@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { CartPaymentContent, CartProgress } from "@/features/customer/cart/components";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function CartPaymentPage() {
+export default async function CartPaymentPage() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+  if (!userId || userId.startsWith("guest-")) {
+    redirect("/login?redirect=/cart/payment");
+  }
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-4">

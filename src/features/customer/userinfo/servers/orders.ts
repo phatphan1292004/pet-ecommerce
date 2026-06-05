@@ -22,7 +22,7 @@ export const getOrdersByCustomer = async (
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     return { success: false, message: "User not authenticated", data: [] };
   }
 
@@ -49,7 +49,7 @@ export const getOrderById = async (orderId: string): Promise<ActionResult<Order 
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     return { success: false, message: "User not authenticated", data: null };
   }
 
@@ -76,7 +76,7 @@ export const updateOrderDeliveryInfo = async (
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     return { success: false, message: "User not authenticated", data: null };
   }
 
@@ -101,7 +101,7 @@ export const cancelOrder = async (
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     return { success: false, message: "User not authenticated", data: null };
   }
 

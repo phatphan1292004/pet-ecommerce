@@ -682,3 +682,70 @@ export const updateDraftCartItem = updateOpenCartItem;
 export const removeDraftCartItem = removeOpenCartItem;
 export const clearDraftCart = clearOpenCart;
 export const createOrderFromDraft = createOrderFromOpenCart;
+
+export const mergeGuestCartIntoUserCart = async (
+  guestId: string,
+  loggedInUserId: string
+): Promise<ActionResult<null>> => {
+  if (!guestId || !loggedInUserId || guestId === loggedInUserId) {
+    return { success: false, message: "Invalid IDs for cart merge" };
+  }
+
+  try {
+    // 1. Fetch guest cart items
+    const guestCartRes = await get(`/carts/${guestId}`, { status: "open" });
+    const guestItems = normalizeCartItems(getRawOpenItems(guestCartRes));
+
+    if (guestItems.length === 0) {
+      return { success: true, message: "Guest cart is empty, no merge needed" };
+    }
+
+    // 2. Fetch logged-in user's cart items
+    const userCartRes = await get(`/carts/${loggedInUserId}`, { status: "open" });
+    const userItems = normalizeCartItems(getRawOpenItems(userCartRes));
+
+    // 3. Merge guest items into user items
+    const mergedMap = new Map<string, CartItem>();
+
+    // Add all existing user items to the map
+    for (const item of userItems) {
+      mergedMap.set(item._id, { ...item });
+    }
+
+    // Merge guest items
+    for (const item of guestItems) {
+      const existing = mergedMap.get(item._id);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        mergedMap.set(item._id, { ...item });
+      }
+    }
+
+    const mergedItems = Array.from(mergedMap.values());
+
+    // 4. Clear the logged-in user's current open cart on the server to prevent duplicates
+    await del(`/carts/${loggedInUserId}/open`);
+
+    // 5. Sync each merged item to the logged-in user's cart on the server
+    for (const item of mergedItems) {
+      await patch(`/carts/${loggedInUserId}/items`, {
+        productId: item._id,
+        quantity: item.quantity,
+        price: item.price,
+        name: item.name,
+        image: item.image,
+        slug: item.slug,
+      });
+    }
+
+    // 6. Clear the guest's cart on the server since it's merged
+    await del(`/carts/${guestId}/open`);
+
+    return { success: true, message: "Carts merged successfully" };
+  } catch (error) {
+    console.error("Error merging guest cart into user cart:", error);
+    return { success: false, message: "Failed to merge carts" };
+  }
+};
+

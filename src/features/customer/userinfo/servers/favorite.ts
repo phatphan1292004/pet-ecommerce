@@ -35,7 +35,11 @@ interface FavoriteApiResponse {
 
 const getCurrentUserId = async (): Promise<string> => {
   const cookieStore = await cookies();
-  return cookieStore.get("userId")?.value || "";
+  const userId = cookieStore.get("userId")?.value || "";
+  if (userId.startsWith("guest-")) {
+    return "";
+  }
+  return userId;
 };
 
 const getResponseMessage = (

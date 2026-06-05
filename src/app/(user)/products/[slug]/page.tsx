@@ -24,7 +24,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const isLoggedIn = !!currentUserId;
+  const isLoggedIn = !!currentUserId && !currentUserId.startsWith("guest-");
 
   let initialComments: UiReview[] = [];
   const reviewResult = await getReviews({ productId: product._id, limit: 50 });

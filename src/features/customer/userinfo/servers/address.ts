@@ -26,7 +26,7 @@ export const getUserAddresses = async (): Promise<UserAddress[]> => {
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
+  if (!userId || userId.startsWith("guest-")) {
     return [];
   }
 
@@ -41,7 +41,7 @@ export const createAddress = async (
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
 
-    if (!userId) {
+    if (!userId || userId.startsWith("guest-")) {
       return { success: false, message: "User not authenticated" };
     }
 
@@ -88,7 +88,7 @@ export const deleteAddress = async (
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
 
-    if (!userId) {
+    if (!userId || userId.startsWith("guest-")) {
       return { success: false, message: "User not authenticated" };
     }
 

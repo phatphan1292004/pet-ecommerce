@@ -8,7 +8,7 @@ export default async function CartPage() {
 
   const initialItems = openCartResponse.success && openCartResponse.data
     ? openCartResponse.data.items
-    : [];
+    : null;
   const initialCoupons = availableCouponsResponse.success && availableCouponsResponse.data
     ? availableCouponsResponse.data.items
     : [];
