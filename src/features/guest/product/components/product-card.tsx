@@ -58,7 +58,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     void trackProductActivity(userId, product._id, "click");
   };
 
-  const handleAddToCart = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleAddToCart = async (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -110,8 +110,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={productLink} onClick={handleTrackClick}>
-      <div className="relative flex cursor-pointer flex-col gap-2 rounded-xl border border-neutral-7 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
+    <Link href={productLink} onClick={handleTrackClick} className="flex flex-col flex-1">
+      <div className="relative flex flex-1 cursor-pointer flex-col gap-2 rounded-xl border border-neutral-7 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
         {/* Discount Badge */}
         {product.discount && product.discount > 0 && (
           <div className="absolute top-2 right-2 bg-yellow-300 text-neutral-1 font-bold text-xs px-2 py-1 rounded z-10">
@@ -166,13 +166,14 @@ export default function ProductCard({ product }: ProductCardProps) {
         </p>
 
         {/* Buy button */}
-        <button
+        <div
+          role="button"
           onClick={handleAddToCart}
-          className="mt-auto flex items-center justify-center gap-2 rounded-full border border-primary-5 bg-primary-6 py-2 text-xs font-semibold text-primary-1 transition-colors hover:bg-primary-5 sm:text-sm"
+          className="mt-auto flex items-center justify-center gap-2 rounded-full border border-primary-5 bg-primary-6 py-2 text-xs font-semibold text-primary-1 transition-colors hover:bg-primary-5 sm:text-sm cursor-pointer"
         >
           <FaShoppingCart size={14} />
           MUA
-        </button>
+        </div>
       </div>
     </Link>
   );
