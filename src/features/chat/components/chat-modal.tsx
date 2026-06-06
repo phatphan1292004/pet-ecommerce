@@ -33,6 +33,7 @@ type ChatModalProps = {
   title?: string;
   containerClassName?: string;
   contentClassName?: string;
+  isEmbedded?: boolean;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_PET_ECOMMERCE_API;
@@ -46,6 +47,7 @@ export default function ChatModal({
   title,
   containerClassName,
   contentClassName,
+  isEmbedded = false,
 }: ChatModalProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [senderId, setSenderId] = useState<string | null>(null);
@@ -299,11 +301,13 @@ export default function ChatModal({
 
   return (
     <div
-      className={`mb-2 w-full max-w-none overflow-hidden rounded-none sm:rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
-        containerClassName ? containerClassName : ""
-      }`}
+      className={`w-full overflow-hidden flex flex-col ${
+        isEmbedded
+          ? "h-full border-0 shadow-none rounded-none bg-white"
+          : "mb-2 max-w-none rounded-none sm:rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120"
+      } ${containerClassName ? containerClassName : ""}`}
     >
-      <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3 shrink-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-neutral-1">
           <FiUser size={16} />
           {title || "Nhân viên hỗ trợ"}
@@ -315,14 +319,16 @@ export default function ChatModal({
             }`}
             title={isConnected ? "Dang ket noi" : "Mat ket noi"}
           />
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-neutral-4 transition hover:bg-neutral-10"
-            aria-label="Thu nho chat nhan vien"
-          >
-            <FiMinimize2 size={14} />
-          </button>
+          {!isEmbedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1 text-neutral-4 transition hover:bg-neutral-10"
+              aria-label="Thu nho chat nhan vien"
+            >
+              <FiMinimize2 size={14} />
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -334,9 +340,11 @@ export default function ChatModal({
         </div>
       </div>
       <div
-        className={`flex h-[min(22rem,calc(100dvh-8rem))] flex-col bg-neutral-10 sm:h-100 ${
-          contentClassName ? contentClassName : ""
-        }`}
+        className={`flex flex-col bg-neutral-10 ${
+          isEmbedded
+            ? "flex-1 h-full min-h-0"
+            : "h-[min(22rem,calc(100dvh-8rem))] sm:h-100"
+        } ${contentClassName ? contentClassName : ""}`}
       >
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {senderId ? "Sẵn sàng hỗ trợ bạn" : "Đang khởi tạo phiên chat..."}

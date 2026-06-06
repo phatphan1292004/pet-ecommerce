@@ -9,6 +9,9 @@ import {
   sendPasswordResetEmail,
   signOut,
   type UserCredential,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -42,3 +45,13 @@ export const logout = (): Promise<void> => signOut(auth);
 
 export const sendPasswordReset = (email: string): Promise<void> =>
   sendPasswordResetEmail(auth, email);
+
+export const changeUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error("Người dùng chưa đăng nhập hoặc không có email.");
+  }
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
+};

@@ -204,14 +204,16 @@ export const trackProductActivity = async (
     return null;
   }
 
+  if (!customerId) {
+    console.warn(`[trackProductActivity] Skipped tracking because customerId is undefined`);
+    return null;
+  }
+
   const payload: TrackProductActivityInput = {
     productId,
     action,
+    customerId,
   };
-
-  if (customerId) {
-    payload.customerId = customerId;
-  }
 
   return post(`/products/track`, payload);
 };
