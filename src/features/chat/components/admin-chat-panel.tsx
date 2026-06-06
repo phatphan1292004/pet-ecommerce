@@ -181,15 +181,15 @@ export default function AdminChatPanel({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-      <div className="rounded-xl border border-neutral-20 bg-white shadow-sm">
-        <div className="border-b border-neutral-20 px-4 py-3">
+      <div className="rounded-xl border border-neutral-20 bg-white shadow-sm flex flex-col h-[76vh]">
+        <div className="border-b border-neutral-20 px-4 py-3 shrink-0">
           <h2 className="text-base font-semibold text-neutral-2">Chat với khách hàng</h2>
           <p className="mt-1 text-sm text-neutral-4">
             Chọn cuộc hội thoại để hỗ trợ khách hàng.
           </p>
         </div>
 
-        <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-3">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {isLoading ? (
             <div className="flex items-center gap-2 px-1 text-sm text-neutral-4">
               <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-neutral-30 border-t-primary-1" />
@@ -279,7 +279,7 @@ export default function AdminChatPanel({
         </div>
       </div>
 
-      <div className="rounded-xl border border-neutral-20 bg-white shadow-sm">
+      <div className="rounded-xl border border-neutral-20 bg-white shadow-sm overflow-hidden flex flex-col h-[76vh]">
         {activeConversationId ? (
           <ChatModal
             isOpen={true}
@@ -288,12 +288,13 @@ export default function AdminChatPanel({
             currentUserName={currentUserName || "Khách hàng"}
             conversationIdOverride={activeConversationId}
             title="Chat với khách hàng"
-            containerClassName="w-full max-w-none border-0 shadow-none"
-            contentClassName="h-[70vh]"
+            containerClassName="w-full max-w-none border-0 shadow-none h-full flex-1"
+            contentClassName="flex-1 h-full min-h-0 bg-neutral-10"
+            isEmbedded={true}
           />
         ) : (
-          <div className="flex h-[70vh] items-center justify-center text-sm text-neutral-4">
-            Chon mot cuoc hoi thoai de bat dau chat.
+          <div className="flex flex-col items-center justify-center flex-1 h-full text-sm text-neutral-4 bg-neutral-10">
+            Chọn một cuộc hội thoại để bắt đầu chat.
           </div>
         )}
       </div>

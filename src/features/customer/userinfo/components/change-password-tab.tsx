@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { changeUserPassword } from "@/integrations/firebase";
+import { useToast } from "@/hooks";
 
 function PasswordField({
   label,
@@ -45,6 +47,48 @@ export default function ChangePasswordTab() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNext, setShowNext] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { showSuccess, showError, showWarning } = useToast();
+
+  const handleSubmit = async () => {
+    if (!current.trim() || !next.trim() || !confirm.trim()) {
+      showWarning("Vui lòng nhập đầy đủ tất cả các trường.");
+      return;
+    }
+
+    if (next !== confirm) {
+      showError("Mật khẩu mới và xác nhận mật khẩu mới không khớp.");
+      return;
+    }
+
+    if (next.length < 6) {
+      showWarning("Mật khẩu mới phải chứa ít nhất 6 ký tự.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await changeUserPassword(current.trim(), next.trim());
+      showSuccess("Đổi mật khẩu thành công!");
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+    } catch (error: any) {
+      console.error("Lỗi đổi mật khẩu:", error);
+      const errorCode = error?.code || "";
+
+      if (errorCode === "auth/wrong-password" || errorCode === "auth/invalid-credential") {
+        showError("Mật khẩu hiện tại không chính xác.");
+      } else if (errorCode === "auth/weak-password") {
+        showError("Mật khẩu mới quá yếu. Mật khẩu phải có ít nhất 6 ký tự.");
+      } else {
+        showError(error?.message || "Đổi mật khẩu thất bại. Vui lòng thử lại.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-md">
@@ -72,8 +116,12 @@ export default function ChangePasswordTab() {
         onToggle={() => setShowConfirm((v) => !v)}
       />
 
-      <button className="w-fit bg-primary-1 hover:bg-primary-2 text-white font-semibold text-base px-8 py-2.5 rounded-md transition-colors">
-        Lưu thay đổi
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="w-fit bg-primary-1 hover:bg-primary-2 text-white font-semibold text-base px-8 py-2.5 rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loading ? "Đang xử lý..." : "Lưu thay đổi"}
       </button>
     </div>
   );
