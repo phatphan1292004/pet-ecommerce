@@ -1,20 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { sendPasswordReset } from "@/features/guest/login/servers/login";
 
+type ForgotPasswordFormValues = {
+  email: string;
+};
+
 export default function ForgotPasswordForm() {
-  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormValues>({
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const onSubmit = async (values: ForgotPasswordFormValues) => {
     setLoading(true);
     setError("");
     try {
-      const result = await sendPasswordReset(email);
+      const result = await sendPasswordReset(values.email);
       if (result?.success) {
         setSuccess(true);
       } else {
@@ -34,7 +43,7 @@ export default function ForgotPasswordForm() {
       </h1>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
         className="w-full max-w-md flex flex-col gap-4"
       >
         {error && (
@@ -48,19 +57,24 @@ export default function ForgotPasswordForm() {
           </p>
         )}
 
-        <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError("");
-            }}
-            className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
-            required
-          />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
+            <input
+              type="email"
+              placeholder="Email"
+              {...register("email", {
+                required: "Vui lòng nhập email",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Email không đúng định dạng",
+                },
+              })}
+              className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
+            />
+          </div>
+          {errors.email && (
+            <span className="text-xs text-red-600 px-1">{errors.email.message}</span>
+          )}
         </div>
 
         <button

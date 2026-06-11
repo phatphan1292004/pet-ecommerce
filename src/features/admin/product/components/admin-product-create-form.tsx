@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { FiSave, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -129,7 +130,6 @@ const toRequiredKeyValueRecord = (value: string): Record<string, string> | undef
 };
 
 export default function AdminProductCreateForm() {
-  const [formValues, setFormValues] = useState<ProductFormValues>(createDefaultValues());
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [brands, setBrands] = useState<BrandOption[]>([]);
@@ -140,6 +140,18 @@ export default function AdminProductCreateForm() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const router = useRouter();
   const { showError, showSuccess, showWarning } = useToast();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    trigger,
+    formState: { errors },
+  } = useForm<ProductFormValues>({
+    defaultValues: createDefaultValues(),
+  });
 
   useEffect(() => {
     let isActive = true;
@@ -223,177 +235,29 @@ export default function AdminProductCreateForm() {
     };
   }, [imageFiles]);
 
-  const handleFieldChange = (field: keyof ProductFormValues, value: string | boolean) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleNameChange = (value: string) => {
-    setFormValues((prev) => {
-      const nextValues = {
-        ...prev,
-        name: value,
-      };
-
-      if (!slugTouched) {
-        nextValues.slug = toSlug(value);
-      }
-
-      return nextValues;
-    });
-  };
-
-  const handleSlugChange = (value: string) => {
-    setSlugTouched(true);
-    handleFieldChange("slug", value);
-  };
-
-  const handleRemoveImage = (indexToRemove: number) => {
-    setImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
-  };
-
   const resetForm = () => {
-    setFormValues(createDefaultValues());
+    reset(createDefaultValues());
     setFormError("");
     setSlugTouched(false);
     setImageFiles([]);
     setImagePreviews([]);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const onSubmit = async (data: ProductFormValues) => {
     if (isSubmitting) {
       return;
     }
 
-    const name = formValues.name.trim();
-    if (name.length === 0) {
-      const message = "Vui lòng nhập tên sản phẩm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const slug = formValues.slug.trim();
-    if (slug.length === 0) {
-      const message = "Vui lòng nhập slug sản phẩm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const price = toOptionalNumber(formValues.price);
-    if (typeof price !== "number" || price <= 0) {
-      const message = "Giá bán phải lớn hơn 0";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const originalPrice = toOptionalNumber(formValues.originalPrice);
-    if (typeof originalPrice === "number" && originalPrice < 0) {
-      const message = "Giá gốc không được âm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (typeof originalPrice === "number" && originalPrice > 0 && price > originalPrice) {
-      const message = "Giá bán không được lớn hơn giá gốc";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const discount = toOptionalNumber(formValues.discount);
-    if (typeof discount === "number" && (discount < 0 || discount > 100)) {
-      const message = "Giảm giá phải trong khoảng 0-100";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const stock = toRequiredInteger(formValues.stock);
-    if (typeof stock !== "number") {
-      const message = "Tồn kho phải là số không âm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const brandId = formValues.brandId.trim();
-    if (brandId.length === 0) {
-      const message = "Vui lòng chọn thương hiệu";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const subCategoryId = formValues.subCategoryId.trim();
-    if (subCategoryId.length === 0) {
-      const message = "Vui lòng chọn danh mục con";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const description = formValues.description.trim();
-    if (description.length === 0) {
-      const message = "Vui lòng nhập mô tả ngắn";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const longDescription = formValues.longDescription.trim();
-    if (longDescription.length === 0) {
-      const message = "Vui lòng nhập mô tả chi tiết";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const specifications = toRequiredKeyValueRecord(formValues.specifications);
-    if (!specifications) {
-      const message = "Thông số phải theo định dạng key: value";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const benefits = toRequiredKeyValueRecord(formValues.benefits);
-    if (!benefits) {
-      const message = "Lợi ích phải theo định dạng key: value";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const usage = formValues.usage.trim();
-    if (usage.length === 0) {
-      const message = "Vui lòng nhập hướng dẫn sử dụng";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const ingredients = formValues.ingredients.trim();
-    if (ingredients.length === 0) {
-      const message = "Vui lòng nhập thành phần";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const shipping = formValues.shipping.trim();
-    if (shipping.length === 0) {
-      const message = "Vui lòng nhập thông tin vận chuyển";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
+    const price = toOptionalNumber(data.price);
+    const originalPrice = toOptionalNumber(data.originalPrice);
+    const discount = toOptionalNumber(data.discount);
+    const stock = toRequiredInteger(data.stock);
+    const specifications = toRequiredKeyValueRecord(data.specifications);
+    const benefits = toRequiredKeyValueRecord(data.benefits);
 
     if (imageFiles.length === 0) {
       const message = "Vui lòng chọn ít nhất 1 ảnh sản phẩm";
@@ -420,21 +284,21 @@ export default function AdminProductCreateForm() {
     }
 
     const payload: AdminCreateProductPayload = {
-      name,
-      slug,
-      price,
-      brandId,
-      subCategoryId,
-      description,
-      longDescription,
-      specifications,
-      benefits,
-      usage,
-      ingredients,
-      stock,
-      shipping,
+      name: data.name.trim(),
+      slug: data.slug.trim(),
+      price: price!,
+      brandId: data.brandId.trim(),
+      subCategoryId: data.subCategoryId.trim(),
+      description: data.description.trim(),
+      longDescription: data.longDescription.trim(),
+      specifications: specifications!,
+      benefits: benefits!,
+      usage: data.usage.trim(),
+      ingredients: data.ingredients.trim(),
+      stock: stock!,
+      shipping: data.shipping.trim(),
       images: imageUrls,
-      isActive: formValues.isActive,
+      isActive: data.isActive,
     };
 
     if (typeof originalPrice === "number") {
@@ -469,29 +333,44 @@ export default function AdminProductCreateForm() {
 
   return (
     <article className="rounded-2xl border border-neutral-20 bg-neutral-10 p-4">
-      <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 md:grid-cols-2">
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Tên sản phẩm *</span>
           <input
             type="text"
-            value={formValues.name}
-            onChange={(event) => handleNameChange(event.target.value)}
+            {...register("name", {
+              required: "Vui lòng nhập tên sản phẩm",
+              onChange: (e) => {
+                const value = e.target.value;
+                if (!slugTouched) {
+                  setValue("slug", toSlug(value), { shouldValidate: true });
+                }
+              }
+            })}
             placeholder="Tên sản phẩm"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
           />
+          {errors.name && (
+            <span className="text-xs text-red-600 block mt-1">{errors.name.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
           <span className="text-xs font-medium text-neutral-4">Slug *</span>
           <input
             type="text"
-            value={formValues.slug}
-            onChange={(event) => handleSlugChange(event.target.value)}
+            {...register("slug", {
+              required: "Vui lòng nhập slug sản phẩm",
+              onChange: () => {
+                setSlugTouched(true);
+              }
+            })}
             placeholder="men-bo-sung-vi-sinh..."
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
           />
+          {errors.slug && (
+            <span className="text-xs text-red-600 block mt-1">{errors.slug.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
@@ -500,12 +379,27 @@ export default function AdminProductCreateForm() {
             type="number"
             min="0"
             step="1000"
-            value={formValues.price}
-            onChange={(event) => handleFieldChange("price", event.target.value)}
+            {...register("price", {
+              required: "Giá bán phải lớn hơn 0",
+              validate: {
+                positive: (val) => {
+                  const num = Number(val);
+                  if (Number.isNaN(num) || num <= 0) {
+                    return "Giá bán phải lớn hơn 0";
+                  }
+                  return true;
+                }
+              },
+              onChange: () => {
+                void trigger("originalPrice");
+              }
+            })}
             placeholder="VD: 150000"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
           />
+          {errors.price && (
+            <span className="text-xs text-red-600 block mt-1">{errors.price.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
@@ -514,11 +408,32 @@ export default function AdminProductCreateForm() {
             type="number"
             min="0"
             step="1000"
-            value={formValues.originalPrice}
-            onChange={(event) => handleFieldChange("originalPrice", event.target.value)}
+            {...register("originalPrice", {
+              validate: {
+                nonNegative: (val) => {
+                  if (!val) return true;
+                  const num = Number(val);
+                  if (Number.isNaN(num) || num < 0) {
+                    return "Giá gốc không được âm";
+                  }
+                  return true;
+                },
+                comparison: (val) => {
+                  if (!val) return true;
+                  const priceVal = watch("price");
+                  if (priceVal && Number(priceVal) > Number(val)) {
+                    return "Giá bán không được lớn hơn giá gốc";
+                  }
+                  return true;
+                }
+              }
+            })}
             placeholder="VD: 200000"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
           />
+          {errors.originalPrice && (
+            <span className="text-xs text-red-600 block mt-1">{errors.originalPrice.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
@@ -528,11 +443,24 @@ export default function AdminProductCreateForm() {
             min="0"
             max="100"
             step="1"
-            value={formValues.discount}
-            onChange={(event) => handleFieldChange("discount", event.target.value)}
+            {...register("discount", {
+              validate: {
+                range: (val) => {
+                  if (!val) return true;
+                  const num = Number(val);
+                  if (Number.isNaN(num) || num < 0 || num > 100) {
+                    return "Giảm giá phải trong khoảng 0-100";
+                  }
+                  return true;
+                }
+              }
+            })}
             placeholder="VD: 10"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
           />
+          {errors.discount && (
+            <span className="text-xs text-red-600 block mt-1">{errors.discount.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
@@ -541,21 +469,33 @@ export default function AdminProductCreateForm() {
             type="number"
             min="0"
             step="1"
-            value={formValues.stock}
-            onChange={(event) => handleFieldChange("stock", event.target.value)}
+            {...register("stock", {
+              required: "Tồn kho phải là số không âm",
+              validate: {
+                nonNegativeInt: (val) => {
+                  const num = Number(val);
+                  if (Number.isNaN(num) || num < 0 || !Number.isInteger(num)) {
+                    return "Tồn kho phải là số không âm";
+                  }
+                  return true;
+                }
+              }
+            })}
             placeholder="VD: 50"
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
           />
+          {errors.stock && (
+            <span className="text-xs text-red-600 block mt-1">{errors.stock.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
           <span className="text-xs font-medium text-neutral-4">Thương hiệu *</span>
           <select
-            value={formValues.brandId}
-            onChange={(event) => handleFieldChange("brandId", event.target.value)}
+            {...register("brandId", {
+              required: "Vui lòng chọn thương hiệu",
+            })}
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
             disabled={isLoadingOptions}
           >
             <option value="">Chọn thương hiệu</option>
@@ -565,15 +505,18 @@ export default function AdminProductCreateForm() {
               </option>
             ))}
           </select>
+          {errors.brandId && (
+            <span className="text-xs text-red-600 block mt-1">{errors.brandId.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2">
           <span className="text-xs font-medium text-neutral-4">Danh mục con *</span>
           <select
-            value={formValues.subCategoryId}
-            onChange={(event) => handleFieldChange("subCategoryId", event.target.value)}
+            {...register("subCategoryId", {
+              required: "Vui lòng chọn danh mục con",
+            })}
             className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-            required
             disabled={isLoadingOptions}
           >
             <option value="">Chọn danh mục con</option>
@@ -583,90 +526,130 @@ export default function AdminProductCreateForm() {
               </option>
             ))}
           </select>
+          {errors.subCategoryId && (
+            <span className="text-xs text-red-600 block mt-1">{errors.subCategoryId.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Mô tả ngắn *</span>
           <textarea
-            value={formValues.description}
-            onChange={(event) => handleFieldChange("description", event.target.value)}
+            {...register("description", {
+              required: "Vui lòng nhập mô tả ngắn",
+            })}
             placeholder="Mô tả ngắn"
             rows={4}
             className="min-h-[120px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.description && (
+            <span className="text-xs text-red-600 block mt-1">{errors.description.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Mô tả chi tiết *</span>
           <textarea
-            value={formValues.longDescription}
-            onChange={(event) => handleFieldChange("longDescription", event.target.value)}
+            {...register("longDescription", {
+              required: "Vui lòng nhập mô tả chi tiết",
+            })}
             placeholder="Mô tả chi tiết"
             rows={8}
             className="min-h-[220px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.longDescription && (
+            <span className="text-xs text-red-600 block mt-1">{errors.longDescription.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Thông số (key: value mỗi dòng) *</span>
           <textarea
-            value={formValues.specifications}
-            onChange={(event) => handleFieldChange("specifications", event.target.value)}
+            {...register("specifications", {
+              required: "Thông số phải theo định dạng key: value",
+              validate: {
+                keyValue: (val) => {
+                  if (!toRequiredKeyValueRecord(val)) {
+                    return "Thông số phải theo định dạng key: value";
+                  }
+                  return true;
+                }
+              }
+            })}
             placeholder="Product Name: ..."
             rows={6}
             className="min-h-[160px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.specifications && (
+            <span className="text-xs text-red-600 block mt-1">{errors.specifications.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Lợi ích (key: value mỗi dòng) *</span>
           <textarea
-            value={formValues.benefits}
-            onChange={(event) => handleFieldChange("benefits", event.target.value)}
+            {...register("benefits", {
+              required: "Lợi ích phải theo định dạng key: value",
+              validate: {
+                keyValue: (val) => {
+                  if (!toRequiredKeyValueRecord(val)) {
+                    return "Lợi ích phải theo định dạng key: value";
+                  }
+                  return true;
+                }
+              }
+            })}
             placeholder="Lợi ích: ..."
             rows={5}
             className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.benefits && (
+            <span className="text-xs text-red-600 block mt-1">{errors.benefits.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Hướng dẫn sử dụng *</span>
           <textarea
-            value={formValues.usage}
-            onChange={(event) => handleFieldChange("usage", event.target.value)}
+            {...register("usage", {
+              required: "Vui lòng nhập hướng dẫn sử dụng",
+            })}
             placeholder="Hướng dẫn sử dụng"
             rows={5}
             className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.usage && (
+            <span className="text-xs text-red-600 block mt-1">{errors.usage.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Thành phần *</span>
           <textarea
-            value={formValues.ingredients}
-            onChange={(event) => handleFieldChange("ingredients", event.target.value)}
+            {...register("ingredients", {
+              required: "Vui lòng nhập thành phần",
+            })}
             placeholder="Thành phần"
             rows={5}
             className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.ingredients && (
+            <span className="text-xs text-red-600 block mt-1">{errors.ingredients.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
           <span className="text-xs font-medium text-neutral-4">Vận chuyển *</span>
           <textarea
-            value={formValues.shipping}
-            onChange={(event) => handleFieldChange("shipping", event.target.value)}
+            {...register("shipping", {
+              required: "Vui lòng nhập thông tin vận chuyển",
+            })}
             placeholder="Thông tin vận chuyển"
             rows={4}
             className="min-h-[120px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
-            required
           />
+          {errors.shipping && (
+            <span className="text-xs text-red-600 block mt-1">{errors.shipping.message}</span>
+          )}
         </label>
 
         <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
@@ -711,8 +694,7 @@ export default function AdminProductCreateForm() {
         <label className="inline-flex items-center gap-2 text-sm text-neutral-2 md:col-span-2">
           <input
             type="checkbox"
-            checked={formValues.isActive}
-            onChange={(event) => handleFieldChange("isActive", event.target.checked)}
+            {...register("isActive")}
             className="h-4 w-4 rounded border-neutral-20 text-primary-1 focus:ring-primary-1"
           />
           Kích hoạt sản phẩm

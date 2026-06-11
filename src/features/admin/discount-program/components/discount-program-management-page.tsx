@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import {
   FiFilter,
   FiPlus,
@@ -123,13 +124,36 @@ export default function DiscountProgramManagementPage({
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<AdminDiscountProgram | null>(null);
-  const [formValues, setFormValues] = useState<DiscountProgramFormValues>(
-    createDefaultFormValues()
-  );
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { showError, showSuccess, showWarning } = useToast();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    trigger,
+    formState: { errors },
+  } = useForm<DiscountProgramFormValues>({
+    defaultValues: createDefaultFormValues(),
+  });
+
+  useEffect(() => {
+    register("productIds", {
+      required: "Vui lòng chọn ít nhất 1 sản phẩm",
+      validate: {
+        hasProducts: (value) => {
+          if (!value || value.length === 0) {
+            return "Vui lòng chọn ít nhất 1 sản phẩm";
+          }
+          return true;
+        }
+      }
+    });
+  }, [register]);
 
   useEffect(() => {
     if (
@@ -289,7 +313,7 @@ export default function DiscountProgramManagementPage({
   };
 
   const resetForm = () => {
-    setFormValues(createDefaultFormValues());
+    reset(createDefaultFormValues());
     setFormError("");
     setEditingProgram(null);
   };
@@ -302,7 +326,7 @@ export default function DiscountProgramManagementPage({
   const openEditForm = (program: AdminDiscountProgram) => {
     setEditingProgram(program);
     setFormError("");
-    setFormValues({
+    reset({
       name: program.name || "",
       code: program.code || "",
       discountType: program.discountType || "",
@@ -326,47 +350,15 @@ export default function DiscountProgramManagementPage({
     resetForm();
   };
 
-  const handleFieldChange = <Field extends keyof DiscountProgramFormValues>(
-    field: Field,
-    value: DiscountProgramFormValues[Field]
-  ) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmitProgram = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSubmitProgram = async (data: DiscountProgramFormValues) => {
     if (isSubmitting) {
       return;
     }
 
-    const name = formValues.name.trim();
-    const code = formValues.code.trim().toUpperCase();
-    const discountType = formValues.discountType.trim();
-    const discountValue = toOptionalNumber(formValues.discountValue);
-
-    if (name.length === 0) {
-      const message = "Vui lòng nhập tên chương trình";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (code.length === 0) {
-      const message = "Vui lòng nhập mã chương trình";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (discountType.length === 0) {
-      const message = "Vui lòng chọn loại giảm giá";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
+    const name = data.name.trim();
+    const code = data.code.trim().toUpperCase();
+    const discountType = data.discountType.trim();
+    const discountValue = toOptionalNumber(data.discountValue);
 
     if (typeof discountValue !== "number" || discountValue <= 0) {
       const message = "Giá trị giảm giá phải lớn hơn 0";
@@ -375,8 +367,8 @@ export default function DiscountProgramManagementPage({
       return;
     }
 
-    const startDate = toOptionalIsoDatetime(formValues.startDate);
-    const endDate = toOptionalIsoDatetime(formValues.endDate);
+    const startDate = toOptionalIsoDatetime(data.startDate);
+    const endDate = toOptionalIsoDatetime(data.endDate);
     if (startDate && endDate && new Date(startDate).getTime() >= new Date(endDate).getTime()) {
       const message = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
       setFormError(message);
@@ -384,17 +376,17 @@ export default function DiscountProgramManagementPage({
       return;
     }
 
-    const productIds = formValues.productIds;
+    const productIds = data.productIds || [];
 
     const basePayload: AdminCreateDiscountProgramPayload = {
       name,
       code,
       discountType,
       discountValue,
-      isActive: formValues.isActive,
+      isActive: data.isActive,
     };
 
-    const description = formValues.description.trim();
+    const description = data.description.trim();
     if (description.length > 0) {
       basePayload.description = description;
     }
@@ -448,10 +440,12 @@ export default function DiscountProgramManagementPage({
     setReloadToken((prev) => prev + 1);
   };
 
+  const formProductIds = watch("productIds") || [];
+
   const selectedProducts = useMemo(() => {
-    const selectedIds = new Set(formValues.productIds);
+    const selectedIds = new Set(formProductIds);
     return products.filter((product) => selectedIds.has(product.id));
-  }, [formValues.productIds, products]);
+  }, [formProductIds, products]);
 
   const filteredProducts = useMemo(() => {
     const keyword = productSearch.trim().toLowerCase();
@@ -468,12 +462,10 @@ export default function DiscountProgramManagementPage({
   }, [productSearch, products]);
 
   const toggleProductSelection = (productId: string) => {
-    handleFieldChange(
-      "productIds",
-      formValues.productIds.includes(productId)
-        ? formValues.productIds.filter((id) => id !== productId)
-        : [...formValues.productIds, productId]
-    );
+    const next = formProductIds.includes(productId)
+      ? formProductIds.filter((id) => id !== productId)
+      : [...formProductIds, productId];
+    setValue("productIds", next, { shouldValidate: true });
   };
 
   return (
@@ -594,43 +586,54 @@ export default function DiscountProgramManagementPage({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitProgram} className="mt-4 grid gap-3 sm:grid-cols-2">
+            <form onSubmit={handleSubmit(onSubmitProgram)} className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm text-neutral-2 sm:col-span-2">
                 <span className="text-xs font-medium text-neutral-4">Tên chương trình *</span>
                 <input
                   type="text"
-                  value={formValues.name}
-                  onChange={(event) => handleFieldChange("name", event.target.value)}
+                  {...register("name", {
+                    required: "Vui lòng nhập tên chương trình",
+                    setValueAs: (v: string) => v.trim(),
+                  })}
                   placeholder="Summer Sale"
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                  required
                 />
+                {errors.name && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.name.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2">
                 <span className="text-xs font-medium text-neutral-4">Mã chương trình *</span>
                 <input
                   type="text"
-                  value={formValues.code}
-                  onChange={(event) => handleFieldChange("code", event.target.value)}
+                  {...register("code", {
+                    required: "Vui lòng nhập mã chương trình",
+                    setValueAs: (v: string) => v.trim().toUpperCase(),
+                  })}
                   placeholder="SUMMER2026"
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm uppercase outline-none focus:border-primary-1"
-                  required
                 />
+                {errors.code && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.code.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2">
                 <span className="text-xs font-medium text-neutral-4">Loại giảm giá *</span>
                 <select
-                  value={formValues.discountType}
-                  onChange={(event) => handleFieldChange("discountType", event.target.value)}
+                  {...register("discountType", {
+                    required: "Vui lòng chọn loại giảm giá",
+                  })}
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                  required
                 >
                   <option value="">Chọn loại</option>
                   <option value="PERCENT">PERCENT</option>
                   <option value="FIXED">FIXED</option>
                 </select>
+                {errors.discountType && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.discountType.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2">
@@ -639,39 +642,70 @@ export default function DiscountProgramManagementPage({
                   type="number"
                   min="0"
                   step="1"
-                  value={formValues.discountValue}
-                  onChange={(event) => handleFieldChange("discountValue", event.target.value)}
+                  {...register("discountValue", {
+                    required: "Giá trị giảm giá phải lớn hơn 0",
+                    validate: {
+                      positive: (val) => {
+                        const num = Number(val);
+                        if (Number.isNaN(num) || num <= 0) {
+                          return "Giá trị giảm giá phải lớn hơn 0";
+                        }
+                        return true;
+                      }
+                    }
+                  })}
                   placeholder="10"
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                  required
                 />
+                {errors.discountValue && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.discountValue.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2">
-                <span className="text-xs font-medium text-neutral-4">Bắt đầu</span>
+                <span className="text-xs font-medium text-neutral-4">Bắt đầu *</span>
                 <input
                   type="datetime-local"
-                  value={formValues.startDate}
-                  onChange={(event) => handleFieldChange("startDate", event.target.value)}
+                  {...register("startDate", {
+                    required: "Vui lòng chọn thời gian bắt đầu",
+                    onChange: () => {
+                      void trigger("endDate");
+                    }
+                  })}
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
                 />
+                {errors.startDate && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.startDate.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2">
-                <span className="text-xs font-medium text-neutral-4">Kết thúc</span>
+                <span className="text-xs font-medium text-neutral-4">Kết thúc *</span>
                 <input
                   type="datetime-local"
-                  value={formValues.endDate}
-                  onChange={(event) => handleFieldChange("endDate", event.target.value)}
+                  {...register("endDate", {
+                    required: "Vui lòng chọn thời gian kết thúc",
+                    validate: {
+                      greaterThanStart: (value) => {
+                        const start = watch("startDate");
+                        if (start && value && new Date(start).getTime() >= new Date(value).getTime()) {
+                          return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
+                        }
+                        return true;
+                      }
+                    }
+                  })}
                   className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
                 />
+                {errors.endDate && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.endDate.message}</span>
+                )}
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2 sm:col-span-2">
                 <span className="text-xs font-medium text-neutral-4">Mô tả</span>
                 <textarea
-                  value={formValues.description}
-                  onChange={(event) => handleFieldChange("description", event.target.value)}
+                  {...register("description")}
                   placeholder="Giảm giá tháng 6"
                   rows={3}
                   className="min-h-24 w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-sm outline-none focus:border-primary-1"
@@ -679,7 +713,7 @@ export default function DiscountProgramManagementPage({
               </label>
 
               <label className="space-y-1 text-sm text-neutral-2 sm:col-span-2">
-                <span className="text-xs font-medium text-neutral-4">Sản phẩm áp dụng</span>
+                <span className="text-xs font-medium text-neutral-4">Sản phẩm áp dụng *</span>
                 <div className="relative" ref={productSelectRef}>
                   <input
                     type="text"
@@ -702,8 +736,8 @@ export default function DiscountProgramManagementPage({
                         </div>
                       ) : (
                         <ul className="max-h-64 overflow-auto py-1">
-                          {filteredProducts.map((product) => {
-                            const isSelected = formValues.productIds.includes(product.id);
+                           {filteredProducts.map((product) => {
+                            const isSelected = formProductIds.includes(product.id);
 
                             return (
                               <li key={product.id}>
@@ -752,6 +786,9 @@ export default function DiscountProgramManagementPage({
                     ))
                   )}
                 </div>
+                {errors.productIds && (
+                  <span className="text-xs text-red-600 block mt-1">{errors.productIds.message}</span>
+                )}
 
                 {isProductSelectOpen ? (
                   <button
@@ -767,8 +804,7 @@ export default function DiscountProgramManagementPage({
               <label className="inline-flex items-center gap-2 text-sm text-neutral-2 sm:col-span-2">
                 <input
                   type="checkbox"
-                  checked={formValues.isActive}
-                  onChange={(event) => handleFieldChange("isActive", event.target.checked)}
+                  {...register("isActive")}
                   className="h-4 w-4 rounded border-neutral-20 text-primary-1 focus:ring-primary-1"
                 />
                 Kích hoạt chương trình

@@ -10,6 +10,7 @@ import {
   Textarea,
 } from "@headlessui/react";
 import { useRouter } from "next/navigation";
+import { useForm, Controller } from "react-hook-form";
 import {
   buildCheckoutPricingPayload,
   type CheckoutOrderPayload,
@@ -26,6 +27,16 @@ const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")} đ`;
 interface CartShippingContentProps {
   initialSavedAddresses: UserAddress[];
 }
+
+type ShippingFormValues = {
+  savedAddress: string;
+  fullName: string;
+  phone: string;
+  provinceName: string;
+  wardName: string;
+  address: string;
+  note: string;
+};
 
 export default function CartShippingContent({
   initialSavedAddresses,
@@ -48,34 +59,30 @@ export default function CartShippingContent({
   const [selectedProvinceId, setSelectedProvinceId] = useState("");
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingWards, setIsLoadingWards] = useState(false);
-  const [form, setForm] = useState({
-    savedAddress: "",
-    fullName: "",
-    phone: "",
-    province: "",
-    ward: "",
-    address: "",
-    note: "",
-  });
 
-  const set = (field: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<ShippingFormValues>({
+    defaultValues: {
+      savedAddress: "",
+      fullName: "",
+      phone: "",
+      provinceName: "",
+      wardName: "",
+      address: "",
+      note: "",
+    },
+  });
 
   const applySavedAddress = (selectedAddress: UserAddress) => {
     const provinceId =
       provinces.find((province) => province.name === selectedAddress.province)
         ?.id || "";
 
-    setForm((prev) => ({
-      ...prev,
-      savedAddress: selectedAddress._id,
-      fullName: selectedAddress.fullName,
-      phone: selectedAddress.phone,
-      province: selectedAddress.province,
-      ward: selectedAddress.ward,
-      address: selectedAddress.address,
-    }));
+    setValue("savedAddress", selectedAddress._id);
+    setValue("fullName", selectedAddress.fullName, { shouldValidate: true });
+    setValue("phone", selectedAddress.phone, { shouldValidate: true });
+    setValue("provinceName", selectedAddress.province, { shouldValidate: true });
+    setValue("wardName", selectedAddress.ward, { shouldValidate: true });
+    setValue("address", selectedAddress.address, { shouldValidate: true });
 
     setSelectedProvinceId(provinceId);
   };
@@ -85,7 +92,7 @@ export default function CartShippingContent({
       (address) => address._id === addressId,
     );
     if (!selectedAddress) {
-      set("savedAddress", "");
+      setValue("savedAddress", "");
       return;
     }
 
@@ -186,53 +193,33 @@ export default function CartShippingContent({
 
   const handleProvinceChange = (provinceId: string) => {
     setSelectedProvinceId(provinceId);
-    const selectedProvince = provinces.find(
-      (province) => province.id === provinceId,
-    );
-    set("province", selectedProvince?.name ?? "");
-    set("ward", "");
     setProvinceQuery("");
     setWardQuery("");
   };
 
   const handleWardChange = (wardId: string) => {
-    const selectedWard = wards.find((ward) => ward.id === wardId);
-    set("ward", selectedWard?.name ?? "");
     setWardQuery("");
   };
 
-  const selectedWardId =
-    wards.find((ward) => ward.name === form.ward)?.id ?? "";
   const shippingFee = checkoutSummary.shippingFee;
   const discountValue = checkoutSummary.couponDiscount;
   const couponCode = checkoutSummary.couponCode;
   const subtotal = checkoutSummary.subtotal;
   const grandTotal = checkoutSummary.grandTotal;
-  const hasRequiredShippingFields =
-    Boolean(form.fullName.trim()) &&
-    Boolean(form.phone.trim()) &&
-    Boolean(form.province.trim()) &&
-    Boolean(form.ward.trim()) &&
-    Boolean(form.address.trim());
-  const canCheckout =
-    hasRequiredShippingFields && grandTotal > 0 && !isSubmitting;
 
-  const handleCheckout = () => {
-    if (!hasRequiredShippingFields) {
-      showWarning("Vui lòng điền đầy đủ thông tin giao hàng");
-      return;
-    }
+  const canCheckout = grandTotal > 0 && !isSubmitting;
 
+  const onSubmit = (values: ShippingFormValues) => {
     if (grandTotal <= 0) {
       showWarning("Giỏ hàng đang trống");
       return;
     }
 
     const payload: CheckoutOrderPayload = {
-      arrivalName: form.fullName.trim(),
-      arrivalPhone: form.phone.trim(),
-      arrivalAddress: `${form.address.trim()}, ${form.ward.trim()}, ${form.province.trim()}`,
-      note: form.note.trim() || undefined,
+      arrivalName: values.fullName.trim(),
+      arrivalPhone: values.phone.trim(),
+      arrivalAddress: `${values.address.trim()}, ${values.wardName.trim()}, ${values.provinceName.trim()}`,
+      note: values.note.trim() || undefined,
       coupon: couponCode,
       couponCode,
       couponDiscount: discountValue,
@@ -248,273 +235,337 @@ export default function CartShippingContent({
   };
 
   return (
-    <>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-4">
-          <p className="text-base font-semibold text-primary-1">
-            Thông tin người nhận
-          </p>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-4">
+        <p className="text-base font-semibold text-primary-1">
+          Thông tin người nhận
+        </p>
 
-          <Listbox
-            value={form.savedAddress}
-            onChange={handleSavedAddressChange}
-          >
-            <div className="relative">
-              <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3">
-                <span
-                  className={
-                    form.savedAddress ? "text-neutral-1" : "text-neutral-4"
-                  }
-                >
-                  {form.savedAddress
-                    ? savedAddresses.find(
-                        (address) => address._id === form.savedAddress,
-                      )?.fullName || "Chọn địa chỉ đã lưu"
-                    : "Chọn địa chỉ đã lưu"}
-                </span>
-                <FaAngleDown className="text-neutral-2" />
-              </ListboxButton>
-              <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
-                {savedAddresses.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-neutral-5">
-                    Chưa có địa chỉ đã lưu
-                  </div>
-                ) : (
-                  savedAddresses.map((address) => (
-                    <ListboxOption
-                      key={address._id}
-                      value={address._id}
-                      className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
-                    >
-                      <div className="text-sm font-medium">
-                        {address.fullName} - {address.phone}
-                      </div>
-                      <div className="text-xs text-neutral-4">
-                        {address.address}, {address.ward}, {address.province}
-                      </div>
-                    </ListboxOption>
-                  ))
-                )}
-              </ListboxOptions>
-            </div>
-          </Listbox>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input
-              type="text"
-              placeholder="Họ tên"
-              value={form.fullName}
-              onChange={(e) => set("fullName", e.target.value)}
-              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
-            />
-            <Input
-              type="tel"
-              placeholder="Số điện thoại"
-              value={form.phone}
-              onChange={(e) => set("phone", e.target.value)}
-              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
-            />
-          </div>
-
-          <p className="text-base font-semibold text-primary-1">Địa chỉ</p>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Controller
+          name="savedAddress"
+          control={control}
+          render={({ field }) => (
             <Listbox
-              value={selectedProvinceId}
-              onChange={handleProvinceChange}
-              disabled={isLoadingProvinces}
+              value={field.value}
+              onChange={(val) => {
+                field.onChange(val);
+                handleSavedAddressChange(val);
+              }}
             >
               <div className="relative">
-                <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
+                <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3">
                   <span
                     className={
-                      selectedProvinceId ? "text-neutral-1" : "text-neutral-4"
+                      field.value ? "text-neutral-1" : "text-neutral-4"
                     }
                   >
-                    {selectedProvinceId
-                      ? provinces.find(
-                          (province) => province.id === selectedProvinceId,
-                        )?.name
-                      : isLoadingProvinces
-                        ? "Đang tải tỉnh/thành phố..."
-                        : "Chọn tỉnh/thành phố"}
-                  </span>
-                  <FaAngleDown className="text-neutral-2"/>
-                </ListboxButton>
-                <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
-                  <div className="px-3 py-2">
-                    <input
-                      value={provinceQuery}
-                      onChange={(e) => setProvinceQuery(e.target.value)}
-                      placeholder="Tìm tỉnh/thành phố..."
-                      className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
-                    />
-                  </div>
-
-                  {provinces.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-neutral-5">
-                      {isLoadingProvinces
-                        ? "Đang tải tỉnh/thành phố..."
-                        : "Không có dữ liệu"}
-                    </div>
-                  ) : (
-                      provinces
-                        .filter((p) =>
-                          p.name.toLowerCase().includes(provinceQuery.toLowerCase()),
-                        )
-                        .map((province) => (
-                      <ListboxOption
-                        key={province.id}
-                        value={province.id}
-                        className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
-                      >
-                        {province.name}
-                      </ListboxOption>
-                    ))
-                  )}
-                </ListboxOptions>
-              </div>
-            </Listbox>
-            <Listbox
-              value={selectedWardId}
-              onChange={handleWardChange}
-              disabled={!selectedProvinceId || isLoadingWards}
-            >
-              <div className="relative">
-                <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
-                  <span
-                    className={
-                      selectedWardId ? "text-neutral-1" : "text-neutral-4"
-                    }
-                  >
-                    {selectedWardId
-                      ? wards.find((ward) => ward.id === selectedWardId)?.name
-                      : !selectedProvinceId
-                        ? "Chọn phường/xã"
-                        : isLoadingWards
-                          ? "Đang tải phường/xã..."
-                          : "Chọn phường/xã"}
+                    {field.value
+                      ? savedAddresses.find(
+                          (address) => address._id === field.value,
+                        )?.fullName || "Chọn địa chỉ đã lưu"
+                      : "Chọn địa chỉ đã lưu"}
                   </span>
                   <FaAngleDown className="text-neutral-2" />
                 </ListboxButton>
                 <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
-                  <div className="px-3 py-2">
-                    <input
-                      value={wardQuery}
-                      onChange={(e) => setWardQuery(e.target.value)}
-                      placeholder="Tìm phường/xã..."
-                      className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
-                    />
-                  </div>
-
-                  {!selectedProvinceId ? (
+                  {savedAddresses.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-neutral-5">
-                      Vui lòng chọn tỉnh/thành phố trước
-                    </div>
-                  ) : wards.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-neutral-5">
-                      {isLoadingWards
-                        ? "Đang tải phường/xã..."
-                        : "Không có dữ liệu"}
+                      Chưa có địa chỉ đã lưu
                     </div>
                   ) : (
-                      wards
-                        .filter((w) =>
-                          w.name.toLowerCase().includes(wardQuery.toLowerCase()),
-                        )
-                        .map((ward) => (
+                    savedAddresses.map((address) => (
                       <ListboxOption
-                        key={ward.id}
-                        value={ward.id}
+                        key={address._id}
+                        value={address._id}
                         className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
                       >
-                        {ward.name}
+                        <div className="text-sm font-medium">
+                          {address.fullName} - {address.phone}
+                        </div>
+                        <div className="text-xs text-neutral-4">
+                          {address.address}, {address.ward}, {address.province}
+                        </div>
                       </ListboxOption>
                     ))
                   )}
                 </ListboxOptions>
               </div>
             </Listbox>
+          )}
+        />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <Input
+              type="text"
+              placeholder="Họ tên"
+              {...register("fullName", { required: "Vui lòng nhập họ tên người nhận" })}
+              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
+            />
+            {errors.fullName && (
+              <span className="mt-1 block text-xs text-red-600 px-1">{errors.fullName.message}</span>
+            )}
           </div>
-
-          <Input
-            type="text"
-            placeholder="Địa chỉ"
-            value={form.address}
-            onChange={(e) => set("address", e.target.value)}
-            className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
-          />
-
-          <Textarea
-            placeholder="Ghi chú"
-            value={form.note}
-            onChange={(e) => set("note", e.target.value)}
-            className="h-28 w-full resize-none rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
-          />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <button className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8">
-              Lưu
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  window.sessionStorage.setItem("userinfo:targetTab", "address");
-                }
-                router.push("/userinfo");
-              }}
-              className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8"
-            >
-              Thêm địa chỉ mới
-            </button>
+          <div>
+            <Input
+              type="tel"
+              placeholder="Số điện thoại"
+              {...register("phone", {
+                required: "Vui lòng nhập số điện thoại người nhận",
+                pattern: {
+                  value: /^[0-9]{10}$/,
+                  message: "Số điện thoại phải gồm 10 chữ số",
+                },
+              })}
+              className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
+            />
+            {errors.phone && (
+              <span className="mt-1 block text-xs text-red-600 px-1">{errors.phone.message}</span>
+            )}
           </div>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-neutral-7 p-5">
-          <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
-            <div className="flex items-center justify-between">
-              <span>Tiền sản phẩm</span>
-              <span className="font-semibold">
-                {formatCurrency(subtotal)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Phí vận chuyển</span>
-              <span className="font-semibold">
-                {formatCurrency(shippingFee)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Giảm giá</span>
-              <span className="font-semibold text-primary-1">
-                -{formatCurrency(discountValue)}
-              </span>
-            </div>
+        <p className="text-base font-semibold text-primary-1">Địa chỉ</p>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <Controller
+              name="provinceName"
+              control={control}
+              rules={{ required: "Vui lòng chọn tỉnh/thành phố" }}
+              render={({ field }) => (
+                <Listbox
+                  value={selectedProvinceId}
+                  onChange={(provinceId) => {
+                    handleProvinceChange(provinceId);
+                    const name = provinces.find((p) => p.id === provinceId)?.name || "";
+                    field.onChange(name);
+                    setValue("wardName", "", { shouldValidate: true });
+                  }}
+                  disabled={isLoadingProvinces}
+                >
+                  <div className="relative">
+                    <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
+                      <span
+                        className={
+                          selectedProvinceId ? "text-neutral-1" : "text-neutral-4"
+                        }
+                      >
+                        {selectedProvinceId
+                          ? provinces.find(
+                              (province) => province.id === selectedProvinceId,
+                            )?.name
+                          : isLoadingProvinces
+                            ? "Đang tải tỉnh/thành phố..."
+                            : "Chọn tỉnh/thành phố"}
+                      </span>
+                      <FaAngleDown className="text-neutral-2"/>
+                    </ListboxButton>
+                    <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                      <div className="px-3 py-2">
+                        <input
+                          value={provinceQuery}
+                          onChange={(e) => setProvinceQuery(e.target.value)}
+                          placeholder="Tìm tỉnh/thành phố..."
+                          className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
+                        />
+                      </div>
+
+                      {provinces.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-neutral-5">
+                          {isLoadingProvinces
+                            ? "Đang tải tỉnh/thành phố..."
+                            : "Không có dữ liệu"}
+                        </div>
+                      ) : (
+                        provinces
+                          .filter((p) =>
+                            p.name.toLowerCase().includes(provinceQuery.toLowerCase()),
+                          )
+                          .map((province) => (
+                            <ListboxOption
+                              key={province.id}
+                              value={province.id}
+                              className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
+                            >
+                              {province.name}
+                            </ListboxOption>
+                          ))
+                      )}
+                    </ListboxOptions>
+                  </div>
+                </Listbox>
+              )}
+            />
+            {errors.provinceName && (
+              <span className="mt-1 block text-xs text-red-600 px-1">{errors.provinceName.message}</span>
+            )}
           </div>
 
-          {couponCode ? (
-            <div className="mt-4 flex items-center justify-between text-sm text-neutral-2">
-              <span>Mã giảm giá</span>
-              <span className="font-semibold text-primary-1">{couponCode}</span>
-            </div>
-          ) : null}
+          <div>
+            <Controller
+              name="wardName"
+              control={control}
+              rules={{ required: "Vui lòng chọn phường/xã" }}
+              render={({ field }) => {
+                const selectedWardId = wards.find((ward) => ward.name === field.value)?.id ?? "";
+                return (
+                  <Listbox
+                    value={selectedWardId}
+                    onChange={(wardId) => {
+                      handleWardChange(wardId);
+                      const name = wards.find((w) => w.id === wardId)?.name || "";
+                      field.onChange(name);
+                    }}
+                    disabled={!selectedProvinceId || isLoadingWards}
+                  >
+                    <div className="relative">
+                      <ListboxButton className="flex w-full items-center justify-between rounded-lg border border-neutral-20 px-4 py-3 text-left outline-none transition-colors data-focus:border-primary-3 disabled:cursor-not-allowed disabled:bg-neutral-8">
+                        <span
+                          className={
+                            field.value ? "text-neutral-1" : "text-neutral-4"
+                          }
+                        >
+                          {field.value
+                            ? field.value
+                            : !selectedProvinceId
+                              ? "Chọn phường/xã"
+                              : isLoadingWards
+                                ? "Đang tải phường/xã..."
+                                : "Chọn phường/xã"}
+                        </span>
+                        <FaAngleDown className="text-neutral-2" />
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-neutral-20 bg-white py-1 shadow-lg outline-none">
+                        <div className="px-3 py-2">
+                          <input
+                            value={wardQuery}
+                            onChange={(e) => setWardQuery(e.target.value)}
+                            placeholder="Tìm phường/xã..."
+                            className="w-full rounded border border-neutral-20 px-3 py-2 text-sm outline-none focus:border-primary-3"
+                          />
+                        </div>
 
-          <div className="mt-4 flex items-center justify-between text-lg font-bold text-neutral-1">
-            <span>Tổng cộng</span>
-            <span>{formatCurrency(grandTotal)}</span>
+                        {!selectedProvinceId ? (
+                          <div className="px-4 py-3 text-sm text-neutral-5">
+                            Vui lòng chọn tỉnh/thành phố trước
+                          </div>
+                        ) : wards.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-neutral-5">
+                            {isLoadingWards
+                              ? "Đang tải phường/xã..."
+                              : "Không có dữ liệu"}
+                          </div>
+                        ) : (
+                          wards
+                            .filter((w) =>
+                              w.name.toLowerCase().includes(wardQuery.toLowerCase()),
+                            )
+                            .map((ward) => (
+                              <ListboxOption
+                                key={ward.id}
+                                value={ward.id}
+                                className="cursor-pointer px-4 py-3 text-neutral-1 data-focus:bg-neutral-8"
+                              >
+                                {ward.name}
+                              </ListboxOption>
+                            ))
+                        )}
+                      </ListboxOptions>
+                    </div>
+                  </Listbox>
+                );
+              }}
+            />
+            {errors.wardName && (
+              <span className="mt-1 block text-xs text-red-600 px-1">{errors.wardName.message}</span>
+            )}
           </div>
+        </div>
 
+        <div>
+          <Input
+            type="text"
+            placeholder="Địa chỉ"
+            {...register("address", { required: "Vui lòng nhập địa chỉ cụ thể" })}
+            className="w-full rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
+          />
+          {errors.address && (
+            <span className="mt-1 block text-xs text-red-600 px-1">{errors.address.message}</span>
+          )}
+        </div>
+
+        <Textarea
+          placeholder="Ghi chú"
+          {...register("note")}
+          className="h-28 w-full resize-none rounded-lg border border-neutral-20 px-4 py-3 text-neutral-1 placeholder:text-neutral-5 outline-none focus:border-primary-3 transition-colors"
+        />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8"
+          >
+            Lưu
+          </button>
           <button
             type="button"
-            onClick={handleCheckout}
-            disabled={!canCheckout}
-            className="mt-6 w-full rounded-xl bg-primary-1 py-3 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-7"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.sessionStorage.setItem("userinfo:targetTab", "address");
+              }
+              router.push("/userinfo");
+            }}
+            className="w-full rounded-lg bg-primary-1 px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-2 sm:w-auto sm:px-8"
           >
-            {isSubmitting ? "Đang xử lý..." : "Thanh toán"}
+            Thêm địa chỉ mới
           </button>
-        </aside>
+        </div>
       </div>
-    </>
+
+      <aside className="h-fit rounded-2xl border border-neutral-7 p-5">
+        <div className="space-y-3 border-b border-neutral-7 pb-4 text-neutral-1">
+          <div className="flex items-center justify-between">
+            <span>Tiền sản phẩm</span>
+            <span className="font-semibold">
+              {formatCurrency(subtotal)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Phí vận chuyển</span>
+            <span className="font-semibold">
+              {formatCurrency(shippingFee)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Giảm giá</span>
+            <span className="font-semibold text-primary-1">
+              -{formatCurrency(discountValue)}
+            </span>
+          </div>
+        </div>
+
+        {couponCode ? (
+          <div className="mt-4 flex items-center justify-between text-sm text-neutral-2">
+            <span>Mã giảm giá</span>
+            <span className="font-semibold text-primary-1">{couponCode}</span>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex items-center justify-between text-lg font-bold text-neutral-1">
+          <span>Tổng cộng</span>
+          <span>{formatCurrency(grandTotal)}</span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canCheckout}
+          className="mt-6 w-full rounded-xl bg-primary-1 py-3 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-not-allowed disabled:bg-neutral-7"
+        >
+          {isSubmitting ? "Đang xử lý..." : "Thanh toán"}
+        </button>
+      </aside>
+    </form>
   );
 }
+

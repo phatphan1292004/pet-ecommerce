@@ -3,15 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
 import ReCAPTCHA from "react-google-recaptcha";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 import { loginWithGoogle, loginWithFacebook } from "@/integrations/firebase";
 import { signIn } from "../servers/login";
 import { useToast } from "@/hooks";
 
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
+
 export default function LoginForm() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState("");
@@ -20,18 +25,19 @@ export default function LoginForm() {
 
   const { showSuccess, showError } = useToast();
 
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
   const resetRecaptcha = () => {
     setRecaptchaToken("");
     setRecaptchaKey((currentKey) => currentKey + 1);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
     setError("");
     try {
@@ -45,7 +51,7 @@ export default function LoginForm() {
         return;
       }
 
-      const result = await signIn(form.email, form.password, recaptchaToken);
+      const result = await signIn(values.email, values.password, recaptchaToken);
       if (result) {
         if (!result.success) {
           setError(result.message);
@@ -101,34 +107,51 @@ export default function LoginForm() {
     <div className="flex flex-col items-center bg-white px-4 py-10 sm:py-16">
       <h1 className="mb-6 text-xl font-bold tracking-widest sm:mb-8 sm:text-2xl">ĐĂNG NHẬP</h1>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md flex flex-col gap-4">
         {error && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-4 py-2">{error}</p>
         )}
+        
         {/* Email */}
-        <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
-            required
-          />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
+            <input
+              type="email"
+              placeholder="Email"
+              {...register("email", {
+                required: "Vui lòng nhập email",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Email không đúng định dạng",
+                },
+              })}
+              className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
+            />
+          </div>
+          {errors.email && (
+            <span className="text-xs text-red-600 px-1">{errors.email.message}</span>
+          )}
         </div>
 
         {/* Password */}
-        <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
-          <input
-            type="password"
-            name="password"
-            placeholder="Mật khẩu"
-            value={form.password}
-            onChange={handleChange}
-            className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
-            required
-          />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center border border-gray-300 rounded px-4 py-3 gap-3">
+            <input
+              type="password"
+              placeholder="Mật khẩu"
+              {...register("password", {
+                required: "Vui lòng nhập mật khẩu",
+                minLength: {
+                  value: 6,
+                  message: "Mật khẩu phải chứa ít nhất 6 ký tự",
+                },
+              })}
+              className="flex-1 outline-none text-sm text-gray-700 py-1 placeholder-gray-400"
+            />
+          </div>
+          {errors.password && (
+            <span className="text-xs text-red-600 px-1">{errors.password.message}</span>
+          )}
         </div>
 
         <div className="rounded border border-gray-200 bg-gray-50 p-3">

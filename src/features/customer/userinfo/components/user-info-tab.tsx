@@ -3,10 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FaCamera, FaRegUserCircle } from "react-icons/fa";
 import { Field, Input, Label } from "@headlessui/react";
+import { useForm } from "react-hook-form";
 import { UserInfo } from "@/types/user";
 import { useToast } from "@/hooks";
 import { changeInfo } from "../servers/info";
 import { uploadAvatarToCloudinary } from "@/integrations/cloudinary";
+
+type UserInfoFormValues = {
+  displayName: string;
+  birthDate: string;
+  phoneNumber: string;
+};
 
 export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
   const { showSuccess, showError } = useToast();
@@ -17,13 +24,26 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
   const [avatarUrl, setAvatarUrl] = useState(avatarFromProfile);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(avatarFromProfile);
-  const [formData, setFormData] = useState({
-    displayName: userInfo?.displayName || "",
-    birthDate: (userInfo?.birthDate || userInfo?.dateOfBirth || "").slice(0, 10),
-    phoneNumber: userInfo?.phoneNumber || "",
-  });
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<UserInfoFormValues>({
+    defaultValues: {
+      displayName: userInfo?.displayName || "",
+      birthDate: (userInfo?.birthDate || userInfo?.dateOfBirth || "").slice(0, 10),
+      phoneNumber: userInfo?.phoneNumber || "",
+    },
+  });
+
+  useEffect(() => {
+    reset({
+      displayName: userInfo?.displayName || "",
+      birthDate: (userInfo?.birthDate || userInfo?.dateOfBirth || "").slice(0, 10),
+      phoneNumber: userInfo?.phoneNumber || "",
+    });
+    setAvatarUrl(avatarFromProfile);
+    setAvatarPreviewUrl(avatarFromProfile);
+  }, [userInfo, reset, avatarFromProfile]);
 
   useEffect(() => {
     if (!selectedAvatarFile) {
@@ -39,15 +59,7 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
     };
   }, [selectedAvatarFile, avatarUrl]);
 
-  const handleChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: UserInfoFormValues) => {
     setIsLoading(true);
 
     try {
@@ -58,7 +70,7 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
       }
 
       const response = await changeInfo({
-        ...formData,
+        ...values,
         photoURL: uploadedAvatarUrl,
       });
 
@@ -97,7 +109,7 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       {/* Avatar + Points + Edit */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
@@ -140,29 +152,33 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
       {/* Form Fields */}
       <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
         {/* Họ và tên */}
-        <Field>
+        <Field className="flex flex-col gap-1">
           <Label className="text-base text-neutral-3">Họ và tên</Label>
           <Input
             type="text"
-            value={formData.displayName}
-            onChange={(e) => handleChange("displayName", e.target.value)}
+            {...register("displayName", { required: "Vui lòng nhập họ và tên" })}
             className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
+          {errors.displayName && (
+            <span className="text-xs text-red-600 px-1">{errors.displayName.message}</span>
+          )}
         </Field>
 
         {/* Sinh nhật */}
-        <Field>
+        <Field className="flex flex-col gap-1">
           <Label className="text-base text-neutral-3">Sinh nhật</Label>
           <Input
             type="date"
-            value={formData.birthDate}
-            onChange={(e) => handleChange("birthDate", e.target.value)}
+            {...register("birthDate", { required: "Vui lòng chọn ngày sinh" })}
             className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-4 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
+          {errors.birthDate && (
+            <span className="text-xs text-red-600 px-1">{errors.birthDate.message}</span>
+          )}
         </Field>
 
         {/* Email - Disabled */}
-        <Field disabled>
+        <Field disabled className="flex flex-col gap-1">
           <Label className="text-base text-neutral-3 data-disabled:text-neutral-3">Email</Label>
           <Input
             type="email"
@@ -172,14 +188,22 @@ export default function UserInfoTab({ userInfo }: { userInfo: UserInfo }) {
         </Field>
 
         {/* Số điện thoại */}
-        <Field>
+        <Field className="flex flex-col gap-1">
           <Label className="text-base text-neutral-3">Số điện thoại</Label>
           <Input
             type="tel"
-            value={formData.phoneNumber}
-            onChange={(e) => handleChange("phoneNumber", e.target.value)}
+            {...register("phoneNumber", {
+              required: "Vui lòng nhập số điện thoại",
+              pattern: {
+                value: /^[0-9]{10}$/,
+                message: "Số điện thoại phải gồm 10 chữ số",
+              },
+            })}
             className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none focus:bg-white focus:ring-2 focus:ring-primary-4 transition-colors"
           />
+          {errors.phoneNumber && (
+            <span className="text-xs text-red-600 px-1">{errors.phoneNumber.message}</span>
+          )}
         </Field>
       </div>
 
