@@ -17,6 +17,7 @@ interface CategorySidebarProps {
   brandFilters: CategoryBrandFilterOption[];
   selectedBrands: string[];
   selectedOrigins: string[];
+  selectedProductType: string;
   minPrice: number;
   maxPrice: number;
   draftMinPrice: number;
@@ -24,6 +25,7 @@ interface CategorySidebarProps {
   formatPrice: (value: number) => string;
   onToggleBrand: (brandId: string) => void;
   onToggleOrigin: (origin: string) => void;
+  onSelectProductType: (value: string) => void;
   onDraftMinPriceChange: (value: number) => void;
   onDraftMaxPriceChange: (value: number) => void;
   onApplyFilter: () => void;
@@ -37,6 +39,7 @@ export default function CategorySidebar({
   brandFilters,
   selectedBrands,
   selectedOrigins,
+  selectedProductType,
   minPrice,
   maxPrice,
   draftMinPrice,
@@ -44,6 +47,7 @@ export default function CategorySidebar({
   formatPrice,
   onToggleBrand,
   onToggleOrigin,
+  onSelectProductType,
   onDraftMinPriceChange,
   onDraftMaxPriceChange,
   onApplyFilter,
@@ -111,6 +115,29 @@ export default function CategorySidebar({
               </div>
             );
           })}
+        </div>
+      </section>
+ 
+      <section className="bg-white border border-neutral-7 rounded-2xl p-5">
+        <h3 className="text-xs uppercase tracking-[0.2em] text-neutral-5 font-bold mb-4">
+          Loại sản phẩm
+        </h3>
+        <div className="space-y-2.5">
+          {[
+            { id: "new", name: "Sản phẩm mới" },
+            { id: "popular", name: "Sản phẩm ưa chuộng" },
+            { id: "best-selling", name: "Sản phẩm bán chạy" },
+          ].map((type) => (
+            <label key={type.id} className="flex items-center gap-2 text-sm text-neutral-1 cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-primary-1"
+                checked={selectedProductType === type.id}
+                onChange={() => onSelectProductType(selectedProductType === type.id ? "" : type.id)}
+              />
+              {type.name}
+            </label>
+          ))}
         </div>
       </section>
 
