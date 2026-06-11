@@ -115,15 +115,15 @@ export default function ChatbotPanel({
       const data = json?.data || {};
       const products: ChatbotProduct[] = Array.isArray(data.products)
         ? data.products.map((item: ChatbotProduct) => ({
-            id: item.id,
-            name: item.name,
-            slug: item.slug,
-            price: item.price,
-            originalPrice: item.originalPrice,
-            discount: item.discount,
-            review: item.review,
-            image: item.image,
-          }))
+          id: item.id,
+          name: item.name,
+          slug: item.slug,
+          price: item.price,
+          originalPrice: item.originalPrice,
+          discount: item.discount,
+          review: item.review,
+          image: item.image,
+        }))
         : [];
 
       const botMessage: ChatbotMessage = {
@@ -170,7 +170,6 @@ export default function ChatbotPanel({
               "Giao hàng mất bao lâu?",
               "Phí vận chuyển là bao nhiêu?",
               "Chính sách đổi trả như thế nào?",
-              "Sản phẩm này còn hàng không?",
               "Có mã giảm giá không?",
             ]);
           }
@@ -181,7 +180,6 @@ export default function ChatbotPanel({
             "Giao hàng mất bao lâu?",
             "Phí vận chuyển là bao nhiêu?",
             "Chính sách đổi trả như thế nào?",
-            "Sản phẩm này còn hàng không?",
             "Có mã giảm giá không?",
           ]);
         }
@@ -203,9 +201,8 @@ export default function ChatbotPanel({
 
   return (
     <div
-      className={`mb-2 w-full overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${
-        containerClassName ? containerClassName : ""
-      }`}
+      className={`mb-2 w-full overflow-hidden rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120 ${containerClassName ? containerClassName : ""
+        }`}
     >
       <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-neutral-1">
@@ -232,9 +229,8 @@ export default function ChatbotPanel({
         </div>
       </div>
       <div
-        className={`flex h-[min(22rem,calc(100dvh-8rem))] flex-col bg-neutral-10 sm:h-100 ${
-          contentClassName ? contentClassName : ""
-        }`}
+        className={`flex h-[min(22rem,calc(100dvh-8rem))] flex-col bg-neutral-10 sm:h-100 ${contentClassName ? contentClassName : ""
+          }`}
       >
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {footerHint}
@@ -279,11 +275,10 @@ export default function ChatbotPanel({
                 className={`flex ${isUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow ${
-                    isUser
+                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow ${isUser
                       ? "bg-primary-1 text-white"
                       : "bg-white text-neutral-1"
-                  }`}
+                    }`}
                 >
                   <p>{item.text}</p>
 
