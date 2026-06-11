@@ -55,9 +55,21 @@ export default async function Home() {
         {recommendedProducts && recommendedProducts.length > 0 && (
           <ProductSection products={recommendedProducts || []} />
         )}
-        <ProductSection title="SẢN PHẨM MỚI" products={newProducts || []} />
-        <ProductSection title="SẢN PHẨM ƯA CHUỘNG" products={popularProducts || []} />
-        <ProductSection title="SẢN PHẨM BÁN CHẠY" products={bestSellingProducts || []} />
+        <ProductSection
+          title="SẢN PHẨM MỚI"
+          products={newProducts || []}
+          viewAllHref="/category?productType=new"
+        />
+        <ProductSection
+          title="SẢN PHẨM ƯA CHUỘNG"
+          products={popularProducts || []}
+          viewAllHref="/category?productType=popular"
+        />
+        <ProductSection
+          title="SẢN PHẨM BÁN CHẠY"
+          products={bestSellingProducts || []}
+          viewAllHref="/category?productType=best-selling"
+        />
         <RetailBenefits />
       </div>
     </div>

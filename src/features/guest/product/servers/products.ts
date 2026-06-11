@@ -68,6 +68,7 @@ export interface FilterProductsParams {
   page?: number;
   limit?: number;
   keyword?: string;
+  productType?: string;
 }
 
 export interface TrackProductActivityInput {
@@ -189,6 +190,9 @@ export const getFilteredProducts = async (params: FilterProductsParams): Promise
   if (typeof params.limit === "number") normalizedParams.limit = params.limit;
   if (typeof params.keyword === "string" && params.keyword.trim().length > 0) {
     normalizedParams.keyword = params.keyword;
+  }
+  if (typeof params.productType === "string" && params.productType.trim().length > 0) {
+    normalizedParams.productType = params.productType;
   }
 
   const res = await get(`/products/filter`, normalizedParams, { data: [] });

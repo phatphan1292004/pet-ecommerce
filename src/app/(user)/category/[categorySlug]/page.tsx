@@ -86,6 +86,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const page = parseNumberParam(getSearchParamValue(query.page));
   const limit = parseNumberParam(getSearchParamValue(query.limit));
   const keyword = getSearchParamValue(query.keyword);
+  const productType = getSearchParamValue(query.productType);
 
   const activeBrandFilters: CategoryBrandFilterOption[] = brands
     .filter((brand) => isItemActive(brand) && Boolean(brand.name))
@@ -153,6 +154,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         page,
         limit,
         keyword,
+        productType,
       })
     : [];
 
@@ -173,6 +175,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         page,
         limit,
         keyword,
+        productType,
       })}
       sidebarCategories={activeSidebarCategories}
       currentCategorySlug={category.slug}
@@ -182,6 +185,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       initialSelectedOrigins={origins}
       initialMinPrice={minPrice}
       initialMaxPrice={maxPrice}
+      initialSelectedProductType={productType}
       products={normalizedProducts}
     />
   );

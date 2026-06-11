@@ -25,6 +25,7 @@ interface CategoryProductsPageProps {
   initialSelectedOrigins: string[];
   initialMinPrice?: number;
   initialMaxPrice?: number;
+  initialSelectedProductType?: string;
   products: Product[];
 }
 
@@ -47,6 +48,7 @@ export default function CategoryProductsPage({
   initialSelectedOrigins,
   initialMinPrice,
   initialMaxPrice,
+  initialSelectedProductType,
   products,
 }: CategoryProductsPageProps) {
   const router = useRouter();
@@ -67,6 +69,9 @@ export default function CategoryProductsPage({
   );
   const [draftMaxPrice, setDraftMaxPrice] = useState(
     initialMaxPrice ?? maxPrice,
+  );
+  const [selectedProductType, setSelectedProductType] = useState<string>(
+    initialSelectedProductType ?? "",
   );
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -127,6 +132,12 @@ export default function CategoryProductsPage({
       nextParams.delete("origins");
     }
 
+    if (selectedProductType) {
+      nextParams.set("productType", selectedProductType);
+    } else {
+      nextParams.delete("productType");
+    }
+
     nextParams.set("minPrice", String(normalizedMinPrice));
     nextParams.set("maxPrice", String(normalizedMaxPrice));
     nextParams.delete("page");
@@ -138,6 +149,7 @@ export default function CategoryProductsPage({
   const handleResetFilter = () => {
     setSelectedBrands([]);
     setSelectedOrigins([]);
+    setSelectedProductType("");
     setDraftMinPrice(minPrice);
     setDraftMaxPrice(maxPrice);
 
@@ -146,6 +158,7 @@ export default function CategoryProductsPage({
     nextParams.delete("origins");
     nextParams.delete("minPrice");
     nextParams.delete("maxPrice");
+    nextParams.delete("productType");
     nextParams.delete("page");
 
     const queryString = nextParams.toString();
@@ -184,6 +197,7 @@ export default function CategoryProductsPage({
             brandFilters={brandFilters}
             selectedBrands={selectedBrands}
             selectedOrigins={selectedOrigins}
+            selectedProductType={selectedProductType}
             minPrice={minPrice}
             maxPrice={maxPrice}
             draftMinPrice={draftMinPrice}
@@ -195,6 +209,7 @@ export default function CategoryProductsPage({
             onToggleOrigin={(origin) =>
               toggleSelection(origin, selectedOrigins, setSelectedOrigins)
             }
+            onSelectProductType={setSelectedProductType}
             onDraftMinPriceChange={setDraftMinPrice}
             onDraftMaxPriceChange={setDraftMaxPrice}
             onApplyFilter={handleApplyFilter}
@@ -280,6 +295,7 @@ export default function CategoryProductsPage({
               brandFilters={brandFilters}
               selectedBrands={selectedBrands}
               selectedOrigins={selectedOrigins}
+              selectedProductType={selectedProductType}
               minPrice={minPrice}
               maxPrice={maxPrice}
               draftMinPrice={draftMinPrice}
@@ -291,6 +307,7 @@ export default function CategoryProductsPage({
               onToggleOrigin={(origin) =>
                 toggleSelection(origin, selectedOrigins, setSelectedOrigins)
               }
+              onSelectProductType={setSelectedProductType}
               onDraftMinPriceChange={setDraftMinPrice}
               onDraftMaxPriceChange={setDraftMaxPrice}
               onApplyFilter={() => {

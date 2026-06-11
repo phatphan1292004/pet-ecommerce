@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { getBrands } from "@/features/guest/brand";
 import { getCategories, getSubCategories } from "@/features/guest/category";
 import CategoryProductsPage from "@/features/guest/category/components/category-products-page";
@@ -13,10 +12,6 @@ import {
 } from "@/utils/category";
 
 interface CategoryPageProps {
-  params: Promise<{
-    categorySlug: string;
-    subcategorySlug: string;
-  }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
@@ -53,8 +48,7 @@ const normalizeBrandToken = (value: string): string =>
     .trim()
     .toLowerCase();
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
-  const { categorySlug, subcategorySlug } = await params;
+export default async function CategoryPage({ searchParams }: CategoryPageProps) {
   const query = await searchParams;
   const [categories, brands] = await Promise.all([getCategories(), getBrands()]);
 
@@ -69,21 +63,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         };
       }),
   );
-
-  const category = sidebarCategories.find((item) => item.slug === categorySlug);
-
-  if (!category) {
-    notFound();
-  }
-
-  const activeSubcategories = category.subcategories.filter((sub) => isItemActive(sub));
-  const selectedSubcategory = activeSubcategories.find(
-    (sub) => sub.slug === subcategorySlug,
-  );
-
-  if (!selectedSubcategory) {
-    notFound();
-  }
 
   const brandIds = parseCsvParam(getSearchParamValue(query.brandIds));
   const origins = parseCsvParam(getSearchParamValue(query.origins));
@@ -151,7 +130,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const dedupedBrandIds = [...new Set(normalizedBrandIds)];
 
   const products = await getFilteredProducts({
-    subCategoryIds: [selectedSubcategory._id],
     brandIds: dedupedBrandIds,
     origins,
     minPrice,
@@ -183,10 +161,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         productType,
       })}
       sidebarCategories={activeSidebarCategories}
-      currentCategorySlug={category.slug}
-      currentSubcategorySlug={selectedSubcategory.slug}
-      categoryName={category.name}
-      subcategoryName={selectedSubcategory.name}
+      currentCategorySlug=""
+      categoryName="Tất cả sản phẩm"
       brandFilters={activeBrandFilters}
       initialSelectedBrandIds={dedupedBrandIds}
       initialSelectedOrigins={origins}
