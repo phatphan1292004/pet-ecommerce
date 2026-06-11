@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { FiEdit2, FiSave, FiX } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useToast } from "@/hooks";
 import {
   updateAdminProduct,
@@ -11,6 +13,7 @@ import {
 } from "@/features/admin/product/servers";
 import { getBrands } from "@/features/guest/brand/servers";
 import { getCategories, getSubCategories } from "@/features/guest/category/servers/category";
+import { uploadProductImageToCloudinary } from "@/integrations/cloudinary";
 
 interface BrandOption {
   id: string;
@@ -38,7 +41,6 @@ interface ProductFormValues {
   longDescription: string;
   specifications: string;
   benefits: string;
-  images: string;
   brandId: string;
   subCategoryId: string;
   usage: string;
@@ -61,11 +63,6 @@ const toOptionalNumber = (value: string): number | undefined => {
   return numeric;
 };
 
-const toImageList = (value: string): string[] =>
-  value
-    .split(/\r?\n|,/g)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
 
 const toKeyValueRecord = (value: string): string | Record<string, string> | undefined => {
   const lines = value
@@ -117,18 +114,6 @@ const formatKeyValueInput = (value?: string | Record<string, unknown>): string =
   return entries.join("\n");
 };
 
-const formatImages = (product: AdminProduct): string => {
-  if (Array.isArray(product.images) && product.images.length > 0) {
-    return product.images.join("\n");
-  }
-
-  if (product.image && product.image.trim().length > 0) {
-    return product.image.trim();
-  }
-
-  return "";
-};
-
 const createDefaultValues = (product: AdminProduct): ProductFormValues => ({
   name: product.name || "",
   price:
@@ -151,7 +136,6 @@ const createDefaultValues = (product: AdminProduct): ProductFormValues => ({
   longDescription: product.longDescription || "",
   specifications: formatKeyValueInput(product.specifications),
   benefits: formatKeyValueInput(product.benefits),
-  images: formatImages(product),
   brandId: product.brand?.id || "",
   subCategoryId: product.subCategory?.id || "",
   usage: product.usage || "",
@@ -166,23 +150,47 @@ export default function AdminProductEditForm({
 }: AdminProductEditFormProps) {
   console.log("product for edit form", product);
   const [isOpen, setIsOpen] = useState(false);
-  const [formValues, setFormValues] = useState<ProductFormValues>(() =>
-    createDefaultValues(product)
-  );
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [brands, setBrands] = useState<BrandOption[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategoryOption[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    trigger,
+    formState: { errors },
+  } = useForm<ProductFormValues>({
+    defaultValues: createDefaultValues(product),
+  });
+
+  const formBrandId = watch("brandId");
+  const formSubCategoryId = watch("subCategoryId");
+
+  const [existingImages, setExistingImages] = useState<string[]>(() => {
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      return [...product.images];
+    }
+    if (product.image && product.image.trim().length > 0) {
+      return [product.image.trim()];
+    }
+    return [];
+  });
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const router = useRouter();
   const { showError, showSuccess, showWarning } = useToast();
 
   const brandName = product.brand?.name ?? "";
   const subCategoryName = product.subCategory?.name ?? "";
 
-  const hasBrandOption = brands.some((brand) => brand.id === formValues.brandId);
+  const hasBrandOption = brands.some((brand) => brand.id === formBrandId);
   const hasSubCategoryOption = subCategories.some(
-    (subCategory) => subCategory.id === formValues.subCategoryId
+    (subCategory) => subCategory.id === formSubCategoryId
   );
 
   useEffect(() => {
@@ -254,7 +262,34 @@ export default function AdminProductEditForm({
   }, []);
 
   useEffect(() => {
-    if (!brandName || formValues.brandId || brands.length === 0) {
+    reset(createDefaultValues(product));
+    setExistingImages(
+      Array.isArray(product.images) && product.images.length > 0
+        ? [...product.images]
+        : product.image && product.image.trim().length > 0
+          ? [product.image.trim()]
+          : []
+    );
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
+  }, [product, reset]);
+
+  useEffect(() => {
+    if (newImageFiles.length === 0) {
+      setNewImagePreviews([]);
+      return;
+    }
+
+    const previews = newImageFiles.map((file) => URL.createObjectURL(file));
+    setNewImagePreviews(previews);
+
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [newImageFiles]);
+
+  useEffect(() => {
+    if (!brandName || formBrandId || brands.length === 0) {
       return;
     }
 
@@ -263,15 +298,12 @@ export default function AdminProductEditForm({
     );
 
     if (matched) {
-      setFormValues((prev) => ({
-        ...prev,
-        brandId: matched.id,
-      }));
+      setValue("brandId", matched.id, { shouldValidate: true });
     }
-  }, [brandName, brands, formValues.brandId]);
+  }, [brandName, brands, formBrandId, setValue]);
 
   useEffect(() => {
-    if (!subCategoryName || formValues.subCategoryId || subCategories.length === 0) {
+    if (!subCategoryName || formSubCategoryId || subCategories.length === 0) {
       return;
     }
 
@@ -280,23 +312,29 @@ export default function AdminProductEditForm({
     );
 
     if (matched) {
-      setFormValues((prev) => ({
-        ...prev,
-        subCategoryId: matched.id,
-      }));
+      setValue("subCategoryId", matched.id, { shouldValidate: true });
     }
-  }, [subCategoryName, subCategories, formValues.subCategoryId]);
-
-  const handleFieldChange = (field: keyof ProductFormValues, value: string | boolean) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  }, [subCategoryName, subCategories, formSubCategoryId, setValue]);
 
   const resetForm = () => {
-    setFormValues(createDefaultValues(product));
-    setFormError("");
+    reset(createDefaultValues(product));
+    setExistingImages(
+      Array.isArray(product.images) && product.images.length > 0
+        ? [...product.images]
+        : product.image && product.image.trim().length > 0
+          ? [product.image.trim()]
+          : []
+    );
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
+  };
+
+  const handleRemoveExistingImage = (indexToRemove: number) => {
+    setExistingImages((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleRemoveNewImage = (indexToRemove: number) => {
+    setNewImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const closeForm = () => {
@@ -304,57 +342,27 @@ export default function AdminProductEditForm({
     resetForm();
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSubmit = async (data: ProductFormValues) => {
     if (isSubmitting) {
       return;
     }
 
-    const name = formValues.name.trim();
-    if (name.length === 0) {
-      const message = "Vui lòng nhập tên sản phẩm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    const price = toOptionalNumber(formValues.price);
+    const name = data.name.trim();
+    const price = toOptionalNumber(data.price);
     if (typeof price !== "number" || price <= 0) {
       const message = "Giá bán phải lớn hơn 0";
-      setFormError(message);
       showWarning(message);
       return;
     }
 
-    const originalPrice = toOptionalNumber(formValues.originalPrice);
-    const discount = toOptionalNumber(formValues.discount);
-    const stock = toOptionalNumber(formValues.stock);
-
-    if (typeof originalPrice === "number" && originalPrice < 0) {
-      const message = "Giá gốc không được âm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (typeof discount === "number" && (discount < 0 || discount > 100)) {
-      const message = "Giảm giá phải trong khoảng 0-100";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (typeof stock === "number" && stock < 0) {
-      const message = "Tồn kho không được âm";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
+    const originalPrice = toOptionalNumber(data.originalPrice);
+    const discount = toOptionalNumber(data.discount);
+    const stock = toOptionalNumber(data.stock);
 
     const payload: AdminUpdateProductPayload = {
       name,
       price,
-      isActive: formValues.isActive,
+      isActive: data.isActive,
     };
 
     if (typeof originalPrice === "number") {
@@ -369,58 +377,74 @@ export default function AdminProductEditForm({
       payload.stock = stock;
     }
 
-    const description = formValues.description.trim();
+    const description = data.description.trim();
     if (description.length > 0) {
       payload.description = description;
     }
 
-    const longDescription = formValues.longDescription.trim();
+    const longDescription = data.longDescription.trim();
     if (longDescription.length > 0) {
       payload.longDescription = longDescription;
     }
 
-    const specifications = toKeyValueRecord(formValues.specifications);
+    const specifications = toKeyValueRecord(data.specifications);
     if (specifications) {
       payload.specifications = specifications;
     }
 
-    const benefits = toKeyValueRecord(formValues.benefits);
+    const benefits = toKeyValueRecord(data.benefits);
     if (benefits) {
       payload.benefits = benefits;
     }
 
-    const usage = formValues.usage.trim();
+    const usage = data.usage.trim();
     if (usage.length > 0) {
       payload.usage = usage;
     }
 
-    const ingredients = formValues.ingredients.trim();
+    const ingredients = data.ingredients.trim();
     if (ingredients.length > 0) {
       payload.ingredients = ingredients;
     }
 
-    const shipping = formValues.shipping.trim();
+    const shipping = data.shipping.trim();
     if (shipping.length > 0) {
       payload.shipping = shipping;
     }
 
-    const images = toImageList(formValues.images);
-    if (images.length > 0) {
-      payload.images = images;
+    if (existingImages.length === 0 && newImageFiles.length === 0) {
+      const message = "Vui lòng chọn ít nhất 1 ảnh sản phẩm";
+      showWarning(message);
+      return;
     }
 
-    const brandId = formValues.brandId.trim();
+    const brandId = data.brandId.trim();
     if (brandId.length > 0) {
       payload.brandId = brandId;
     }
 
-    const subCategoryId = formValues.subCategoryId.trim();
+    const subCategoryId = data.subCategoryId.trim();
     if (subCategoryId.length > 0) {
       payload.subCategoryId = subCategoryId;
     }
 
     setIsSubmitting(true);
-    setFormError("");
+
+    let uploadedUrls: string[] = [];
+    if (newImageFiles.length > 0) {
+      try {
+        uploadedUrls = await Promise.all(
+          newImageFiles.map(async (file) => uploadProductImageToCloudinary(file))
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Không thể tải ảnh lên";
+        showError(message);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    payload.images = [...existingImages, ...uploadedUrls];
 
     const result = await updateAdminProduct(product.id, payload);
 
@@ -428,7 +452,6 @@ export default function AdminProductEditForm({
 
     if (!result.success) {
       const message = result.message || "Không thể cập nhật sản phẩm";
-      setFormError(message);
       showError(message);
       return;
     }
@@ -482,17 +505,20 @@ export default function AdminProductEditForm({
             ) : null}
           </div>
 
-          <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Tên sản phẩm *</span>
               <input
                 type="text"
-                value={formValues.name}
-                onChange={(event) => handleFieldChange("name", event.target.value)}
+                {...register("name", {
+                  required: "Vui lòng nhập tên sản phẩm",
+                })}
                 placeholder="Tên sản phẩm"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                required
               />
+              {errors.name && (
+                <span className="text-xs text-red-600 block mt-1">{errors.name.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -501,12 +527,27 @@ export default function AdminProductEditForm({
                 type="number"
                 min="0"
                 step="1000"
-                value={formValues.price}
-                onChange={(event) => handleFieldChange("price", event.target.value)}
+                {...register("price", {
+                  required: "Giá bán phải lớn hơn 0",
+                  validate: {
+                    positive: (val) => {
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num <= 0) {
+                        return "Giá bán phải lớn hơn 0";
+                      }
+                      return true;
+                    }
+                  },
+                  onChange: () => {
+                    void trigger("originalPrice");
+                  }
+                })}
                 placeholder="VD: 150000"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                required
               />
+              {errors.price && (
+                <span className="text-xs text-red-600 block mt-1">{errors.price.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -515,11 +556,32 @@ export default function AdminProductEditForm({
                 type="number"
                 min="0"
                 step="1000"
-                value={formValues.originalPrice}
-                onChange={(event) => handleFieldChange("originalPrice", event.target.value)}
+                {...register("originalPrice", {
+                  validate: {
+                    nonNegative: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0) {
+                        return "Giá gốc không được âm";
+                      }
+                      return true;
+                    },
+                    comparison: (val) => {
+                      if (!val) return true;
+                      const priceVal = watch("price");
+                      if (priceVal && Number(priceVal) > Number(val)) {
+                        return "Giá bán không được lớn hơn giá gốc";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 200000"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.originalPrice && (
+                <span className="text-xs text-red-600 block mt-1">{errors.originalPrice.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -529,11 +591,24 @@ export default function AdminProductEditForm({
                 min="0"
                 max="100"
                 step="1"
-                value={formValues.discount}
-                onChange={(event) => handleFieldChange("discount", event.target.value)}
+                {...register("discount", {
+                  validate: {
+                    range: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0 || num > 100) {
+                        return "Giảm giá phải trong khoảng 0-100";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 10"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.discount && (
+                <span className="text-xs text-red-600 block mt-1">{errors.discount.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -542,24 +617,38 @@ export default function AdminProductEditForm({
                 type="number"
                 min="0"
                 step="1"
-                value={formValues.stock}
-                onChange={(event) => handleFieldChange("stock", event.target.value)}
+                {...register("stock", {
+                  validate: {
+                    nonNegativeInt: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0 || !Number.isInteger(num)) {
+                        return "Tồn kho phải là số không âm";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 50"
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.stock && (
+                <span className="text-xs text-red-600 block mt-1">{errors.stock.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
               <span className="text-xs font-medium text-neutral-4">Thương hiệu</span>
               <select
-                value={formValues.brandId}
-                onChange={(event) => handleFieldChange("brandId", event.target.value)}
+                {...register("brandId", {
+                  required: "Vui lòng chọn thương hiệu",
+                })}
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
                 disabled={isLoadingOptions}
               >
                 <option value="">Chọn thương hiệu</option>
-                {!hasBrandOption && formValues.brandId ? (
-                  <option value={formValues.brandId}>
+                {!hasBrandOption && formBrandId ? (
+                  <option value={formBrandId}>
                     {product.brand?.name || "Thuong hieu hien tai"}
                   </option>
                 ) : null}
@@ -569,19 +658,23 @@ export default function AdminProductEditForm({
                   </option>
                 ))}
               </select>
+              {errors.brandId && (
+                <span className="text-xs text-red-600 block mt-1">{errors.brandId.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
               <span className="text-xs font-medium text-neutral-4">Danh mục con</span>
               <select
-                value={formValues.subCategoryId}
-                onChange={(event) => handleFieldChange("subCategoryId", event.target.value)}
+                {...register("subCategoryId", {
+                  required: "Vui lòng chọn danh mục con",
+                })}
                 className="h-12 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
                 disabled={isLoadingOptions}
               >
                 <option value="">Chọn danh mục con</option>
-                {!hasSubCategoryOption && formValues.subCategoryId ? (
-                  <option value={formValues.subCategoryId}>
+                {!hasSubCategoryOption && formSubCategoryId ? (
+                  <option value={formSubCategoryId}>
                     {product.subCategory?.name || "Danh muc hien tai"}
                   </option>
                 ) : null}
@@ -591,57 +684,91 @@ export default function AdminProductEditForm({
                   </option>
                 ))}
               </select>
+              {errors.subCategoryId && (
+                <span className="text-xs text-red-600 block mt-1">{errors.subCategoryId.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Mô tả ngắn</span>
               <textarea
-                value={formValues.description}
-                onChange={(event) => handleFieldChange("description", event.target.value)}
+                {...register("description", {
+                  required: "Vui lòng nhập mô tả ngắn",
+                })}
                 placeholder="Mô tả ngắn"
                 rows={4}
                 className="min-h-[120px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
               />
+              {errors.description && (
+                <span className="text-xs text-red-600 block mt-1">{errors.description.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Mô tả chi tiết</span>
               <textarea
-                value={formValues.longDescription}
-                onChange={(event) => handleFieldChange("longDescription", event.target.value)}
+                {...register("longDescription", {
+                  required: "Vui lòng nhập mô tả chi tiết",
+                })}
                 placeholder="Mô tả chi tiết"
                 rows={8}
                 className="min-h-[220px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
               />
+              {errors.longDescription && (
+                <span className="text-xs text-red-600 block mt-1">{errors.longDescription.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Thông số (key: value mỗi dòng)</span>
               <textarea
-                value={formValues.specifications}
-                onChange={(event) => handleFieldChange("specifications", event.target.value)}
+                {...register("specifications", {
+                  validate: {
+                    keyValue: (val) => {
+                      if (!val) return true;
+                      if (!toKeyValueRecord(val)) {
+                        return "Thông số phải theo định dạng key: value";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="Product Name: ..."
                 rows={6}
                 className="min-h-[160px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
               />
+              {errors.specifications && (
+                <span className="text-xs text-red-600 block mt-1">{errors.specifications.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Lợi ích (key: value mỗi dòng)</span>
               <textarea
-                value={formValues.benefits}
-                onChange={(event) => handleFieldChange("benefits", event.target.value)}
+                {...register("benefits", {
+                  validate: {
+                    keyValue: (val) => {
+                      if (!val) return true;
+                      if (!toKeyValueRecord(val)) {
+                        return "Lợi ích phải theo định dạng key: value";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="Lợi ích: ..."
                 rows={5}
                 className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
               />
+              {errors.benefits && (
+                <span className="text-xs text-red-600 block mt-1">{errors.benefits.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Hướng dẫn sử dụng</span>
               <textarea
-                value={formValues.usage}
-                onChange={(event) => handleFieldChange("usage", event.target.value)}
+                {...register("usage")}
                 placeholder="Hướng dẫn sử dụng"
                 rows={5}
                 className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
@@ -651,8 +778,7 @@ export default function AdminProductEditForm({
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Thành phần</span>
               <textarea
-                value={formValues.ingredients}
-                onChange={(event) => handleFieldChange("ingredients", event.target.value)}
+                {...register("ingredients")}
                 placeholder="Thành phần"
                 rows={5}
                 className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
@@ -662,30 +788,91 @@ export default function AdminProductEditForm({
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Vận chuyển</span>
               <textarea
-                value={formValues.shipping}
-                onChange={(event) => handleFieldChange("shipping", event.target.value)}
+                {...register("shipping")}
                 placeholder="Thông tin vận chuyển"
                 rows={4}
                 className="min-h-[120px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
               />
             </label>
 
-            <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
-              <span className="text-xs font-medium text-neutral-4">Ảnh sản phẩm (mỗi dòng một URL)</span>
-              <textarea
-                value={formValues.images}
-                onChange={(event) => handleFieldChange("images", event.target.value)}
-                placeholder="https://..."
-                rows={5}
-                className="min-h-[140px] w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-base outline-none focus:border-primary-1"
+            <div className="space-y-1 text-sm text-neutral-2 md:col-span-2">
+              <span className="text-xs font-medium text-neutral-4">Ảnh sản phẩm *</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  setNewImageFiles((prev) => [...prev, ...files]);
+                }}
+                className="block w-full text-sm text-neutral-2 file:mr-3 file:rounded-lg file:border file:border-neutral-20 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-neutral-4"
               />
-            </label>
+
+              {(existingImages.length > 0 || newImagePreviews.length > 0) ? (
+                <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Existing images previews */}
+                  {existingImages.map((imageUrl, index) => (
+                    <div
+                      key={`existing-${imageUrl}-${index}`}
+                      className="relative overflow-hidden rounded-xl border border-neutral-20 bg-white"
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={`Existing image ${index + 1}`}
+                        width={420}
+                        height={260}
+                        className="h-44 w-full object-cover sm:h-52"
+                        unoptimized
+                      />
+                      <span className="absolute left-2 top-2 rounded bg-primary-1/90 px-2 py-0.5 text-2xs font-semibold text-white shadow">
+                        Ảnh hiện tại
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingImage(index)}
+                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-black/60 text-sm font-semibold text-white shadow transition hover:bg-black/80"
+                        aria-label="Xóa ảnh hiện tại"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* New images previews */}
+                  {newImagePreviews.map((previewUrl, index) => (
+                    <div
+                      key={`new-${previewUrl}-${index}`}
+                      className="relative overflow-hidden rounded-xl border border-neutral-20 bg-white"
+                    >
+                      <Image
+                        src={previewUrl}
+                        alt={`New image preview ${index + 1}`}
+                        width={420}
+                        height={260}
+                        className="h-44 w-full object-cover sm:h-52"
+                        unoptimized
+                      />
+                      <span className="absolute left-2 top-2 rounded bg-emerald-600/90 px-2 py-0.5 text-2xs font-semibold text-white shadow">
+                        Ảnh mới chọn
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewImage(index)}
+                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-black/60 text-sm font-semibold text-white shadow transition hover:bg-black/80"
+                        aria-label="Xóa ảnh mới chọn"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
 
             <label className="inline-flex items-center gap-2 text-sm text-neutral-2 md:col-span-2">
               <input
                 type="checkbox"
-                checked={formValues.isActive}
-                onChange={(event) => handleFieldChange("isActive", event.target.checked)}
+                {...register("isActive")}
                 className="h-4 w-4 rounded border-neutral-20 text-primary-1 focus:ring-primary-1"
               />
               Kích hoạt sản phẩm

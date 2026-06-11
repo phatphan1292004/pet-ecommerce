@@ -24,9 +24,20 @@ function ProgressBarImpl() {
   // Handle document click interception for standard <a> tags
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return;
+
       // Find the closest anchor tag
       let target = e.target as HTMLElement | null;
       while (target && target.tagName !== "A") {
+        if (
+          target.tagName === "BUTTON" ||
+          target.getAttribute("role") === "button" ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT"
+        ) {
+          return;
+        }
         target = target.parentElement;
       }
 

@@ -66,11 +66,10 @@ export default function CategorySidebar({
             return (
               <div key={item._id} className="rounded-xl">
                 <div
-                  className={`w-full px-3 py-2 rounded-xl font-semibold text-sm flex items-center justify-between transition-colors ${
-                    isOpen
+                  className={`w-full px-3 py-2 rounded-xl font-semibold text-sm flex items-center justify-between transition-colors ${isOpen
                       ? "bg-primary-6 text-primary-1"
                       : "text-neutral-1 bg-neutral-10 hover:bg-neutral-7"
-                  }`}
+                    }`}
                 >
                   <Link
                     href={`/category/${item.slug}`}
@@ -98,11 +97,10 @@ export default function CategorySidebar({
                         <Link
                           key={sub._id}
                           href={`/category/${item.slug}/${sub.slug}`}
-                          className={`block rounded-lg px-2 py-1.5 text-sm transition-colors ${
-                            isSelected
+                          className={`block rounded-lg px-2 py-1.5 text-sm transition-colors ${isSelected
                               ? "text-primary-1 font-semibold"
                               : "text-neutral-4 hover:text-primary-1"
-                          }`}
+                            }`}
                         >
                           {sub.name}
                         </Link>

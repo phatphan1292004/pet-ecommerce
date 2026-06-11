@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import {
   FiFilter,
   FiPlus,
@@ -119,11 +120,20 @@ export default function CouponManagementPage({
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
-  const [formValues, setFormValues] = useState<CouponFormValues>(createDefaultFormValues());
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { showError, showSuccess, showWarning } = useToast();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<CouponFormValues>({
+    defaultValues: createDefaultFormValues(),
+  });
 
   useEffect(() => {
     if (
@@ -219,7 +229,7 @@ export default function CouponManagementPage({
   };
 
   const resetForm = () => {
-    setFormValues(createDefaultFormValues());
+    reset(createDefaultFormValues());
     setFormError("");
     setEditingCoupon(null);
   };
@@ -232,7 +242,7 @@ export default function CouponManagementPage({
   const openEditForm = (coupon: AdminCoupon) => {
     setEditingCoupon(coupon);
     setFormError("");
-    setFormValues({
+    reset({
       code: coupon.code || "",
       discountType: coupon.discountType || "",
       discountValue:
@@ -264,83 +274,40 @@ export default function CouponManagementPage({
     resetForm();
   };
 
-  const handleFieldChange = (field: keyof CouponFormValues, value: string | boolean) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmitCoupon = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSubmitCoupon = async (data: CouponFormValues) => {
     if (isSubmitting) {
       return;
     }
 
-    const code = formValues.code.trim().toUpperCase();
-    const discountType = formValues.discountType.trim();
-    const discountValue = toOptionalNumber(formValues.discountValue);
-
-    if (code.length === 0) {
-      const message = "Vui long nhap ma coupon";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (discountType.length === 0) {
-      const message = "Vui long nhap loai giam gia";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
+    const code = data.code.trim().toUpperCase();
+    const discountType = data.discountType.trim();
+    const discountValue = toOptionalNumber(data.discountValue);
 
     if (typeof discountValue !== "number" || discountValue <= 0) {
-      const message = "Gia tri giam gia phai lon hon 0";
+      const message = "Giá trị giảm giá phải lớn hơn 0";
       setFormError(message);
       showWarning(message);
       return;
     }
 
-    const startDate = toOptionalIsoDatetime(formValues.startDate);
-    const endDate = toOptionalIsoDatetime(formValues.endDate);
+    const startDate = toOptionalIsoDatetime(data.startDate);
+    const endDate = toOptionalIsoDatetime(data.endDate);
     if (startDate && endDate && new Date(startDate).getTime() >= new Date(endDate).getTime()) {
-      const message = "Thoi gian ket thuc phai lon hon thoi gian bat dau";
+      const message = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
       setFormError(message);
       showWarning(message);
       return;
     }
 
-    const minOrderValue = toOptionalNumber(formValues.minOrderValue);
-    const maxDiscount = toOptionalNumber(formValues.maxDiscount);
-    const usageLimit = toOptionalNumber(formValues.usageLimit);
-
-    if (typeof minOrderValue === "number" && minOrderValue < 0) {
-      const message = "Don toi thieu khong duoc am";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (typeof maxDiscount === "number" && maxDiscount < 0) {
-      const message = "Giam toi da khong duoc am";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
-
-    if (typeof usageLimit === "number" && usageLimit < 0) {
-      const message = "So luot su dung khong duoc am";
-      setFormError(message);
-      showWarning(message);
-      return;
-    }
+    const minOrderValue = toOptionalNumber(data.minOrderValue);
+    const maxDiscount = toOptionalNumber(data.maxDiscount);
+    const usageLimit = toOptionalNumber(data.usageLimit);
 
     const basePayload: AdminCreateCouponPayload = {
       code,
       discountType,
       discountValue,
-      isActive: formValues.isActive,
+      isActive: data.isActive,
     };
 
     if (typeof minOrderValue === "number") {
@@ -355,7 +322,7 @@ export default function CouponManagementPage({
       basePayload.usageLimit = usageLimit;
     }
 
-    const description = formValues.description.trim();
+    const description = data.description.trim();
     if (description.length > 0) {
       basePayload.description = description;
     }
@@ -524,29 +491,37 @@ export default function CouponManagementPage({
             </button>
           </div>
 
-          <form onSubmit={handleSubmitCoupon} className="grid gap-3 md:grid-cols-2">
+          <form onSubmit={handleSubmit(onSubmitCoupon)} className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm text-neutral-2">
               <span className="text-xs font-medium text-neutral-4">Mã coupon *</span>
               <input
                 type="text"
-                value={formValues.code}
-                onChange={(event) => handleFieldChange("code", event.target.value)}
+                {...register("code", {
+                  required: "Vui lòng nhập mã coupon",
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                })}
                 placeholder="VD: PET10"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                required
               />
+              {errors.code && (
+                <span className="text-xs text-red-600 block mt-1">{errors.code.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
               <span className="text-xs font-medium text-neutral-4">Loại giảm giá *</span>
               <input
                 type="text"
-                value={formValues.discountType}
-                onChange={(event) => handleFieldChange("discountType", event.target.value)}
+                {...register("discountType", {
+                  required: "Vui lòng nhập loại giảm giá",
+                  setValueAs: (v: string) => v.trim(),
+                })}
                 placeholder="PERCENT, FIXED..."
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                required
               />
+              {errors.discountType && (
+                <span className="text-xs text-red-600 block mt-1">{errors.discountType.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -555,12 +530,24 @@ export default function CouponManagementPage({
                 type="number"
                 min="0"
                 step="0.01"
-                value={formValues.discountValue}
-                onChange={(event) => handleFieldChange("discountValue", event.target.value)}
+                {...register("discountValue", {
+                  required: "Giá trị giảm giá phải lớn hơn 0",
+                  validate: {
+                    positive: (val) => {
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num <= 0) {
+                        return "Giá trị giảm giá phải lớn hơn 0";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 10 hoac 50000"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
-                required
               />
+              {errors.discountValue && (
+                <span className="text-xs text-red-600 block mt-1">{errors.discountValue.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -568,11 +555,24 @@ export default function CouponManagementPage({
               <input
                 type="number"
                 min="0"
-                value={formValues.usageLimit}
-                onChange={(event) => handleFieldChange("usageLimit", event.target.value)}
+                {...register("usageLimit", {
+                  validate: {
+                    nonNegative: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0) {
+                        return "Số lượt sử dụng không được âm";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="Bỏ trong nếu không giới hạn"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.usageLimit && (
+                <span className="text-xs text-red-600 block mt-1">{errors.usageLimit.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -581,11 +581,24 @@ export default function CouponManagementPage({
                 type="number"
                 min="0"
                 step="1000"
-                value={formValues.minOrderValue}
-                onChange={(event) => handleFieldChange("minOrderValue", event.target.value)}
+                {...register("minOrderValue", {
+                  validate: {
+                    nonNegative: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0) {
+                        return "Đơn tối thiểu không được âm";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 200000"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.minOrderValue && (
+                <span className="text-xs text-red-600 block mt-1">{errors.minOrderValue.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
@@ -594,19 +607,31 @@ export default function CouponManagementPage({
                 type="number"
                 min="0"
                 step="1000"
-                value={formValues.maxDiscount}
-                onChange={(event) => handleFieldChange("maxDiscount", event.target.value)}
+                {...register("maxDiscount", {
+                  validate: {
+                    nonNegative: (val) => {
+                      if (!val) return true;
+                      const num = Number(val);
+                      if (Number.isNaN(num) || num < 0) {
+                        return "Giảm tối đa không được âm";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 placeholder="VD: 100000"
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.maxDiscount && (
+                <span className="text-xs text-red-600 block mt-1">{errors.maxDiscount.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2">
               <span className="text-xs font-medium text-neutral-4">Bắt đầu</span>
               <input
                 type="datetime-local"
-                value={formValues.startDate}
-                onChange={(event) => handleFieldChange("startDate", event.target.value)}
+                {...register("startDate")}
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
             </label>
@@ -615,17 +640,28 @@ export default function CouponManagementPage({
               <span className="text-xs font-medium text-neutral-4">Kết thúc</span>
               <input
                 type="datetime-local"
-                value={formValues.endDate}
-                onChange={(event) => handleFieldChange("endDate", event.target.value)}
+                {...register("endDate", {
+                  validate: {
+                    greaterThanStart: (value) => {
+                      const start = watch("startDate");
+                      if (start && value && new Date(start).getTime() >= new Date(value).getTime()) {
+                        return "Thời gian kết thúc phải lớn hơn thời gian bắt đầu";
+                      }
+                      return true;
+                    }
+                  }
+                })}
                 className="h-10 w-full rounded-lg border border-neutral-20 bg-white px-3 text-sm outline-none focus:border-primary-1"
               />
+              {errors.endDate && (
+                <span className="text-xs text-red-600 block mt-1">{errors.endDate.message}</span>
+              )}
             </label>
 
             <label className="space-y-1 text-sm text-neutral-2 md:col-span-2">
               <span className="text-xs font-medium text-neutral-4">Mô tả</span>
               <textarea
-                value={formValues.description}
-                onChange={(event) => handleFieldChange("description", event.target.value)}
+                {...register("description")}
                 placeholder="Mo ta coupon"
                 rows={3}
                 className="w-full rounded-lg border border-neutral-20 bg-white px-3 py-2 text-sm outline-none focus:border-primary-1"
@@ -635,8 +671,7 @@ export default function CouponManagementPage({
             <label className="inline-flex items-center gap-2 text-sm text-neutral-2 md:col-span-2">
               <input
                 type="checkbox"
-                checked={formValues.isActive}
-                onChange={(event) => handleFieldChange("isActive", event.target.checked)}
+                {...register("isActive")}
                 className="h-4 w-4 rounded border-neutral-20 text-primary-1 focus:ring-primary-1"
               />
               Kích hoạt coupon

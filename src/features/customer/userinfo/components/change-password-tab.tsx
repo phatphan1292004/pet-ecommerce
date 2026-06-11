@@ -1,22 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { changeUserPassword } from "@/integrations/firebase";
 import { useToast } from "@/hooks";
 
+type ChangePasswordFormValues = {
+  current: string;
+  next: string;
+  confirm: string;
+};
+
 function PasswordField({
   label,
-  value,
-  onChange,
   show,
   onToggle,
+  registration,
+  error,
 }: {
   label: string;
-  value: string;
-  onChange: (v: string) => void;
   show: boolean;
   onToggle: () => void;
+  registration: any;
+  error?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -24,8 +31,7 @@ function PasswordField({
       <div className="relative">
         <input
           type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          {...registration}
           className="w-full bg-neutral-20/40 rounded-md px-4 py-3 text-base text-neutral-1 outline-none focus:ring-2 focus:ring-primary-4 pr-11"
         />
         <button
@@ -36,44 +42,33 @@ function PasswordField({
           {show ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
         </button>
       </div>
+      {error && <span className="text-xs text-red-600 px-1">{error}</span>}
     </div>
   );
 }
 
 export default function ChangePasswordTab() {
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNext, setShowNext] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showSuccess, showError, showWarning } = useToast();
+  const { showSuccess, showError } = useToast();
 
-  const handleSubmit = async () => {
-    if (!current.trim() || !next.trim() || !confirm.trim()) {
-      showWarning("Vui lòng nhập đầy đủ tất cả các trường.");
-      return;
-    }
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ChangePasswordFormValues>({
+    defaultValues: {
+      current: "",
+      next: "",
+      confirm: "",
+    },
+  });
 
-    if (next !== confirm) {
-      showError("Mật khẩu mới và xác nhận mật khẩu mới không khớp.");
-      return;
-    }
-
-    if (next.length < 6) {
-      showWarning("Mật khẩu mới phải chứa ít nhất 6 ký tự.");
-      return;
-    }
-
+  const onSubmit = async (values: ChangePasswordFormValues) => {
     setLoading(true);
 
     try {
-      await changeUserPassword(current.trim(), next.trim());
+      await changeUserPassword(values.current.trim(), values.next.trim());
       showSuccess("Đổi mật khẩu thành công!");
-      setCurrent("");
-      setNext("");
-      setConfirm("");
+      reset();
     } catch (error: any) {
       console.error("Lỗi đổi mật khẩu:", error);
       const errorCode = error?.code || "";
@@ -91,38 +86,47 @@ export default function ChangePasswordTab() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-md">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-md">
       <h3 className="text-base font-semibold text-neutral-1">Đổi mật khẩu</h3>
 
       <PasswordField
         label="Mật khẩu hiện tại"
-        value={current}
-        onChange={setCurrent}
         show={showCurrent}
         onToggle={() => setShowCurrent((v) => !v)}
+        registration={register("current", { required: "Vui lòng nhập mật khẩu hiện tại" })}
+        error={errors.current?.message}
       />
       <PasswordField
         label="Mật khẩu mới"
-        value={next}
-        onChange={setNext}
         show={showNext}
         onToggle={() => setShowNext((v) => !v)}
+        registration={register("next", {
+          required: "Vui lòng nhập mật khẩu mới",
+          minLength: {
+            value: 6,
+            message: "Mật khẩu mới phải chứa ít nhất 6 ký tự",
+          },
+        })}
+        error={errors.next?.message}
       />
       <PasswordField
         label="Xác nhận mật khẩu mới"
-        value={confirm}
-        onChange={setConfirm}
         show={showConfirm}
         onToggle={() => setShowConfirm((v) => !v)}
+        registration={register("confirm", {
+          required: "Vui lòng xác nhận mật khẩu mới",
+          validate: (value) => value === watch("next") || "Mật khẩu mới và xác nhận mật khẩu mới không khớp",
+        })}
+        error={errors.confirm?.message}
       />
 
       <button
-        onClick={handleSubmit}
+        type="submit"
         disabled={loading}
         className="w-fit bg-primary-1 hover:bg-primary-2 text-white font-semibold text-base px-8 py-2.5 rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "Đang xử lý..." : "Lưu thay đổi"}
       </button>
-    </div>
+    </form>
   );
 }
