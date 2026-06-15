@@ -130,6 +130,16 @@ export default function ChatModal({
         const json = await res.json();
         if (json?.success) {
           setMessages(Array.isArray(json.data) ? json.data : []);
+
+          if (senderId) {
+            void fetch(`${API_BASE}/chat/conversations/${conversationId}/read`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ readerId: senderId }),
+            });
+          }
         } else {
           setMessages([]);
           setErrorMessage(json?.message || "Khong the tai lich su chat");
@@ -141,7 +151,7 @@ export default function ChatModal({
         setLoading(false);
       }
     })();
-  }, [isOpen, conversationId]);
+  }, [isOpen, conversationId, senderId]);
 
 
   useEffect(() => {
@@ -155,6 +165,26 @@ export default function ChatModal({
         if (prev.some((item) => item._id === msg._id)) return prev;
         return [...prev, msg];
       });
+
+      if (senderId && msg.senderId !== senderId) {
+        void fetch(`${API_BASE}/chat/conversations/${conversationId}/read`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ readerId: senderId }),
+        });
+      }
+    };
+
+    const onMessagesRead = (data: { conversationId: string; readerId: string }) => {
+      if (data.readerId !== senderId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.senderId === senderId ? { ...msg, isRead: true } : msg
+          )
+        );
+      }
     };
 
     const onChatError = (err: ChatError) => {
@@ -162,14 +192,16 @@ export default function ChatModal({
     };
 
     socket.on("new_message", onNewMessage);
+    socket.on("messages_read", onMessagesRead);
     socket.on("chat_error", onChatError);
 
     return () => {
       socket.off("new_message", onNewMessage);
+      socket.off("messages_read", onMessagesRead);
       socket.off("chat_error", onChatError);
       socket.disconnect();
     };
-  }, [isOpen, socket, conversationId]);
+  }, [isOpen, socket, conversationId, senderId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -271,6 +303,16 @@ export default function ChatModal({
     setSelectedImagePreview(null);
     setSelectedImageFile(null);
   };
+
+  const lastMyMessageIndex = useMemo(() => {
+    if (!senderId) return -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].senderId === senderId) {
+        return i;
+      }
+    }
+    return -1;
+  }, [messages, senderId]);
 
   if (!isOpen) return null;
 
@@ -413,7 +455,7 @@ export default function ChatModal({
                     }`}
                   >
                     <p className="text-xs opacity-70">
-                      {item.senderName || item.senderId}
+                      {isMine ? "Bạn" : (item.senderName || item.senderId)}
                     </p>
                     {item.messageType === "image" && item.imageUrl ? (
                       <div className="mt-2 space-y-2">
@@ -441,6 +483,12 @@ export default function ChatModal({
                       }`}
                     >
                       <span>{timeLabel}</span>
+                      {isMine && index === lastMyMessageIndex && (
+                        <>
+                          <span>•</span>
+                          <span>{item.isRead ? "Đã xem" : "Chưa xem"}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -494,6 +542,25 @@ export default function ChatModal({
                 if (event.key === "Enter") {
                   event.preventDefault();
                   handleSendMessage();
+                }
+              }}
+              onPaste={(event) => {
+                const items = event.clipboardData?.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                  if (items[i].type.indexOf("image") !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                      if (selectedImagePreview) {
+                        URL.revokeObjectURL(selectedImagePreview);
+                      }
+                      setSelectedImageFile(file);
+                      setSelectedImagePreview(URL.createObjectURL(file));
+                      setErrorMessage(null);
+                      event.preventDefault();
+                      break;
+                    }
+                  }
                 }
               }}
               placeholder="Nhập tin nhắn..."

@@ -4,6 +4,7 @@ import type { IconType } from "react-icons";
 import {
   FiActivity,
   FiDollarSign,
+  FiDownload,
   FiMinus,
   FiPackage,
   FiTrendingUp,
@@ -65,6 +66,29 @@ const formatDateTime = (value?: string) => {
   });
 };
 
+const formatActivityMessage = (message: string) => {
+  if (message.startsWith("Don #")) {
+    let msg = message
+      .replace("Don #", "Đơn #")
+      .replace("da duoc cap nhat trang thai", "đã được cập nhật trạng thái");
+    
+    msg = msg.replace(/\bpending\b/g, "chờ xử lý")
+             .replace(/\bdelivering\b/g, "đang giao")
+             .replace(/\bdelivered\b/g, "đã giao")
+             .replace(/\bcancelled\b/g, "đã hủy")
+             .replace(/\bclose\b/g, "đã hoàn thành");
+    return msg;
+  }
+  
+  if (message.startsWith("Khach hang ")) {
+    return message
+      .replace("Khach hang ", "Khách hàng ")
+      .replace(" dang ky tai khoan", " đăng ký tài khoản");
+  }
+  
+  return message;
+};
+
 const activityTypeConfig = (type: string): { icon: IconType; className: string; label: string } => {
   const normalizedType = type.trim().toLowerCase();
 
@@ -72,7 +96,7 @@ const activityTypeConfig = (type: string): { icon: IconType; className: string; 
     return {
       icon: FiPackage,
       className: "bg-amber-50 text-amber-700 border-amber-200",
-      label: "Order",
+      label: "Đơn hàng",
     };
   }
 
@@ -80,14 +104,14 @@ const activityTypeConfig = (type: string): { icon: IconType; className: string; 
     return {
       icon: FiUsers,
       className: "bg-sky-50 text-sky-700 border-sky-200",
-      label: "User",
+      label: "Người dùng",
     };
   }
 
   return {
     icon: FiActivity,
     className: "bg-neutral-10 text-neutral-3 border-neutral-20",
-    label: "System",
+    label: "Hệ thống",
   };
 };
 
@@ -118,7 +142,7 @@ function ActivityItem({ activity }: { activity: AdminRecentActivity }) {
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-neutral-1">{activity.message}</p>
+          <p className="text-sm font-medium text-neutral-1">{formatActivityMessage(activity.message)}</p>
           <p className="mt-1 text-xs text-neutral-4">
             {config.label} · {formatDateTime(activity.createdAt)}
           </p>
@@ -166,29 +190,45 @@ export default function DashboardPageContent({
   const chartOrders = chartData.map((item) => item.orders);
   const chartUsers = chartData.map((item) => item.users);
 
+  const currentMonth = overviewSeries[overviewSeries.length - 1] || { revenue: 0, orders: 0, users: 0 };
+  const prevMonth = overviewSeries[overviewSeries.length - 2] || { revenue: 0, orders: 0, users: 0 };
+
+  const getGrowth = (current: number, prev: number) => {
+    if (prev === 0) return prev === current ? 0 : 100;
+    return ((current - prev) / prev) * 100;
+  };
+
+  const revenueGrowth = overviewSeries.length >= 2 ? getGrowth(currentMonth.revenue, prevMonth.revenue) : undefined;
+  const ordersGrowth = overviewSeries.length >= 2 ? getGrowth(currentMonth.orders, prevMonth.orders) : undefined;
+  const usersGrowth = overviewSeries.length >= 2 ? getGrowth(currentMonth.users, prevMonth.users) : undefined;
+
   const summaryCards: Array<{
     label: string;
     value: string;
     icon: IconType;
     iconClassName: string;
+    growth?: number;
   }> = [
     {
       label: "Doanh thu tháng này",
       value: formatCurrency(dashboard.summary.revenueThisMonth),
       icon: FiDollarSign,
       iconClassName: "bg-primary-6 text-primary-1 border-primary-4",
+      growth: revenueGrowth,
     },
     {
-      label: "Đơn mới hôm nay",
-      value: formatNumber(dashboard.summary.newOrdersToday),
+      label: "Đơn hàng tháng này",
+      value: formatNumber(currentMonth.orders),
       icon: FiPackage,
       iconClassName: "bg-amber-50 text-amber-700 border-amber-200",
+      growth: ordersGrowth,
     },
     {
-      label: "Người dùng mới",
-      value: formatNumber(dashboard.summary.newUsersToday),
+      label: "Người dùng mới tháng này",
+      value: formatNumber(currentMonth.users),
       icon: FiUserPlus,
       iconClassName: "bg-sky-50 text-sky-700 border-sky-200",
+      growth: usersGrowth,
     },
     {
       label: "Tỷ lệ hoàn thành",
@@ -198,8 +238,57 @@ export default function DashboardPageContent({
     },
   ];
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((val) => `"${val.replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportDashboard = () => {
+    const headers = ["Chỉ số", "Giá trị"];
+    const rows = [
+      ["Doanh thu tháng này (VND)", dashboard.summary.revenueThisMonth.toString()],
+      ["Đơn hàng tháng này", currentMonth.orders.toString()],
+      ["Người dùng mới tháng này", currentMonth.users.toString()],
+      ["Tỷ lệ hoàn thành (%)", dashboard.summary.completionRate.toString()],
+      ["--- Xu hướng 7 ngày ---", ""],
+      ["Ngày", "Đơn hàng", "Người dùng mới"],
+      ...chartData.map((item) => [
+        item.date,
+        item.orders.toString(),
+        item.users.toString()
+      ])
+    ];
+    downloadCSV("Tong_quan_dashboard.csv", headers, rows);
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-neutral-black sm:text-lg">Tổng quan Dashboard</h2>
+          <p className="text-xs text-neutral-4 sm:text-sm">Báo cáo tóm tắt tình hình kinh doanh</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleExportDashboard}
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-primary-1 bg-white px-3.5 py-1.5 text-xs font-semibold text-primary-1 transition hover:bg-primary-6"
+        >
+          <FiDownload size={15} />
+          Xuất Excel
+        </button>
+      </div>
       {errorMessage ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {errorMessage}
@@ -213,17 +302,38 @@ export default function DashboardPageContent({
           return (
             <article
               key={card.label}
-              className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5"
+              className="rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5 flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm text-neutral-4">{card.label}</p>
-                <span
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${card.iconClassName}`}
-                >
-                  <Icon size={15} />
-                </span>
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-neutral-4">{card.label}</p>
+                  <span
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${card.iconClassName}`}
+                  >
+                    <Icon size={15} />
+                  </span>
+                </div>
+                <p className="mt-3 text-2xl font-semibold text-neutral-black">{card.value}</p>
               </div>
-              <p className="mt-3 text-2xl font-semibold text-neutral-black">{card.value}</p>
+              
+              {card.growth !== undefined && (
+                <div className="mt-3 flex items-center gap-1.5 text-xs">
+                  {card.growth > 0 ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700 border border-emerald-200">
+                      ↑ {card.growth.toFixed(1)}%
+                    </span>
+                  ) : card.growth < 0 ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-red-50 px-1.5 py-0.5 font-semibold text-red-700 border border-red-200">
+                      ↓ {Math.abs(card.growth).toFixed(1)}%
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-neutral-50 px-1.5 py-0.5 font-semibold text-neutral-600 border border-neutral-200">
+                      0.0%
+                    </span>
+                  )}
+                  <span className="text-neutral-4 text-[11px]">so với tháng trước</span>
+                </div>
+              )}
             </article>
           );
         })}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FiFilter, FiRotateCcw, FiSearch } from "react-icons/fi";
+import { FiDownload, FiFilter, FiRotateCcw, FiSearch } from "react-icons/fi";
 import AdminOrdersTable from "@/features/admin/order/components/admin-orders-table";
 import {
   getAdminOrders,
@@ -117,6 +117,38 @@ export default function OrderManagementPage({
     );
   };
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((val) => `"${val.replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportOrders = () => {
+    const headers = ["Mã đơn", "Khách hàng", "Số điện thoại", "Địa chỉ", "Phương thức thanh toán", "Tổng tiền (VND)", "Trạng thái", "Ngày tạo"];
+    const rows = orders.map((order) => [
+      order._id,
+      order.arrivalName || "",
+      order.arrivalPhone || "",
+      order.arrivalAddress || "",
+      order.paymentMethod || "",
+      (order.finalPrice ?? order.totalPrice ?? 0).toString(),
+      order.status || "",
+      order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : ""
+    ]);
+    downloadCSV("Danh_sach_don_hang.csv", headers, rows);
+  };
+
   return (
     <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -124,6 +156,14 @@ export default function OrderManagementPage({
           <h2 className="text-base font-semibold text-neutral-black sm:text-lg">Quản lý đơn hàng</h2>
           <p className="text-xs text-neutral-4 sm:text-sm">{titleDescription}</p>
         </div>
+        <button
+          type="button"
+          onClick={handleExportOrders}
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-primary-1 bg-white px-3.5 py-1.5 text-sm font-semibold text-primary-1 transition hover:bg-primary-6"
+        >
+          <FiDownload size={15} />
+          Xuất Excel
+        </button>
       </div>
 
       <form

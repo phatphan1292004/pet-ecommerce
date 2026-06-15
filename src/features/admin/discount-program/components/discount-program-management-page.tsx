@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
+  FiDownload,
   FiFilter,
   FiPlus,
   FiRotateCcw,
@@ -468,6 +469,38 @@ export default function DiscountProgramManagementPage({
     setValue("productIds", next, { shouldValidate: true });
   };
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((val) => `"${val.replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPrograms = () => {
+    const headers = ["Tên chương trình", "Mã chương trình", "Loại giảm giá", "Giá trị giảm", "Trạng thái", "Ngày bắt đầu", "Ngày kết thúc", "Số sản phẩm áp dụng"];
+    const rows = programs.map((program) => [
+      program.name || "",
+      program.code || "",
+      program.discountType || "",
+      (program.discountValue ?? 0).toString(),
+      program.isActive ? "Đang hoạt động" : "Đã tắt",
+      program.startDate ? new Date(program.startDate).toLocaleString("vi-VN") : "",
+      program.endDate ? new Date(program.endDate).toLocaleString("vi-VN") : "",
+      (program.productIds?.length ?? 0).toString()
+    ]);
+    downloadCSV("Danh_sach_chuong_trinh_giam_gia.csv", headers, rows);
+  };
+
   return (
     <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -478,14 +511,24 @@ export default function DiscountProgramManagementPage({
           <p className="text-xs text-neutral-4 sm:text-sm">{titleDescription}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-4 bg-primary-6 px-3 text-sm font-semibold text-primary-1 transition hover:border-primary-1"
-        >
-          <FiPlus size={15} />
-          Tạo chương trình
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportPrograms}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-primary-1 bg-white px-3.5 py-1.5 text-sm font-semibold text-primary-1 transition hover:bg-primary-6"
+          >
+            <FiDownload size={15} />
+            Xuất Excel
+          </button>
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary-4 bg-primary-6 px-3 text-sm font-semibold text-primary-1 transition hover:border-primary-1"
+          >
+            <FiPlus size={15} />
+            Tạo chương trình
+          </button>
+        </div>
       </div>
 
       <form
