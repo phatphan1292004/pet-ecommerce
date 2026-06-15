@@ -166,7 +166,17 @@ export const getProductsBySubcategory = async (subcategoryId: string): Promise<P
   return normalizeProducts(res?.data ?? res);
 };
 
-export const getFilteredProducts = async (params: FilterProductsParams): Promise<Product[]> => {
+export interface PaginatedProducts {
+  products: Product[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const getFilteredProducts = async (params: FilterProductsParams): Promise<PaginatedProducts> => {
   const normalizedParams: Record<string, string | number> = {};
 
   if (params.subCategoryIds && params.subCategoryIds.length > 0) {
@@ -196,7 +206,18 @@ export const getFilteredProducts = async (params: FilterProductsParams): Promise
   }
 
   const res = await get(`/products/filter`, normalizedParams, { data: [] });
-  return normalizeProducts(res?.data ?? res);
+  const products = normalizeProducts(res?.data ?? res);
+  const pagination = res?.pagination ?? {
+    total: products.length,
+    page: params.page ?? 1,
+    limit: params.limit ?? 12,
+    totalPages: products.length > 0 ? 1 : 0
+  };
+
+  return {
+    products,
+    pagination,
+  };
 };
 
 export const trackProductActivity = async (

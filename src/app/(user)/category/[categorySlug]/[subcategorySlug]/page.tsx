@@ -90,8 +90,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const minPrice = parseNumberParam(getSearchParamValue(query.minPrice));
   const maxPrice = parseNumberParam(getSearchParamValue(query.maxPrice));
   const sortBy = getSearchParamValue(query.sortBy);
-  const page = parseNumberParam(getSearchParamValue(query.page));
-  const limit = parseNumberParam(getSearchParamValue(query.limit));
+  const page = parseNumberParam(getSearchParamValue(query.page)) ?? 1;
+  const limit = parseNumberParam(getSearchParamValue(query.limit)) ?? 12;
   const keyword = getSearchParamValue(query.keyword);
   const productType = getSearchParamValue(query.productType);
 
@@ -150,7 +150,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const dedupedBrandIds = [...new Set(normalizedBrandIds)];
 
-  const products = await getFilteredProducts({
+  const { products, pagination } = await getFilteredProducts({
     subCategoryIds: [selectedSubcategory._id],
     brandIds: dedupedBrandIds,
     origins,
@@ -194,6 +194,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       initialMaxPrice={maxPrice}
       initialSelectedProductType={productType}
       products={normalizedProducts}
+      pagination={pagination}
     />
   );
 }

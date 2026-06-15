@@ -83,8 +83,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const minPrice = parseNumberParam(getSearchParamValue(query.minPrice));
   const maxPrice = parseNumberParam(getSearchParamValue(query.maxPrice));
   const sortBy = getSearchParamValue(query.sortBy);
-  const page = parseNumberParam(getSearchParamValue(query.page));
-  const limit = parseNumberParam(getSearchParamValue(query.limit));
+  const page = parseNumberParam(getSearchParamValue(query.page)) ?? 1;
+  const limit = parseNumberParam(getSearchParamValue(query.limit)) ?? 12;
   const keyword = getSearchParamValue(query.keyword);
   const productType = getSearchParamValue(query.productType);
 
@@ -143,7 +143,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const dedupedBrandIds = [...new Set(normalizedBrandIds)];
 
-  const products = subCategoryIds.length > 0
+  const { products, pagination } = subCategoryIds.length > 0
     ? await getFilteredProducts({
         subCategoryIds,
         brandIds: dedupedBrandIds,
@@ -156,7 +156,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         keyword,
         productType,
       })
-    : [];
+    : { products: [], pagination: { total: 0, page, limit, totalPages: 0 } };
 
   const normalizedProducts = products.map((item) => mapToProductCard(item as RawProduct));
   const activeSidebarCategories = sidebarCategories.map((item) => ({
@@ -187,6 +187,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       initialMaxPrice={maxPrice}
       initialSelectedProductType={productType}
       products={normalizedProducts}
+      pagination={pagination}
     />
   );
 }
