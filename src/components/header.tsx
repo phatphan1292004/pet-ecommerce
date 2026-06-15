@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FaChevronDown, FaRegUserCircle } from "react-icons/fa";
 import {
@@ -15,6 +16,7 @@ import { getSubCategories } from "@/features/guest/category";
 import { logout } from "@/features/guest/logout";
 import { useCartStore } from "@/store";
 import { Category, Subcategory } from "@/types/category";
+import { useToast } from "@/hooks";
 import CategoryDropdown from "./category-dropdown";
 import SearchDropdown from "./search-dropdown";
 
@@ -36,6 +38,8 @@ export default function Header({
   categories,
   brands,
 }: HeaderProps) {
+  const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const cartCount = useCartStore((state) => state.totalItems);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -133,10 +137,17 @@ export default function Header({
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setAccountMenuOpen(false);
     setMobileMenuOpen(false);
-    void logout();
+    try {
+      await logout();
+      showSuccess("Đăng xuất thành công");
+      router.push("/");
+      router.refresh();
+    } catch {
+      showError("Đăng xuất thất bại. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -227,17 +238,17 @@ export default function Header({
               type="button"
               className="inline-flex items-center justify-center rounded-md border border-neutral-20 p-2 text-neutral-2 transition hover:border-primary-1 hover:text-primary-1 lg:hidden"
               onClick={() => {
-                  setMobileMenuOpen((prev) => {
-                    const nextOpen = !prev;
-                    if (nextOpen) {
-                      setMobileOpenCategorySlug(null);
-                      setMobileOpenBrandPanel(false);
-                    }
-                    return nextOpen;
-                  });
-                  setSearchOpen(false);
-                  setAccountMenuOpen(false);
-                }}
+                setMobileMenuOpen((prev) => {
+                  const nextOpen = !prev;
+                  if (nextOpen) {
+                    setMobileOpenCategorySlug(null);
+                    setMobileOpenBrandPanel(false);
+                  }
+                  return nextOpen;
+                });
+                setSearchOpen(false);
+                setAccountMenuOpen(false);
+              }}
               aria-label="Mở menu"
             >
               {mobileMenuOpen ? (
@@ -311,9 +322,8 @@ export default function Header({
                   setSearchOpen((prev) => !prev);
                   setMobileMenuOpen(false);
                 }}
-                className={`flex items-center transition-colors ${
-                  searchOpen ? "text-primary-1" : "text-neutral-1"
-                }`}
+                className={`flex items-center transition-colors ${searchOpen ? "text-primary-1" : "text-neutral-1"
+                  }`}
                 aria-label="Tìm kiếm"
               >
                 <IoSearchOutline size={24} />
@@ -341,23 +351,20 @@ export default function Header({
       </div>
 
       <div
-        className={`fixed inset-0 z-70 transition lg:hidden ${
-          mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-70 transition lg:hidden ${mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none"
+          }`}
       >
         <button
           type="button"
           aria-label="Đóng menu"
           onClick={() => setMobileMenuOpen(false)}
-          className={`absolute inset-0 z-40 bg-neutral-black/45 transition-opacity ${
-            mobileMenuOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 z-40 bg-neutral-black/45 transition-opacity ${mobileMenuOpen ? "opacity-100" : "opacity-0"
+            }`}
         />
 
         <aside
-          className={`absolute left-0 top-0 flex h-full w-[88%] max-w-sm flex-col overflow-hidden bg-white px-4 py-4 shadow-xl transition-transform duration-300 z-50 ${
-            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`absolute left-0 top-0 flex h-full w-[88%] max-w-sm flex-col overflow-hidden bg-white px-4 py-4 shadow-xl transition-transform duration-300 z-50 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="mb-4 flex items-center justify-between border-b border-neutral-20 pb-3">
             <Image
@@ -396,22 +403,22 @@ export default function Header({
 
               <section className="rounded-2xl border border-neutral-10 bg-white p-3">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-4">
-                  Danh mục 
+                  Danh mục
                 </p>
 
                 <div className="space-y-2">
                   {activeCategories.map((category) => {
-                      const isOpen = mobileOpenCategorySlug === category.slug;
-                      const localSubcategories = (category.subcategories ?? []).filter(
-                        (subcategory) => subcategory.is_active,
-                      );
+                    const isOpen = mobileOpenCategorySlug === category.slug;
+                    const localSubcategories = (category.subcategories ?? []).filter(
+                      (subcategory) => subcategory.is_active,
+                    );
 
-                      const loadedSubcategories = mobileSubcategories[category.slug];
-                      const effectiveSubcategories = Array.isArray(loadedSubcategories)
-                        ? loadedSubcategories
-                        : localSubcategories;
+                    const loadedSubcategories = mobileSubcategories[category.slug];
+                    const effectiveSubcategories = Array.isArray(loadedSubcategories)
+                      ? loadedSubcategories
+                      : localSubcategories;
 
-                      return (
+                    return (
                       <div key={category._id} className="rounded-xl border border-neutral-10">
                         <div className="flex items-center gap-2 px-3 py-2">
                           <Link

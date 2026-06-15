@@ -27,6 +27,12 @@ interface CategoryProductsPageProps {
   initialMaxPrice?: number;
   initialSelectedProductType?: string;
   products: Product[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 const formatPrice = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
@@ -50,6 +56,7 @@ export default function CategoryProductsPage({
   initialMaxPrice,
   initialSelectedProductType,
   products,
+  pagination,
 }: CategoryProductsPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,6 +81,14 @@ export default function CategoryProductsPage({
     initialSelectedProductType ?? "",
   );
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const buildUrl = (overrides: Record<string, string | number>) => {
+    const nextParams = new URLSearchParams(currentSearchParams.toString());
+    Object.entries(overrides).forEach(([k, v]) => {
+      nextParams.set(k, String(v));
+    });
+    return `${pathname}?${nextParams.toString()}`;
+  };
 
   const brandTokenToId = useMemo(() => {
     const map = new Map<string, string>();
@@ -220,7 +235,7 @@ export default function CategoryProductsPage({
         <section>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-7 bg-neutral-10 px-4 py-4 sm:px-5">
             <div className="font-semibold text-neutral-1">
-              {products.length} sản phẩm
+              {pagination.total} sản phẩm
             </div>
             <div className="flex items-center justify-between w-full text-sm">
               <button
@@ -259,6 +274,74 @@ export default function CategoryProductsPage({
               {products.map((product) => (
                 <ProductCard key={product._id} product={product} />
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
+              {/* Prev */}
+              {pagination.page > 1 ? (
+                <Link
+                  href={buildUrl({ page: pagination.page - 1 })}
+                  className="rounded-lg border border-neutral-20 px-4 py-2 text-sm text-neutral-3 transition-colors hover:border-primary-3 hover:text-primary-1"
+                >
+                  ← Trước
+                </Link>
+              ) : (
+                <span className="rounded-lg border border-neutral-10 px-4 py-2 text-sm text-neutral-5 opacity-50 cursor-not-allowed">
+                  ← Trước
+                </span>
+              )}
+
+              {/* Page numbers */}
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter(
+                  (p) =>
+                    p === 1 ||
+                    p === pagination.totalPages ||
+                    Math.abs(p - pagination.page) <= 1
+                )
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                    acc.push("...");
+                  }
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-neutral-5">
+                      ...
+                    </span>
+                  ) : (
+                    <Link
+                      key={p}
+                      href={buildUrl({ page: p })}
+                      className={`rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
+                        p === pagination.page
+                          ? "border-primary-3 bg-primary-1 text-white"
+                          : "border-neutral-20 text-neutral-3 hover:border-primary-3 hover:text-primary-1"
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  )
+                )}
+
+              {/* Next */}
+              {pagination.page < pagination.totalPages ? (
+                <Link
+                  href={buildUrl({ page: pagination.page + 1 })}
+                  className="rounded-lg border border-neutral-20 px-4 py-2 text-sm text-neutral-3 transition-colors hover:border-primary-3 hover:text-primary-1"
+                >
+                  Tiếp →
+                </Link>
+              ) : (
+                <span className="rounded-lg border border-neutral-10 px-4 py-2 text-sm text-neutral-5 opacity-50 cursor-not-allowed">
+                  Tiếp →
+                </span>
+              )}
             </div>
           )}
         </section>
