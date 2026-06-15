@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FiFilter, FiPlus, FiRotateCcw, FiSearch } from "react-icons/fi";
+import { FiDownload, FiFilter, FiPlus, FiRotateCcw, FiSearch } from "react-icons/fi";
 import AdminProductsTable from "@/features/admin/product/components/admin-products-table";
 import {
   getAdminProducts,
@@ -162,6 +162,37 @@ export default function AdminProductsPage({
     [meta.totalItems, meta.page, meta.totalPages]
   );
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((val) => `"${val.replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportProducts = () => {
+    const headers = ["ID", "Tên sản phẩm", "Thương hiệu", "Giá (VND)", "Tồn kho", "Trạng thái", "Ngày tạo"];
+    const rows = products.map((product) => [
+      product.id,
+      product.name || "",
+      product.brandName || "",
+      (product.price ?? 0).toString(),
+      (product.stock ?? 0).toString(),
+      product.isActive ? "Đang hoạt động" : "Tạm tắt",
+      product.createdAt ? new Date(product.createdAt).toLocaleString("vi-VN") : ""
+    ]);
+    downloadCSV("Danh_sach_san_pham.csv", headers, rows);
+  };
+
   return (
     <section className="space-y-4 rounded-2xl border border-neutral-20 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -170,13 +201,23 @@ export default function AdminProductsPage({
           <p className="text-xs text-neutral-4 sm:text-sm">{titleDescription}</p>
         </div>
 
-        <Link
-          href="/admin/products/new"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary-1 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-2"
-        >
-          <FiPlus size={16} />
-          Thêm sản phẩm
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportProducts}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-primary-1 bg-white px-3.5 text-sm font-semibold text-primary-1 transition hover:bg-primary-6"
+          >
+            <FiDownload size={15} />
+            Xuất Excel
+          </button>
+          <Link
+            href="/admin/products/new"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary-1 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-2"
+          >
+            <FiPlus size={16} />
+            Thêm sản phẩm
+          </Link>
+        </div>
       </div>
 
       <form

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { io, type Socket } from "socket.io-client";
 import { getNameInitials } from "@/features/admin/order/utils/order-display";
 import ChatModal from "./chat-modal";
 
@@ -38,6 +39,15 @@ export default function AdminChatPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const socket: Socket = useMemo(
+    () =>
+      io(API_BASE || "", {
+        transports: ["websocket"],
+        autoConnect: false,
+      }),
+    [],
+  );
+
   useEffect(() => {
     let isMounted = true;
 
@@ -46,7 +56,7 @@ export default function AdminChatPanel({
       setErrorMessage(null);
 
       try {
-        const res = await fetch(`${API_BASE}/chat/conversations?limit=50`);
+        const res = await fetch(`${API_BASE}/chat/conversations?limit=50&readerId=${currentUserId || ""}`);
         const json = await res.json();
         if (!isMounted) return;
 
@@ -71,6 +81,86 @@ export default function AdminChatPanel({
       isMounted = false;
     };
   }, []);
+
+  const markAsRead = async (conversationId: string) => {
+    if (!currentUserId || !conversationId) return;
+    try {
+      await fetch(`${API_BASE}/chat/conversations/${conversationId}/read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ readerId: currentUserId }),
+      });
+    } catch (error) {
+      console.error("Failed to mark messages as read:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (activeConversationId) {
+      void markAsRead(activeConversationId);
+    }
+  }, [activeConversationId]);
+
+  useEffect(() => {
+    socket.connect();
+    socket.emit("join_conversation", { conversationId: "admin" });
+
+    const onNewMessageAdmin = (msg: any) => {
+      const isMessageFromCustomer = msg.senderId !== currentUserId;
+      const isCurrentlyActive = msg.conversationId === activeConversationId;
+
+      if (isCurrentlyActive && isMessageFromCustomer) {
+        void markAsRead(msg.conversationId);
+      }
+
+      setConversations((prev) => {
+        const existingIndex = prev.findIndex(
+          (c) => c.conversationId === msg.conversationId
+        );
+
+        if (existingIndex > -1) {
+          const existingConv = prev[existingIndex];
+          const updatedConv: ConversationSummary = {
+            ...existingConv,
+            lastMessage: msg.message,
+            lastMessageType: msg.messageType,
+            lastImageUrl: msg.imageUrl,
+            lastMessageAt: msg.createdAt,
+            lastSenderId: msg.senderId,
+            lastSenderName: msg.senderName,
+            unreadCount: (isMessageFromCustomer && !isCurrentlyActive)
+              ? (existingConv.unreadCount || 0) + 1
+              : existingConv.unreadCount,
+          };
+
+          const nextConvs = [...prev];
+          nextConvs.splice(existingIndex, 1);
+          return [updatedConv, ...nextConvs];
+        } else {
+          const newConv: ConversationSummary = {
+            conversationId: msg.conversationId,
+            lastMessage: msg.message,
+            lastMessageType: msg.messageType,
+            lastImageUrl: msg.imageUrl,
+            lastMessageAt: msg.createdAt,
+            lastSenderId: msg.senderId,
+            lastSenderName: msg.senderName,
+            unreadCount: (isMessageFromCustomer && !isCurrentlyActive) ? 1 : 0,
+          };
+          return [newConv, ...prev];
+        }
+      });
+    };
+
+    socket.on("new_message_admin", onNewMessageAdmin);
+
+    return () => {
+      socket.off("new_message_admin", onNewMessageAdmin);
+      socket.disconnect();
+    };
+  }, [socket, currentUserId, activeConversationId]);
 
   useEffect(() => {
     if (activeConversationId || conversations.length === 0) return;
@@ -157,6 +247,12 @@ export default function AdminChatPanel({
 
   const handleSelectConversation = (conversationId: string) => {
     setActiveConversationId(conversationId);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.conversationId === conversationId ? { ...c, unreadCount: 0 } : c
+      )
+    );
+    void markAsRead(conversationId);
   };
 
   const getConversationTitle = (conversation: ConversationSummary) => {
