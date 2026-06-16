@@ -38,6 +38,62 @@ type ChatModalProps = {
 
 const API_BASE = process.env.NEXT_PUBLIC_PET_ECOMMERCE_API;
 
+function MarkdownText({ text, isUser }: { text: string; isUser?: boolean }) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  
+  return (
+    <div className="space-y-1.5 whitespace-pre-wrap break-words">
+      {lines.map((line, lineIndex) => {
+        let trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={lineIndex} className="h-2" />;
+        }
+        
+        let isBullet = false;
+        if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+          isBullet = true;
+          trimmed = trimmed.substring(2).trim();
+        } else if (trimmed.startsWith("*") && !trimmed.startsWith("**")) {
+          isBullet = true;
+          trimmed = trimmed.substring(1).trim();
+        } else if (trimmed.startsWith("-") && !trimmed.startsWith("--")) {
+          isBullet = true;
+          trimmed = trimmed.substring(1).trim();
+        }
+
+        // Parse bold tags (**text**)
+        const parts = trimmed.split(/(\*\*.*?\*\*)/g);
+        const renderedLine = parts.map((part, partIndex) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <strong key={partIndex} className={`font-bold ${isUser ? "text-white" : "text-neutral-1"}`}>
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        });
+
+        if (isBullet) {
+          return (
+            <div key={lineIndex} className="flex items-start gap-1.5 pl-2 my-0.5">
+              <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${isUser ? "bg-white/80" : "bg-neutral-4"}`} />
+              <span className="flex-1 text-sm leading-relaxed">{renderedLine}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={lineIndex} className="text-sm leading-relaxed">
+            {renderedLine}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatModal({
   isOpen,
   onClose,
@@ -343,11 +399,10 @@ export default function ChatModal({
 
   return (
     <div
-      className={`w-full overflow-hidden flex flex-col ${
-        isEmbedded
+      className={`w-full overflow-hidden flex flex-col ${isEmbedded
           ? "h-full border-0 shadow-none rounded-none bg-white"
           : "mb-2 max-w-none rounded-none sm:rounded-lg border border-neutral-20 bg-white shadow-xl sm:w-120"
-      } ${containerClassName ? containerClassName : ""}`}
+        } ${containerClassName ? containerClassName : ""}`}
     >
       <div className="flex items-center justify-between border-b border-neutral-20 px-4 py-3 shrink-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-neutral-1">
@@ -356,9 +411,8 @@ export default function ChatModal({
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              isConnected ? "bg-emerald-500" : "bg-neutral-30"
-            }`}
+            className={`h-2.5 w-2.5 rounded-full ${isConnected ? "bg-emerald-500" : "bg-neutral-30"
+              }`}
             title={isConnected ? "Dang ket noi" : "Mat ket noi"}
           />
           {!isEmbedded && (
@@ -382,16 +436,15 @@ export default function ChatModal({
         </div>
       </div>
       <div
-        className={`flex flex-col bg-neutral-10 ${
-          isEmbedded
+        className={`flex flex-col bg-neutral-10 ${isEmbedded
             ? "flex-1 h-full min-h-0"
             : "h-[min(22rem,calc(100dvh-8rem))] sm:h-100"
-        } ${contentClassName ? contentClassName : ""}`}
+          } ${contentClassName ? contentClassName : ""}`}
       >
         <div className="border-b border-neutral-20 px-4 py-2 text-xs text-neutral-4">
           {senderId ? "Sẵn sàng hỗ trợ bạn" : "Đang khởi tạo phiên chat..."}
         </div>
-        
+
         <div
           ref={listRef}
           className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
@@ -436,23 +489,20 @@ export default function ChatModal({
                   className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[75%] text-sm ${
-                      item.messageType === "image"
+                    className={`max-w-[75%] text-sm ${item.messageType === "image"
                         ? ""
                         : "rounded-2xl px-3 py-2 shadow"
-                    } ${
-                      item.messageType === "image"
+                      } ${item.messageType === "image"
                         ? "text-neutral-1"
                         : isMine
                           ? "text-white"
                           : "text-neutral-1"
-                    } ${
-                      item.messageType === "image"
+                      } ${item.messageType === "image"
                         ? ""
                         : isMine
                           ? "bg-primary-1"
                           : "bg-white"
-                    }`}
+                      }`}
                   >
                     <p className="text-xs opacity-70">
                       {isMine ? "Bạn" : (item.senderName || item.senderId)}
@@ -470,17 +520,16 @@ export default function ChatModal({
                             className="max-h-48 w-auto rounded-lg object-cover"
                           />
                         </button>
-                        {item.message ? <p>{item.message}</p> : null}
+                        {item.message ? <MarkdownText text={item.message} isUser={isMine} /> : null}
                       </div>
                     ) : (
-                      <p>{item.message}</p>
+                      <MarkdownText text={item.message} isUser={isMine} />
                     )}
                     <div
-                      className={`mt-2 flex items-center gap-2 text-[11px] ${
-                        isMine
+                      className={`mt-2 flex items-center gap-2 text-[11px] ${isMine
                           ? "justify-end text-white/70"
                           : "justify-start text-neutral-500"
-                      }`}
+                        }`}
                     >
                       <span>{timeLabel}</span>
                       {isMine && index === lastMyMessageIndex && (
@@ -521,9 +570,8 @@ export default function ChatModal({
           ) : null}
           <div className="flex items-center gap-2">
             <label
-              className={`inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-neutral-20 bg-white text-neutral-4 transition hover:border-primary-3 hover:text-primary-2 ${
-                isUploadingImage ? "cursor-not-allowed opacity-50" : ""
-              }`}
+              className={`inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-neutral-20 bg-white text-neutral-4 transition hover:border-primary-3 hover:text-primary-2 ${isUploadingImage ? "cursor-not-allowed opacity-50" : ""
+                }`}
               aria-label="Gui hinh anh"
             >
               <FiImage size={16} />

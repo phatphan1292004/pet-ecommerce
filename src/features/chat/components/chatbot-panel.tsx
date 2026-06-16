@@ -42,6 +42,62 @@ const formatPrice = (value?: number) => {
   return `${value.toLocaleString("vi-VN")}₫`;
 };
 
+function MarkdownText({ text, isUser }: { text: string; isUser?: boolean }) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  
+  return (
+    <div className="space-y-1.5 whitespace-pre-wrap break-words">
+      {lines.map((line, lineIndex) => {
+        let trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={lineIndex} className="h-2" />;
+        }
+        
+        let isBullet = false;
+        if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+          isBullet = true;
+          trimmed = trimmed.substring(2).trim();
+        } else if (trimmed.startsWith("*") && !trimmed.startsWith("**")) {
+          isBullet = true;
+          trimmed = trimmed.substring(1).trim();
+        } else if (trimmed.startsWith("-") && !trimmed.startsWith("--")) {
+          isBullet = true;
+          trimmed = trimmed.substring(1).trim();
+        }
+
+        // Parse bold tags (**text**)
+        const parts = trimmed.split(/(\*\*.*?\*\*)/g);
+        const renderedLine = parts.map((part, partIndex) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <strong key={partIndex} className={`font-bold ${isUser ? "text-white" : "text-neutral-1"}`}>
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        });
+
+        if (isBullet) {
+          return (
+            <div key={lineIndex} className="flex items-start gap-1.5 pl-2 my-0.5">
+              <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${isUser ? "bg-white/80" : "bg-neutral-4"}`} />
+              <span className="flex-1 text-sm leading-relaxed">{renderedLine}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={lineIndex} className="text-sm leading-relaxed">
+            {renderedLine}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatbotPanel({
   isOpen,
   onClose,
@@ -276,11 +332,11 @@ export default function ChatbotPanel({
               >
                 <div
                   className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow ${isUser
-                      ? "bg-primary-1 text-white"
-                      : "bg-white text-neutral-1"
+                    ? "bg-primary-1 text-white"
+                    : "bg-white text-neutral-1"
                     }`}
                 >
-                  <p>{item.text}</p>
+                  <MarkdownText text={item.text} isUser={isUser} />
 
                   {!isUser && item.products && item.products.length > 0 ? (
                     <div className="mt-3 space-y-2">
