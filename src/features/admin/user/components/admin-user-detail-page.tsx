@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FiArrowLeft,
   FiCalendar,
@@ -14,7 +14,12 @@ import {
   FiShoppingBag,
   FiUser,
 } from "react-icons/fi";
-import type { AdminUser, AdminUserAddress } from "@/features/admin/user/servers";
+import {
+  updateAdminUser,
+  type AdminUser,
+  type AdminUserAddress,
+} from "@/features/admin/user/servers";
+import { useToast } from "@/hooks";
 import {
   getOrderStatusLabel,
   getOrderStatusStyles,
@@ -138,15 +143,119 @@ const getOrderStatusKey = (status?: string) => {
 };
 
 export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) {
-  const displayName = getDisplayName(user);
+  const [currentUser, setCurrentUser] = useState<AdminUser>(user);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { showError, showSuccess } = useToast();
+
+  const toInputDate = (value?: string) => {
+    if (!value) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const [form, setForm] = useState({
+    displayName: user.displayName || "",
+    email: user.email || "",
+    phoneNumber: user.phoneNumber || "",
+    photoURL: user.photoURL || "",
+    birthDate: toInputDate(user.birthDate),
+    gender: user.gender || "",
+  });
+
+  useEffect(() => {
+    setCurrentUser(user);
+    setForm({
+      displayName: user.displayName || "",
+      email: user.email || "",
+      phoneNumber: user.phoneNumber || "",
+      photoURL: user.photoURL || "",
+      birthDate: toInputDate(user.birthDate),
+      gender: user.gender || "",
+    });
+  }, [user]);
+
+  const displayName = getDisplayName(currentUser);
   const initials = getInitials(displayName);
-  const roleLabel = getRoleLabel(user);
-  const photoURL = user.photoURL?.trim();
+  const roleLabel = getRoleLabel(currentUser);
+  const photoURL = currentUser.photoURL?.trim();
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const addresses = useMemo(() => user.addresses || [], [user.addresses]);
-  const orders = useMemo(() => user.orders || [], [user.orders]);
+  const addresses = useMemo(() => currentUser.addresses || [], [currentUser.addresses]);
+  const orders = useMemo(() => currentUser.orders || [], [currentUser.orders]);
+
+  const handleCancel = () => {
+    setForm({
+      displayName: currentUser.displayName || "",
+      email: currentUser.email || "",
+      phoneNumber: currentUser.phoneNumber || "",
+      photoURL: currentUser.photoURL || "",
+      birthDate: toInputDate(currentUser.birthDate),
+      gender: currentUser.gender || "",
+    });
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.displayName.trim()) {
+      showError("Tên hiển thị không được để trống");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      showError("Email không được để trống");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      showError("Email không hợp lệ");
+      return;
+    }
+
+    if (form.photoURL.trim() && !/^https?:\/\//i.test(form.photoURL.trim())) {
+      showError("Link ảnh đại diện phải bắt đầu bằng http:// hoặc https://");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const result = await updateAdminUser(currentUser.id, {
+        displayName: form.displayName,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        photoURL: form.photoURL,
+        birthDate: form.birthDate || undefined,
+        gender: form.gender || undefined,
+      });
+
+      if (result.success && result.data) {
+        const updatedUser: AdminUser = {
+          ...result.data,
+          addresses: result.data.addresses ?? currentUser.addresses,
+          orders: result.data.orders ?? currentUser.orders,
+        };
+        setCurrentUser(updatedUser);
+        showSuccess(result.message || "Cập nhật thông tin người dùng thành công");
+        setIsEditing(false);
+      } else {
+        showError(result.message || "Không thể cập nhật thông tin người dùng");
+      }
+    } catch (error) {
+      console.error(error);
+      showError("Đã xảy ra lỗi khi cập nhật thông tin");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -192,7 +301,14 @@ export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) 
 
             <div className="-mt-10 px-4 pb-5 sm:px-5">
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-primary-5 text-2xl font-semibold text-primary-1">
-                {photoURL ? (
+                {isEditing ? (
+                  form.photoURL.trim() ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={form.photoURL.trim()} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{initials}</span>
+                  )
+                ) : photoURL ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoURL} alt={displayName} className="h-full w-full object-cover" />
                 ) : (
@@ -200,28 +316,99 @@ export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) 
                 )}
               </div>
 
-              <div className="mt-3 space-y-1">
-                <h1 className="text-2xl font-semibold text-neutral-black">{displayName}</h1>
-                <p className="break-all text-sm text-neutral-4">ID: {user.id}</p>
-                <span className="inline-flex items-center gap-1 rounded-full border border-primary-4 bg-primary-6 px-3 py-1 text-xs font-semibold text-primary-1">
-                  <FiShield size={12} />
-                  {roleLabel}
-                </span>
+              <div className="mt-3 space-y-2">
+                {isEditing ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs text-neutral-4 font-semibold">Tên hiển thị</label>
+                      <input
+                        type="text"
+                        value={form.displayName}
+                        onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                        className="w-full rounded-xl border border-neutral-20 px-3 py-2 text-sm text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                        placeholder="Nhập tên hiển thị"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-neutral-4 font-semibold">Link ảnh đại diện</label>
+                      <input
+                        type="text"
+                        value={form.photoURL}
+                        onChange={(e) => setForm({ ...form, photoURL: e.target.value })}
+                        className="w-full rounded-xl border border-neutral-20 px-3 py-2 text-sm text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                        placeholder="Nhập link ảnh đại diện"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-2xl font-semibold text-neutral-black">{displayName}</h1>
+                    <p className="break-all text-sm text-neutral-4">ID: {currentUser.id}</p>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary-4 bg-primary-6 px-3 py-1 text-xs font-semibold text-primary-1">
+                      <FiShield size={12} />
+                      {roleLabel}
+                    </span>
+                  </>
+                )}
               </div>
 
-              <div className="mt-4 space-y-2 text-sm text-neutral-2">
-                <p className="flex items-center gap-2">
-                  <FiMail size={14} className="text-neutral-4" />
-                  <span className="truncate">{user.email || "--"}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <FiPhone size={14} className="text-neutral-4" />
-                  {user.phoneNumber || "--"}
-                </p>
-                <p className="flex items-center gap-2">
-                  <FiCalendar size={14} className="text-neutral-4" />
-                  Sinh nhật: {formatDate(user.birthDate)}
-                </p>
+              <div className="mt-4 space-y-3 text-sm text-neutral-2">
+                {isEditing ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs text-neutral-4 font-semibold flex items-center gap-1.5">
+                        <FiMail size={13} /> Email
+                      </label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className="w-full rounded-xl border border-neutral-20 px-3 py-2 text-sm text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                        placeholder="Nhập email"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-neutral-4 font-semibold flex items-center gap-1.5">
+                        <FiPhone size={13} /> Số điện thoại
+                      </label>
+                      <input
+                        type="text"
+                        value={form.phoneNumber}
+                        onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                        className="w-full rounded-xl border border-neutral-20 px-3 py-2 text-sm text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                        placeholder="Nhập số điện thoại"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-neutral-4 font-semibold flex items-center gap-1.5">
+                        <FiCalendar size={13} /> Sinh nhật
+                      </label>
+                      <input
+                        type="date"
+                        value={form.birthDate}
+                        onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                        className="w-full rounded-xl border border-neutral-20 px-3 py-2 text-sm text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="flex items-center gap-2">
+                      <FiMail size={14} className="text-neutral-4" />
+                      <span className="truncate">{currentUser.email || "--"}</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <FiPhone size={14} className="text-neutral-4" />
+                      {currentUser.phoneNumber || "--"}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <FiCalendar size={14} className="text-neutral-4" />
+                      Sinh nhật: {formatDate(currentUser.birthDate)}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
@@ -232,9 +419,40 @@ export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) 
                 <div className="rounded-xl border border-neutral-20 bg-neutral-10 p-3">
                   <p className="text-xs uppercase tracking-wide text-neutral-4">Tham gia</p>
                   <p className="mt-1 text-sm font-semibold text-neutral-black">
-                    {formatDate(user.createdAt)}
+                    {formatDate(currentUser.createdAt)}
                   </p>
                 </div>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="w-28 rounded-xl bg-primary-1 py-2 text-center text-sm font-semibold text-white transition hover:bg-primary-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSaving ? "Đang lưu..." : "Lưu"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      disabled={isSaving}
+                      className="w-28 rounded-xl border border-neutral-20 bg-white py-2 text-center text-sm font-semibold text-neutral-2 transition hover:bg-neutral-10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Hủy
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="w-44 rounded-xl border border-primary-1 bg-white py-2 text-center text-sm font-semibold text-primary-1 transition hover:bg-primary-6"
+                  >
+                    Chỉnh sửa thông tin
+                  </button>
+                )}
               </div>
             </div>
           </article>
@@ -271,24 +489,39 @@ export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) 
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <dt className="text-neutral-4">Firebase UID</dt>
-                <dd className="font-medium text-neutral-1">{user.firebaseUid || "--"}</dd>
+                <dd className="font-medium text-neutral-1">{currentUser.firebaseUid || "--"}</dd>
               </div>
 
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <dt className="text-neutral-4">Giới tính</dt>
-                <dd className="font-medium text-neutral-1">{user.gender || "--"}</dd>
+                <dd className="font-medium text-neutral-1">
+                  {isEditing ? (
+                    <select
+                      value={form.gender}
+                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                      className="rounded-lg border border-neutral-20 px-2 py-1 text-sm text-neutral-black bg-white outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                    >
+                      <option value="">-- Chọn giới tính --</option>
+                      <option value="Nam">Nam</option>
+                      <option value="Nữ">Nữ</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  ) : (
+                    currentUser.gender || "--"
+                  )}
+                </dd>
               </div>
 
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <dt className="text-neutral-4">Mô tả vai trò</dt>
-                <dd className="font-medium text-neutral-1">{user.role?.description || "--"}</dd>
+                <dd className="font-medium text-neutral-1">{currentUser.role?.description || "--"}</dd>
               </div>
 
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <dt className="text-neutral-4">Ngày tạo</dt>
                 <dd className="flex items-center gap-2 font-medium text-neutral-1">
                   <FiCalendar size={14} className="text-neutral-4" />
-                  {formatDateTime(user.createdAt)}
+                  {formatDateTime(currentUser.createdAt)}
                 </dd>
               </div>
 
@@ -296,7 +529,7 @@ export default function AdminUserDetailPage({ user }: AdminUserDetailPageProps) 
                 <dt className="text-neutral-4">Cập nhật lần cuối</dt>
                 <dd className="flex items-center gap-2 font-medium text-neutral-1">
                   <FiUser size={14} className="text-neutral-4" />
-                  {formatDateTime(user.updatedAt)}
+                  {formatDateTime(currentUser.updatedAt)}
                 </dd>
               </div>
             </dl>

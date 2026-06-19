@@ -1,17 +1,31 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   FiArrowLeft,
   FiAlertCircle,
   FiCheckCircle,
   FiClock,
   FiCreditCard,
-  FiDownload,
   FiMapPin,
   FiPackage,
   FiPhone,
   FiUser,
+  FiEdit,
+  FiX,
+  FiSave,
 } from "react-icons/fi";
-import type { AdminOrderDetail } from "@/features/admin/order/servers";
+import { updateAdminOrder, type AdminOrderDetail } from "@/features/admin/order/servers";
+import { useToast } from "@/hooks";
+
+const ORDER_STATUS_OPTIONS = [
+  { value: "pending", label: "Chờ xác nhận" },
+  { value: "confirmed", label: "Đã xác nhận" },
+  { value: "delivering", label: "Đang giao" },
+  { value: "delivered", label: "Hoàn thành" },
+  { value: "cancelled", label: "Đã hủy" },
+];
 import {
   buildOrderTimeline,
   formatCurrency,
@@ -32,22 +46,101 @@ interface OrderDetailPageProps {
 }
 
 export default function OrderDetailPage({ order }: OrderDetailPageProps) {
-  const items = getOrderItems(order);
-  const customerInitials = getNameInitials(order.arrivalName);
-  const customerPhotoURL = order.customerPhotoURL?.trim();
+  const [currentOrder, setCurrentOrder] = useState<AdminOrderDetail>(order);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { showError, showSuccess } = useToast();
+
+  const [form, setForm] = useState({
+    arrivalName: order.arrivalName || "",
+    arrivalPhone: order.arrivalPhone || "",
+    arrivalAddress: order.arrivalAddress || "",
+    note: order.note || "",
+    status: order.status || "",
+  });
+
+  useEffect(() => {
+    setCurrentOrder(order);
+    setForm({
+      arrivalName: order.arrivalName || "",
+      arrivalPhone: order.arrivalPhone || "",
+      arrivalAddress: order.arrivalAddress || "",
+      note: order.note || "",
+      status: order.status || "",
+    });
+  }, [order]);
+
+  const handleCancel = () => {
+    setForm({
+      arrivalName: currentOrder.arrivalName || "",
+      arrivalPhone: currentOrder.arrivalPhone || "",
+      arrivalAddress: currentOrder.arrivalAddress || "",
+      note: currentOrder.note || "",
+      status: currentOrder.status || "",
+    });
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.arrivalName.trim()) {
+      showError("Tên người nhận không được để trống");
+      return;
+    }
+
+    if (!form.arrivalPhone.trim()) {
+      showError("Số điện thoại không được để trống");
+      return;
+    }
+
+    if (!form.arrivalAddress.trim()) {
+      showError("Địa chỉ giao hàng không được để trống");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const result = await updateAdminOrder(currentOrder._id, {
+        arrivalName: form.arrivalName,
+        arrivalPhone: form.arrivalPhone,
+        arrivalAddress: form.arrivalAddress,
+        note: form.note,
+        status: form.status,
+      });
+
+      if (result.success && result.data) {
+        setCurrentOrder({
+          ...currentOrder,
+          ...result.data,
+        });
+        showSuccess(result.message || "Cập nhật thông tin đơn hàng thành công");
+        setIsEditing(false);
+      } else {
+        showError(result.message || "Không thể cập nhật thông tin đơn hàng");
+      }
+    } catch (error) {
+      console.error(error);
+      showError("Đã xảy ra lỗi khi cập nhật thông tin");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const items = getOrderItems(currentOrder);
+  const customerInitials = getNameInitials(currentOrder.arrivalName);
+  const customerPhotoURL = currentOrder.customerPhotoURL?.trim();
   const totalQuantity = getTotalQuantity(items);
   const subtotal =
-    order.cart?.totalPrice ??
+    currentOrder.cart?.totalPrice ??
     items.reduce(
       (sum, item) =>
         sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
       0,
     );
   const finalPrice =
-    order.cart?.finalPrice ?? order.finalPrice ?? order.totalPrice ?? subtotal;
+    currentOrder.cart?.finalPrice ?? currentOrder.finalPrice ?? currentOrder.totalPrice ?? subtotal;
   const discount = Math.max((subtotal || 0) - (finalPrice || 0), 0);
-  const timeline = buildOrderTimeline(order);
-  const paymentStatus = getOrderPaymentStatus(order);
+  const timeline = buildOrderTimeline(currentOrder);
+  const paymentStatus = getOrderPaymentStatus(currentOrder);
 
   return (
     <div className="space-y-5">
@@ -60,13 +153,38 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
           Quay lại danh sách
         </Link>
 
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-primary-4 bg-primary-6 px-4 py-2 text-sm font-semibold text-primary-1 transition hover:border-primary-3 hover:bg-primary-5"
-        >
-          <FiDownload size={15} />
-          In hóa đơn
-        </button>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-20 bg-white px-4 py-2 text-sm font-semibold text-neutral-2 transition hover:bg-neutral-10"
+              >
+                <FiX size={15} />
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 rounded-full border border-primary-4 bg-primary-6 px-4 py-2 text-sm font-semibold text-primary-1 transition hover:border-primary-3 hover:bg-primary-5 disabled:opacity-50"
+              >
+                <FiSave size={15} />
+                {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-primary-4 bg-primary-6 px-4 py-2 text-sm font-semibold text-primary-1 transition hover:border-primary-3 hover:bg-primary-5"
+            >
+              <FiEdit size={15} />
+              Chỉnh sửa đơn hàng
+            </button>
+          )}
+        </div>
       </div>
 
       <section className="rounded-3xl border border-neutral-20 bg-[linear-gradient(118deg,#fff_0%,#fff7f7_35%,#fdfefe_100%)] p-6 shadow-sm">
@@ -76,27 +194,41 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
               Chi tiết đơn hàng
             </p>
             <h1 className="text-3xl font-semibold text-neutral-black">
-              Đơn #{getShortOrderId(order._id)}
+              Đơn #{getShortOrderId(currentOrder._id)}
             </h1>
             <p className="text-sm text-neutral-4">
-              Đặt lúc {formatDateTime(order.createdAt)}
+              Đặt lúc {formatDateTime(currentOrder.createdAt)}
             </p>
           </div>
 
-          <span
-            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(
-              order.status,
-            )}`}
-          >
-            {getOrderStatusLabel(order.status)}
-          </span>
+          {isEditing ? (
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="rounded-full border border-neutral-20 px-3 py-1.5 text-xs font-semibold focus:border-primary-1 focus:outline-none"
+            >
+              {ORDER_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span
+              className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getOrderStatusStyles(
+                currentOrder.status,
+              )}`}
+            >
+              {getOrderStatusLabel(currentOrder.status)}
+            </span>
+          )}
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-neutral-20 bg-white/80 p-3">
             <p className="text-xs text-neutral-4">Cập nhật gần nhất</p>
             <p className="mt-1 text-sm font-semibold text-neutral-1">
-              {formatDateTime(order.updatedAt)}
+              {formatDateTime(currentOrder.updatedAt)}
             </p>
           </div>
           <div className="rounded-xl border border-neutral-20 bg-white/80 p-3">
@@ -128,7 +260,7 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
                   {customerPhotoURL ? (
                     <Image
                       src={customerPhotoURL}
-                      alt={order.arrivalName || "Customer Photo"}
+                      alt={currentOrder.arrivalName || "Customer Photo"}
                       width={48}
                       height={48}
                       className="h-full w-full object-cover"
@@ -138,12 +270,23 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
                   )}
                 </div>
 
-                <div>
-                  <p className="text-base font-semibold text-neutral-1">
-                    {order.arrivalName || "Khách hàng"}
-                  </p>
+                <div className="flex-1">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.arrivalName}
+                      onChange={(e) =>
+                        setForm({ ...form, arrivalName: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-neutral-20 bg-white px-3 py-1.5 text-base font-semibold text-neutral-1 focus:border-primary-1 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="text-base font-semibold text-neutral-1">
+                      {currentOrder.arrivalName || "Khách hàng"}
+                    </p>
+                  )}
                   <p className="text-xs text-neutral-4">
-                    Mã khách: {order.customerId || "--"}
+                    Mã khách: {currentOrder.customerId || "--"}
                   </p>
                 </div>
               </div>
@@ -151,17 +294,39 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
               <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
                 <div className="rounded-xl border border-neutral-20 bg-white px-3 py-2.5">
                   <p className="text-xs text-neutral-4">Số điện thoại</p>
-                  <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-1">
-                    <FiPhone size={14} className="text-neutral-4" />
-                    {order.arrivalPhone || "--"}
-                  </p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.arrivalPhone}
+                      onChange={(e) =>
+                        setForm({ ...form, arrivalPhone: e.target.value })
+                      }
+                      className="mt-1 w-full border-b border-neutral-20 bg-transparent text-sm font-semibold text-neutral-1 focus:border-primary-1 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-1">
+                      <FiPhone size={14} className="text-neutral-4" />
+                      {currentOrder.arrivalPhone || "--"}
+                    </p>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-neutral-20 bg-white px-3 py-2.5">
                   <p className="text-xs text-neutral-4">Ghi chú đơn hàng</p>
-                  <p className="mt-1 font-semibold text-neutral-1">
-                    {order.note || "Không có"}
-                  </p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.note}
+                      onChange={(e) =>
+                        setForm({ ...form, note: e.target.value })
+                      }
+                      className="mt-1 w-full border-b border-neutral-20 bg-transparent text-sm font-semibold text-neutral-1 focus:border-primary-1 focus:outline-none"
+                    />
+                  ) : (
+                    <p className="mt-1 font-semibold text-neutral-1">
+                      {currentOrder.note || "Không có"}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -249,7 +414,18 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
               Địa chỉ giao hàng
             </h2>
             <div className="mt-4 rounded-2xl border border-neutral-20 bg-neutral-10 p-4 text-neutral-2">
-              <p className="leading-relaxed">{order.arrivalAddress || "--"}</p>
+              {isEditing ? (
+                <textarea
+                  value={form.arrivalAddress}
+                  onChange={(e) =>
+                    setForm({ ...form, arrivalAddress: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-neutral-20 bg-white px-3 py-2 text-sm font-medium text-neutral-black outline-none focus:border-primary-1 focus:ring-1 focus:ring-primary-1"
+                  rows={2}
+                />
+              ) : (
+                <p className="leading-relaxed">{currentOrder.arrivalAddress || "--"}</p>
+              )}
             </div>
           </article>
         </div>
@@ -269,13 +445,12 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
                   ) : null}
 
                   <span
-                    className={`absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${
-                      step.danger
+                    className={`absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${step.danger
                         ? "border-rose-300 bg-rose-50 text-rose-600"
                         : step.active
                           ? "border-emerald-300 bg-emerald-50 text-emerald-600"
                           : "border-neutral-20 bg-white text-neutral-4"
-                    }`}
+                      }`}
                   >
                     {step.danger ? (
                       <FiAlertCircle size={12} />
@@ -306,7 +481,7 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-neutral-4">Phương thức</dt>
                 <dd className="font-medium text-neutral-1">
-                  {getPaymentMethodLabel(order.paymentMethod)}
+                  {getPaymentMethodLabel(currentOrder.paymentMethod)}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-2">
@@ -322,7 +497,7 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-neutral-4">Mã giao dịch</dt>
                 <dd className="font-medium text-neutral-1">
-                  {order.cartId || "--"}
+                  {currentOrder.cartId || "--"}
                 </dd>
               </div>
             </dl>

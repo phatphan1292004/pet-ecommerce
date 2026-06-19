@@ -21,7 +21,7 @@ const statusTokens = {
   processing: ["processing", "confirmed", "xac_nhan", "da_xac_nhan"],
   delivering: ["delivering", "shipping", "dang_giao", "in_transit"],
   delivered: ["delivered", "da_giao", "completed", "done", "hoan_thanh"],
-  cancelled: ["cancelled", "canceled", "da_huy", "huy"],
+  cancelled: ["cancelled", "canceled", "da_huy", "huy", "failed", "that_bai"],
 } as const;
 
 const hasAnyStatusToken = (normalizedStatus: string, tokens: readonly string[]) =>
@@ -69,7 +69,7 @@ export const getOrderStatusLabel = (status?: string, options: OrderStatusOptions
     return "Hoàn thành";
   }
   if (hasAnyStatusToken(normalized, statusTokens.cancelled)) {
-    return "Đã hủy";
+    return normalized.includes("failed") ? "Thất bại" : "Đã hủy";
   }
 
   return status || "--";

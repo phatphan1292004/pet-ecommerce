@@ -1,6 +1,18 @@
 "use server";
 
-import { del, get, patch } from "@/integrations/storeClient";
+import { del, get, patch, put } from "@/integrations/storeClient";
+
+export interface AdminUpdateOrderPayload {
+  customerId?: string;
+  cartId?: string;
+  status?: string;
+  paymentMethod?: string;
+  arrivalName?: string;
+  arrivalPhone?: string;
+  arrivalAddress?: string;
+  arrivalTime?: string;
+  note?: string;
+}
 
 export interface AdminOrderItem {
   _id?: string;
@@ -284,7 +296,28 @@ export const updateAdminOrderStatus = async (
 
   return {
     success: Boolean(res?.success),
-    message: res?.message || "Kh�ng th? c?p nh?t tr?ng th�i don h�ng",
+    message: res?.message || "Khng th? c?p nh?t tr?ng thi don hng",
     data: normalizeUpdatedOrder(res?.data),
+  };
+};
+
+export const updateAdminOrder = async (
+  orderId: string,
+  payload: AdminUpdateOrderPayload
+): Promise<AdminOrderDetailResult> => {
+  if (!orderId || orderId.trim().length === 0) {
+    return {
+      success: false,
+      message: "ID đơn hàng không hợp lệ",
+      data: null,
+    };
+  }
+
+  const res = await put(`/admin/orders/${orderId.trim()}`, payload);
+
+  return {
+    success: Boolean(res?.success),
+    message: res?.message || "Không thể cập nhật thông tin đơn hàng",
+    data: normalizeOrderDetail(res?.data),
   };
 };

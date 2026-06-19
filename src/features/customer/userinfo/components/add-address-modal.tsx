@@ -13,10 +13,10 @@ import {
   Select,
 } from "@headlessui/react";
 import { useEffect, useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaChevronDown } from "react-icons/fa";
 import { Controller, useForm } from "react-hook-form";
 import { useToast } from "@/hooks";
-import { createAddress } from "../servers/address";
+import { createAddress, updateAddress } from "../servers/address";
 import { UserAddress } from "@/types/address";
 import {
   getProvinces,
@@ -28,6 +28,8 @@ interface AddAddressModalProps {
   open: boolean;
   onClose: () => void;
   onCreated?: (address: UserAddress) => void;
+  onUpdated?: (address: UserAddress) => void;
+  editAddress?: UserAddress | null;
 }
 
 const ADDRESS_TYPES = ["Nhà riêng", "Văn phòng", "Khác"];
@@ -57,6 +59,8 @@ export default function AddAddressModal({
   open,
   onClose,
   onCreated,
+  onUpdated,
+  editAddress,
 }: AddAddressModalProps) {
   const { showSuccess, showError } = useToast();
   const [provinces, setProvinces] = useState<LocationOption[]>([]);
@@ -142,6 +146,58 @@ export default function AddAddressModal({
     };
   }, [selectedProvinceId, setValue]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    if (editAddress) {
+      const initEditForm = async () => {
+        try {
+          let currentProvinces = provinces;
+          if (currentProvinces.length === 0) {
+            currentProvinces = await getProvinces();
+            setProvinces(currentProvinces);
+          }
+
+          const foundProvince = currentProvinces.find(
+            (p) => p.name.trim().toLowerCase() === editAddress.province.trim().toLowerCase()
+          );
+
+          if (foundProvince) {
+            setValue("provinceId", foundProvince.id);
+            const currentWards = await getWardsByProvinceId(foundProvince.id);
+            setWards(currentWards);
+
+            const foundWard = currentWards.find(
+              (w) => w.name.trim().toLowerCase() === editAddress.ward.trim().toLowerCase()
+            );
+            if (foundWard) {
+              setValue("wardId", foundWard.id);
+            } else {
+              setValue("wardId", "");
+            }
+          } else {
+            setValue("provinceId", "");
+            setValue("wardId", "");
+          }
+        } catch (err) {
+          console.error("Error setting edit address province/ward ids", err);
+        }
+
+        setValue("fullName", editAddress.fullName || "");
+        setValue("phone", editAddress.phone || "");
+        setValue("email", editAddress.email || "");
+        setValue("address", editAddress.address || "");
+        setValue("type", editAddress.type || "");
+        setValue("isDefault", editAddress.isDefault || false);
+      };
+
+      void initEditForm();
+    } else {
+      reset(INITIAL_FORM);
+      setWards([]);
+    }
+  }, [open, editAddress]);
+
   const onSubmit = async (form: AddressForm) => {
     const selectedProvince = provinces.find((province) => province.id === form.provinceId);
     const selectedWard = wards.find((ward) => ward.id === form.wardId);
@@ -154,31 +210,55 @@ export default function AddAddressModal({
     setIsSubmitting(true);
 
     try {
-      const result = await createAddress({
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || undefined,
-        province: selectedProvince.name,
-        ward: selectedWard.name,
-        address: form.address.trim(),
-        type: form.type,
-        isDefault: form.isDefault,
-      });
+      if (editAddress) {
+        const result = await updateAddress(editAddress._id, {
+          fullName: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || undefined,
+          province: selectedProvince.name,
+          ward: selectedWard.name,
+          address: form.address.trim(),
+          type: form.type,
+          isDefault: form.isDefault,
+        });
 
-      if (!result.success) {
-        showError(result.message || "Không thể thêm địa chỉ");
-        return;
-      }
+        if (!result.success) {
+          showError(result.message || "Không thể cập nhật địa chỉ");
+          return;
+        }
 
-      showSuccess(result.message || "Thêm địa chỉ thành công");
-      if (result.data) {
-        onCreated?.(result.data);
+        showSuccess(result.message || "Cập nhật địa chỉ thành công");
+        if (result.data) {
+          onUpdated?.(result.data);
+        }
+        onClose();
+      } else {
+        const result = await createAddress({
+          fullName: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || undefined,
+          province: selectedProvince.name,
+          ward: selectedWard.name,
+          address: form.address.trim(),
+          type: form.type,
+          isDefault: form.isDefault,
+        });
+
+        if (!result.success) {
+          showError(result.message || "Không thể thêm địa chỉ");
+          return;
+        }
+
+        showSuccess(result.message || "Thêm địa chỉ thành công");
+        if (result.data) {
+          onCreated?.(result.data);
+        }
+        reset(INITIAL_FORM);
+        setWards([]);
+        onClose();
       }
-      reset(INITIAL_FORM);
-      setWards([]);
-      onClose();
     } catch {
-      showError("Không thể thêm địa chỉ");
+      showError(editAddress ? "Không thể cập nhật địa chỉ" : "Không thể thêm địa chỉ");
     } finally {
       setIsSubmitting(false);
     }
@@ -193,7 +273,7 @@ export default function AddAddressModal({
           {/* Header */}
           <div className="relative flex items-center justify-center py-5 px-6 border-b border-neutral-20">
             <DialogTitle className="text-2xl font-bold text-neutral-1">
-              Thêm địa chỉ
+              {editAddress ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ"}
             </DialogTitle>
             <Button
               onClick={onClose}
@@ -255,62 +335,72 @@ export default function AddAddressModal({
 
             {/* Province + Ward */}
             <div className="grid grid-cols-2 gap-4">
-              <Field>
+              <Field className="relative">
                 <Controller
                   name="provinceId"
                   control={control}
                   rules={{ required: "Vui lòng chọn tỉnh/thành phố" }}
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onChange={(e) => {
-                        field.onChange(e.target.value);
-                        setValue("wardId", "", { shouldValidate: true });
-                      }}
-                      className="w-full border border-neutral-20 rounded-lg px-4 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white"
-                    >
-                      <option value="" disabled>
-                        {isLoadingProvinces
-                          ? "Đang tải tỉnh/thành phố..."
-                          : "Tỉnh, thành phố"}
-                      </option>
-                      {provinces.map((province) => (
-                        <option key={province.id} value={province.id}>
-                          {province.name}
+                    <div className="relative">
+                      <Select
+                        value={field.value}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setValue("wardId", "", { shouldValidate: true });
+                        }}
+                        className="w-full border border-neutral-20 rounded-lg pl-4 pr-10 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white"
+                      >
+                        <option value="" disabled>
+                          {isLoadingProvinces
+                            ? "Đang tải tỉnh/thành phố..."
+                            : "Tỉnh, thành phố"}
                         </option>
-                      ))}
-                    </Select>
+                        {provinces.map((province) => (
+                          <option key={province.id} value={province.id}>
+                            {province.name}
+                          </option>
+                        ))}
+                      </Select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-4">
+                        <FaChevronDown size={14} />
+                      </div>
+                    </div>
                   )}
                 />
                 {errors.provinceId ? (
                   <p className="mt-1 text-sm text-red-500">{errors.provinceId.message}</p>
                 ) : null}
               </Field>
-              <Field>
+              <Field className="relative">
                 <Controller
                   name="wardId"
                   control={control}
                   rules={{ required: "Vui lòng chọn phường/xã" }}
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      disabled={
-                        !selectedProvinceId || isLoadingProvinces || isLoadingWards
-                      }
-                      className="w-full border border-neutral-20 rounded-lg px-4 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white"
-                    >
-                      <option value="" disabled>
-                        {isLoadingProvinces || isLoadingWards
-                          ? "Đang tải phường/xã..."
-                          : "Phường, xã"}
-                      </option>
-                      {wards.map((ward) => (
-                        <option key={ward.id} value={ward.id}>
-                          {ward.name}
+                    <div className="relative">
+                      <Select
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        disabled={
+                          !selectedProvinceId || isLoadingProvinces || isLoadingWards
+                        }
+                        className="w-full border border-neutral-20 rounded-lg pl-4 pr-10 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white disabled:bg-neutral-10"
+                      >
+                        <option value="" disabled>
+                          {isLoadingProvinces || isLoadingWards
+                            ? "Đang tải phường/xã..."
+                            : "Phường, xã"}
                         </option>
-                      ))}
-                    </Select>
+                        {wards.map((ward) => (
+                          <option key={ward.id} value={ward.id}>
+                            {ward.name}
+                          </option>
+                        ))}
+                      </Select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-4">
+                        <FaChevronDown size={14} />
+                      </div>
+                    </div>
                   )}
                 />
                 {errors.wardId ? (
@@ -333,20 +423,25 @@ export default function AddAddressModal({
             </Field>
 
             {/* Type */}
-            <Field>
-              <Select
-                {...register("type", { required: "Vui lòng chọn loại địa chỉ" })}
-                className="w-full border border-neutral-20 rounded-lg px-4 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white"
-              >
-                <option value="" disabled>
-                  Loại địa chỉ
-                </option>
-                {ADDRESS_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+            <Field className="relative">
+              <div className="relative">
+                <Select
+                  {...register("type", { required: "Vui lòng chọn loại địa chỉ" })}
+                  className="w-full border border-neutral-20 rounded-lg pl-4 pr-10 py-3 text-base text-neutral-5 outline-none focus:border-primary-3 transition-colors appearance-none bg-white"
+                >
+                  <option value="" disabled>
+                    Loại địa chỉ
                   </option>
-                ))}
-              </Select>
+                  {ADDRESS_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-4">
+                  <FaChevronDown size={14} />
+                </div>
+              </div>
               {errors.type ? (
                 <p className="mt-1 text-sm text-red-500">{errors.type.message}</p>
               ) : null}

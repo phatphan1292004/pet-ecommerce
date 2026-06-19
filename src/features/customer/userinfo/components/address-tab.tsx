@@ -6,6 +6,7 @@ import AddAddressModal from "./add-address-modal";
 import { UserAddress } from "@/types/address";
 import { useToast } from "@/hooks";
 import { deleteAddress } from "../servers/address";
+import { ConfirmDialog } from "@/components";
 
 interface AddressTabProps {
   initialAddresses: UserAddress[];
@@ -15,6 +16,9 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [addresses, setAddresses] = useState<UserAddress[]>(initialAddresses);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [addressIdToDelete, setAddressIdToDelete] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
 
   const handleAddressCreated = (newAddress: UserAddress) => {
@@ -25,6 +29,20 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
       }
 
       return [newAddress, ...prev];
+    });
+  };
+
+  const handleAddressUpdated = (updatedAddress: UserAddress) => {
+    setAddresses((prev) => {
+      let next = prev.map((item) =>
+        item._id === updatedAddress._id ? updatedAddress : item
+      );
+      if (updatedAddress.isDefault) {
+        next = next.map((item) =>
+          item._id === updatedAddress._id ? item : { ...item, isDefault: false }
+        );
+      }
+      return next.sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
     });
   };
 
@@ -65,23 +83,9 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
             >
               <button
                 type="button"
-                onClick={async () => {
-                  const ok = window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?");
-                  if (!ok) return;
-                  try {
-                    setDeletingId(item._id);
-                    const res = await deleteAddress(item._id);
-                    if (res.success) {
-                      setAddresses((prev) => prev.filter((a) => a._id !== item._id));
-                      showSuccess(res.message || "Xóa địa chỉ thành công");
-                    } else {
-                      showError(res.message || "Không xóa được địa chỉ");
-                    }
-                  } catch {
-                    showError("Lỗi khi xóa địa chỉ");
-                  } finally {
-                    setDeletingId(null);
-                  }
+                onClick={() => {
+                  setAddressIdToDelete(item._id);
+                  setDeleteConfirmOpen(true);
                 }}
                 disabled={deletingId === item._id}
                 aria-label="Xóa địa chỉ"
@@ -122,6 +126,10 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => {
+                      setEditingAddress(item);
+                      setModalOpen(true);
+                    }}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary-1 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-2 sm:w-auto"
                     aria-label="Chỉnh sửa địa chỉ"
                   >
@@ -139,8 +147,45 @@ export default function AddressTab({ initialAddresses }: AddressTabProps) {
 
       <AddAddressModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingAddress(null);
+        }}
         onCreated={handleAddressCreated}
+        onUpdated={handleAddressUpdated}
+        editAddress={editingAddress}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setAddressIdToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (!addressIdToDelete) return;
+          setDeleteConfirmOpen(false);
+          try {
+            setDeletingId(addressIdToDelete);
+            const res = await deleteAddress(addressIdToDelete);
+            if (res.success) {
+              setAddresses((prev) => prev.filter((a) => a._id !== addressIdToDelete));
+              showSuccess(res.message || "Xóa địa chỉ thành công");
+            } else {
+              showError(res.message || "Không xóa được địa chỉ");
+            }
+          } catch {
+            showError("Lỗi khi xóa địa chỉ");
+          } finally {
+            setDeletingId(null);
+            setAddressIdToDelete(null);
+          }
+        }}
+        title="Xóa địa chỉ"
+        message="Bạn có chắc chắn muốn xóa địa chỉ này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        isDanger={true}
+        isLoading={deletingId !== null}
       />
     </div>
   );

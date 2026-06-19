@@ -8,6 +8,7 @@ import type { Order, OrderItem } from "@/types/order";
 import { updateOrderDeliveryInfo, cancelOrder } from "../servers/orders";
 import { useToast } from "@/hooks";
 import { useCartStore } from "@/store";
+import { ConfirmDialog } from "@/components";
 
 interface OrderDetailClientProps {
   order: Order;
@@ -43,6 +44,20 @@ const getPaymentLabel = (method?: string) => {
   return method;
 };
 
+const getStatusLabel = (status?: string) => {
+  if (!status) return "--";
+  const normalized = status.toLowerCase();
+
+  if (normalized === "pending") return "Chờ xác nhận";
+  if (normalized === "confirmed") return "Đã xác nhận";
+  if (normalized === "shipping" || normalized === "delivering") return "Đang giao";
+  if (normalized === "delivered" || normalized === "completed") return "Đã giao";
+  if (normalized === "cancelled" || normalized === "canceled") return "Đã hủy";
+  if (normalized === "failed") return "Thất bại";
+
+  return status;
+};
+
 const getItems = (order: Order): OrderItem[] =>
   order.cart?.products || order.products || order.items || order.cartItems || [];
 
@@ -52,6 +67,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const { showError, showSuccess } = useToast();
   const addItem = useCartStore((state) => state.addItem);
 
@@ -108,8 +124,6 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
   };
 
   const handleCancel = async () => {
-    const confirmCancel = window.confirm("Bạn có chắc muốn hủy đơn hàng này?");
-    if (!confirmCancel) return;
     setIsCancelling(true);
     try {
       const res = await cancelOrder(orderId);
@@ -251,53 +265,55 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
           </div>
 
           <div className="flex flex-col items-stretch gap-2">
-            {!isEditing ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={isCancelling}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-red-600 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
-                >
-                  <FaTimes size={14} />
-                  {isCancelling ? "Đang hủy..." : "Hủy đơn"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(true);
-                    resetForm();
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2"
-                >
-                  <FaEdit size={14} />
-                  Chỉnh sửa
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2 disabled:bg-neutral-5"
-                >
-                  <FaSave size={14} />
-                  {isSaving ? "Đang lưu..." : "Lưu"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    resetForm();
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-neutral-20 px-3 py-2 text-sm font-medium text-neutral-3 hover:bg-neutral-10"
-                >
-                  <FaTimes size={14} />
-                  Hủy
-                </button>
-              </>
-            )}
+            {order.status === "pending" ? (
+              !isEditing ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCancelConfirmOpen(true)}
+                    disabled={isCancelling}
+                    className="inline-flex items-center justify-center gap-2 rounded-md border border-red-600 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                  >
+                    <FaTimes size={14} />
+                    {isCancelling ? "Đang hủy..." : "Hủy đơn"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      resetForm();
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2"
+                  >
+                    <FaEdit size={14} />
+                    Chỉnh sửa
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-1 px-3 py-2 text-sm font-medium text-white hover:bg-primary-2 disabled:bg-neutral-5"
+                  >
+                    <FaSave size={14} />
+                    {isSaving ? "Đang lưu..." : "Lưu"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      resetForm();
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-md border border-neutral-20 px-3 py-2 text-sm font-medium text-neutral-3 hover:bg-neutral-10"
+                  >
+                    <FaTimes size={14} />
+                    Hủy
+                  </button>
+                </>
+              )
+            ) : null}
           </div>
         </div>
 
@@ -323,7 +339,7 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
               <FaTruck size={14} />
               <p className="text-xs uppercase tracking-wide">Trạng thái</p>
             </div>
-            <p className="mt-2 font-medium text-neutral-1">{order.status || "--"}</p>
+            <p className="mt-2 font-medium text-neutral-1">{getStatusLabel(order.status)}</p>
           </div>
         </div>
       </div>
@@ -376,6 +392,20 @@ export default function OrderDetailClient({ order: initialOrder, orderId }: Orde
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onClose={() => setCancelConfirmOpen(false)}
+        onConfirm={async () => {
+          setCancelConfirmOpen(false);
+          await handleCancel();
+        }}
+        title="Hủy đơn hàng"
+        message="Bạn có chắc chắn muốn hủy đơn hàng này? Thao tác này không thể hoàn tác."
+        confirmText="Hủy đơn"
+        isDanger={true}
+        isLoading={isCancelling}
+      />
     </div>
   );
 }
