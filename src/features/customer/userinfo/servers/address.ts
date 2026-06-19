@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { del, get, post } from "@/integrations/storeClient";
+import { del, get, post, put } from "@/integrations/storeClient";
 import { UserAddress } from "@/types/address";
 
 export interface CreateAddressInput {
@@ -107,6 +107,55 @@ export const deleteAddress = async (
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error deleting address:", message);
+    return { success: false, message };
+  }
+};
+
+export interface UpdateAddressResponse {
+  success: boolean;
+  message: string;
+  data?: UserAddress;
+}
+
+export const updateAddress = async (
+  addressId: string,
+  data: CreateAddressInput
+): Promise<UpdateAddressResponse> => {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
+    if (!userId || userId.startsWith("guest-")) {
+      return { success: false, message: "User not authenticated" };
+    }
+
+    const res = await put(`/addresses/${addressId}`, {
+      firebaseUid: userId,
+      fullName: data.fullName.trim(),
+      phone: data.phone.trim(),
+      email: data.email?.trim(),
+      address: data.address.trim(),
+      province: data.province.trim(),
+      ward: data.ward.trim(),
+      type: data.type,
+      isDefault: data.isDefault,
+    });
+
+    if (res?.data || res?.success) {
+      return {
+        success: true,
+        message: res?.message || "Address updated successfully",
+        data: res?.data as UserAddress,
+      };
+    }
+
+    return {
+      success: false,
+      message: res?.message || "Failed to update address",
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error updating address:", message);
     return { success: false, message };
   }
 };

@@ -34,15 +34,19 @@ const normalizeStatus = (value?: string) =>
 
 const statusTokens = {
   pending: ["pending", "cho_xac_nhan", "dang_cho", "awaiting", "waiting"],
+  confirmed: ["confirmed", "da_xac_nhan"],
   delivering: ["delivering", "shipping", "dang_giao", "in_transit"],
   delivered: ["delivered", "da_giao", "completed", "done"],
-  cancelled: ["cancelled", "canceled", "da_huy", "huy"],
+  cancelled: ["cancelled", "canceled", "da_huy", "huy", "failed", "that_bai"],
 };
 
 const getStatusLabel = (status?: string) => {
   const normalized = normalizeStatus(status);
   if (statusTokens.pending.some((token) => normalized.includes(token))) {
     return "Chờ xác nhận";
+  }
+  if (statusTokens.confirmed.some((token) => normalized.includes(token))) {
+    return "Đã xác nhận";
   }
   if (statusTokens.delivering.some((token) => normalized.includes(token))) {
     return "Đang giao";
@@ -51,7 +55,7 @@ const getStatusLabel = (status?: string) => {
     return "Đã giao";
   }
   if (statusTokens.cancelled.some((token) => normalized.includes(token))) {
-    return "Đã hủy";
+    return normalized.includes("failed") ? "Thất bại" : "Đã hủy";
   }
 
   return status || "--";
@@ -61,6 +65,9 @@ const getStatusStyles = (status?: string) => {
   const normalized = normalizeStatus(status);
   if (statusTokens.pending.some((token) => normalized.includes(token))) {
     return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  if (statusTokens.confirmed.some((token) => normalized.includes(token))) {
+    return "border-blue-200 bg-blue-50 text-blue-700";
   }
   if (statusTokens.delivering.some((token) => normalized.includes(token))) {
     return "border-sky-200 bg-sky-50 text-sky-700";

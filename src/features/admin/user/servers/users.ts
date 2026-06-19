@@ -1,6 +1,6 @@
 "use server";
 
-import { get, patch } from "@/integrations/storeClient";
+import { get, patch, put } from "@/integrations/storeClient";
 
 export interface AdminUserRole {
   id?: string;
@@ -498,4 +498,55 @@ export const downgradeAdminUserToUser = async (
     `/admin/users/${userId.trim()}/downgrade-staff`,
     "Cannot downgrade staff to user"
   );
+};
+
+export interface UpdateAdminUserInput {
+  displayName?: string;
+  email?: string;
+  phoneNumber?: string;
+  photoURL?: string;
+  birthDate?: string;
+  gender?: string;
+}
+
+export const updateAdminUser = async (
+  userId: string,
+  data: UpdateAdminUserInput
+): Promise<AdminUserMutationResult> => {
+  if (!userId || userId.trim().length === 0) {
+    return {
+      success: false,
+      message: "Invalid user id",
+      data: null,
+    };
+  }
+
+  try {
+    const res = await put(`/admin/users/${userId.trim()}`, {
+      displayName: data.displayName?.trim(),
+      email: data.email?.trim(),
+      phoneNumber: data.phoneNumber?.trim(),
+      photoURL: data.photoURL?.trim() || undefined,
+      birthDate: data.birthDate?.trim() || undefined,
+      gender: data.gender?.trim() || undefined,
+    });
+
+    if (res?.data || res?.success) {
+      return {
+        success: true,
+        message: res?.message || "User updated successfully",
+        data: normalizeUserDetail(res?.data),
+      };
+    }
+
+    return {
+      success: false,
+      message: res?.message || "Cannot update user",
+      data: null,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error updating user:", message);
+    return { success: false, message, data: null };
+  }
 };
