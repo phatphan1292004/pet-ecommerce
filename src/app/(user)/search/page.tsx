@@ -136,11 +136,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <Link
                       key={opt.value}
                       href={buildUrl({ sortBy: opt.value, page: 1 })}
-                      className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                        sortBy === opt.value
+                      className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${sortBy === opt.value
                           ? "border-primary-3 bg-primary-6 font-medium text-primary-1"
                           : "border-neutral-20 text-neutral-3 hover:border-primary-5 hover:text-primary-1"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </Link>
@@ -233,11 +232,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       <Link
                         key={p}
                         href={buildUrl({ page: p })}
-                        className={`rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
-                          p === page
+                        className={`rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${p === page
                             ? "border-primary-3 bg-primary-1 text-white"
                             : "border-neutral-20 text-neutral-3 hover:border-primary-3 hover:text-primary-1"
-                        }`}
+                          }`}
                       >
                         {p}
                       </Link>
